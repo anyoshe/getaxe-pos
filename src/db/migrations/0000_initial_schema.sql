@@ -1,0 +1,22 @@
+CREATE TABLE "businesses" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text NOT NULL,
+	"legal_name" text,
+	"registration_number" text,
+	"kra_pin" text,
+	"business_type" text NOT NULL,
+	"email" text,
+	"phone" text,
+	"website" text,
+	"country" text DEFAULT 'Kenya' NOT NULL,
+	"county" text,
+	"town" text,
+	"address" text,
+	"currency" text DEFAULT 'KES' NOT NULL,
+	"timezone" text DEFAULT 'Africa/Nairobi' NOT NULL,
+	"logo" text,
+	"active" boolean DEFAULT true NOT NULL,
+	"created_by" uuid,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
