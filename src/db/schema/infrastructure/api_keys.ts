@@ -1,0 +1,48 @@
+import {
+  pgTable,
+  uuid,
+  text,
+  boolean,
+  timestamp,
+  index,
+} from "drizzle-orm/pg-core";
+
+import { businesses } from "../core/businesses";
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id")
+      .defaultRandom()
+      .primaryKey(),
+
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id),
+
+    name: text("name")
+      .notNull(),
+
+    keyHash: text("key_hash")
+      .notNull(),
+
+    active: boolean("active")
+      .default(true)
+      .notNull(),
+
+    lastUsedAt: timestamp("last_used_at"),
+
+    expiresAt: timestamp("expires_at"),
+
+    createdAt: timestamp("created_at")
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    businessIdx: index("api_keys_business_idx")
+      .on(table.businessId),
+
+    activeIdx: index("api_keys_active_idx")
+      .on(table.active),
+  })
+);

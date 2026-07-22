@@ -4,46 +4,84 @@ import {
   text,
   timestamp,
   uuid,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const businesses = pgTable("businesses", {
-  id: uuid("id").defaultRandom().primaryKey(),
+import { businessTypeEnum } from "../shared";
 
-  name: text("name").notNull(),
+export const businesses = pgTable(
+  "businesses",
+  {
+    id: uuid("id")
+      .defaultRandom()
+      .primaryKey(),
 
-  legalName: text("legal_name"),
+    name: text("name")
+      .notNull(),
 
-  registrationNumber: text("registration_number"),
+    legalName: text("legal_name"),
 
-  kraPin: text("kra_pin"),
+    registrationNumber: text("registration_number"),
 
-  businessType: text("business_type").notNull(),
+    kraPin: text("kra_pin"),
 
-  email: text("email"),
+    businessType: businessTypeEnum("business_type")
+      .notNull(),
 
-  phone: text("phone"),
+    email: text("email"),
 
-  website: text("website"),
+    phone: text("phone"),
 
-  country: text("country").default("Kenya").notNull(),
+    website: text("website"),
 
-  county: text("county"),
+    country: text("country")
+      .default("Kenya")
+      .notNull(),
 
-  town: text("town"),
+    county: text("county"),
 
-  address: text("address"),
+    town: text("town"),
 
-  currency: text("currency").default("KES").notNull(),
+    address: text("address"),
 
-  timezone: text("timezone").default("Africa/Nairobi").notNull(),
+    currency: text("currency")
+      .default("KES")
+      .notNull(),
 
-  logo: text("logo"),
+    timezone: text("timezone")
+      .default("Africa/Nairobi")
+      .notNull(),
 
-  active: boolean("active").default(true).notNull(),
+    logo: text("logo"),
 
-  createdBy: uuid("created_by"),
+    active: boolean("active")
+      .default(true)
+      .notNull(),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdBy: uuid("created_by"),
 
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+    createdAt: timestamp("created_at")
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    businessTypeIdx: index("businesses_type_idx")
+      .on(table.businessType),
+
+    activeIdx: index("businesses_active_idx")
+      .on(table.active),
+
+    registrationNumberIdx: uniqueIndex(
+      "businesses_registration_number_unique"
+    ).on(table.registrationNumber),
+
+    kraPinIdx: uniqueIndex(
+      "businesses_kra_pin_unique"
+    ).on(table.kraPin),
+  })
+);

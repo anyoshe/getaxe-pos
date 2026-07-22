@@ -1,0 +1,6 @@
+export const SALE_STATUS = {
+  DRAFT: "DRAFT",
+  COMPLETED: "COMPLETED",
+  VOIDED: "VOIDED",
+  REFUNDED: "REFUNDED",
+} as const;
