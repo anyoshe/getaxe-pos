@@ -1,43 +1,62 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { ReactNode } from "react";
+import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface AnimatedButtonProps {
   children: ReactNode;
   loading?: boolean;
+  disabled?: boolean;
   className?: string;
+  type?: "button" | "submit" | "reset";
 }
 
 export function AnimatedButton({
   children,
   loading = false,
+  disabled = false,
   className,
+  type = "button",
 }: AnimatedButtonProps) {
+  const isDisabled = loading || disabled;
+
   return (
-    <button
-      disabled={loading}
+    <motion.button
+      type={type}
+      disabled={isDisabled}
+      whileHover={!isDisabled ? { y: -2, scale: 1.01 } : undefined}
+      whileTap={!isDisabled ? { scale: 0.98 } : undefined}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 18,
+      }}
       className={`
+        flex
+        w-full
+        items-center
+        justify-center
+        gap-2
+        rounded-2xl
         transition-all
         duration-300
-        hover:-translate-y-0.5
-        hover:shadow-lg
-        disabled:opacity-70
         disabled:cursor-not-allowed
+        disabled:opacity-70
         ${className}
       `}
     >
       {loading ? (
-        <span className="flex items-center justify-center gap-2">
+        <>
           <Loader2
-            className="animate-spin"
             size={18}
+            className="animate-spin"
           />
-          Please wait...
-        </span>
+          <span>Signing in...</span>
+        </>
       ) : (
         children
       )}
-    </button>
+    </motion.button>
   );
 }

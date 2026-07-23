@@ -1,49 +1,133 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { verifyJwt } from "@/lib/auth/jwt";
+
 const PUBLIC_ROUTES = [
   "/login",
   "/forgot-password",
   "/reset-password",
 ];
 
-export async function proxy(request: NextRequest) {
-  console.log("🔥 Proxy:", request.nextUrl.pathname);
 
-  const token = request.cookies.get("getaxe-session")?.value;
+const PROTECTED_ROUTES = [
+  "/dashboard",
+  "/sales",
+  "/inventory",
+  "/customers",
+  "/suppliers",
+  "/purchases",
+  "/pharmacy",
+  "/clinical",
+  "/finance",
+  "/reports",
+  "/settings",
+  "/users",
+];
 
+
+const SESSION_COOKIE = "getaxe-session";
+
+
+export async function proxy(
+  request: NextRequest
+) {
 
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
-  if (PUBLIC_ROUTES.includes(pathname)) {
-    return NextResponse.next();
+
+  const token =
+    request.cookies.get(
+      SESSION_COOKIE
+    )?.value;
+
+
+
+  const isPublicRoute =
+    PUBLIC_ROUTES.includes(pathname);
+
+
+  const isProtectedRoute =
+    PROTECTED_ROUTES.some((route) =>
+      pathname.startsWith(route)
+    );
+
+
+
+  let authenticated = false;
+
+
+
+  /*
+    Validate existing session
+  */
+  if (token) {
+
+    try {
+
+      await verifyJwt(token);
+
+      authenticated = true;
+
+    } catch {
+
+      authenticated = false;
+
+    }
+
   }
 
-  // Protect dashboard modules
+
+
+  /*
+    Logged in users should not see login page
+  */
   if (
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/sales") ||
-    pathname.startsWith("/inventory") ||
-    pathname.startsWith("/customers") ||
-    pathname.startsWith("/suppliers") ||
-    pathname.startsWith("/purchases") ||
-    pathname.startsWith("/pharmacy") ||
-    pathname.startsWith("/clinical") ||
-    pathname.startsWith("/finance") ||
-    pathname.startsWith("/reports") ||
-    pathname.startsWith("/settings") ||
-    pathname.startsWith("/users")
+    isPublicRoute &&
+    authenticated
   ) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+
+    return NextResponse.redirect(
+      new URL("/dashboard", request.url)
+    );
+
   }
+
+
+
+  /*
+    Protect private routes
+  */
+  if (
+    isProtectedRoute &&
+    !authenticated
+  ) {
+
+    const response =
+      NextResponse.redirect(
+        new URL("/login", request.url)
+      );
+
+
+    response.cookies.delete(
+      SESSION_COOKIE
+    );
+
+
+    return response;
+
+  }
+
+
 
   return NextResponse.next();
 }
 
+
+
 export const config = {
+
   matcher: [
+
     "/dashboard/:path*",
     "/sales/:path*",
     "/inventory/:path*",
@@ -56,5 +140,11 @@ export const config = {
     "/reports/:path*",
     "/settings/:path*",
     "/users/:path*",
+
+    "/login",
+    "/forgot-password",
+    "/reset-password",
+
   ],
+
 };
