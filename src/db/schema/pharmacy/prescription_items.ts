@@ -12,6 +12,8 @@ import {
 
 import { prescriptions } from "./prescriptions";
 import { products } from "../inventory/products";
+import { relations } from "drizzle-orm";
+
 
 export const prescriptionItems = pgTable(
     "prescription_items",
@@ -83,3 +85,17 @@ export const prescriptionItems = pgTable(
     })
 );
 
+export const prescriptionItemsRelations = relations(
+  prescriptionItems,
+  ({ one }) => ({
+    prescription: one(prescriptions, {
+      fields: [prescriptionItems.prescriptionId],
+      references: [prescriptions.id],
+    }),
+
+    product: one(products, {
+      fields: [prescriptionItems.productId],
+      references: [products.id],
+    }),
+  })
+);

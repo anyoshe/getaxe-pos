@@ -2,9 +2,16 @@ import {
   pgTable,
   uuid,
   text,
+  boolean,
+  timestamp,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+
+import { sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
+
+import { rolePermissions } from "./role_permissions";
 
 export const permissions = pgTable(
   "permissions",
@@ -23,6 +30,23 @@ export const permissions = pgTable(
       .notNull(),
 
     description: text("description"),
+
+    active: boolean("active")
+      .default(true)
+      .notNull(),
+
+    isSystem: boolean("is_system")
+      .default(true)
+      .notNull(),
+
+    createdAt: timestamp("created_at")
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
   },
   (table) => ({
     codeUnique: uniqueIndex(
@@ -36,5 +60,16 @@ export const permissions = pgTable(
     moduleIdx: index(
       "permissions_module_idx"
     ).on(table.module),
+
+    activeIdx: index(
+      "permissions_active_idx"
+    ).on(table.active),
+  })
+);
+
+export const permissionsRelations = relations(
+  permissions,
+  ({ many }) => ({
+    rolePermissions: many(rolePermissions),
   })
 );

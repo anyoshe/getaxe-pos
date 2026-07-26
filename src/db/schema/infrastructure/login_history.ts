@@ -9,6 +9,8 @@ import {
 
 import { businesses } from "../core/businesses";
 import { users } from "../users/users";
+import { relations } from "drizzle-orm";
+
 
 export const loginHistory = pgTable(
   "login_history",
@@ -44,5 +46,20 @@ export const loginHistory = pgTable(
 
     userIdx: index("login_history_user_idx")
       .on(table.userId),
+  })
+);
+
+export const loginHistoryRelations = relations(
+  loginHistory,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [loginHistory.businessId],
+      references: [businesses.id],
+    }),
+
+    user: one(users, {
+      fields: [loginHistory.userId],
+      references: [users.id],
+    }),
   })
 );

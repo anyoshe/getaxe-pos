@@ -8,6 +8,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 import { businesses } from "../core/businesses";
 
@@ -83,5 +84,14 @@ export const fiscalYears = pgTable(
       table.businessId,
       table.name
     ),
+  })
+);
+export const fiscalYearsRelations = relations(
+  fiscalYears,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [fiscalYears.businessId],
+      references: [businesses.id],
+    }),
   })
 );

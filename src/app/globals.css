@@ -117,13 +117,28 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-input:-webkit-autofill,
+/* input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-text-fill-color: white;
   -webkit-box-shadow: 0 0 0 1000px rgba(255,255,255,0.08) inset;
   transition: background-color 9999s ease-in-out 0s;
+} */
+ /* Chrome Autofill */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--foreground) !important;
+  caret-color: var(--foreground);
+
+  -webkit-box-shadow: 0 0 0 1000px var(--background) inset;
+
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 @layer base {

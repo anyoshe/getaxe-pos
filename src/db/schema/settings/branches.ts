@@ -9,6 +9,10 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { businesses } from "../core/businesses";
+import { relations } from "drizzle-orm";
+import { warehouses } from "./warehouses";
+import { businessSettings } from "./business_settings";
+import { numberingSequences } from "./numbering_sequences";
 
 export const branches = pgTable(
   "branches",
@@ -76,5 +80,21 @@ export const branches = pgTable(
       table.businessId,
       table.name
     ),
+  })
+);
+
+export const branchesRelations = relations(
+  branches,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [branches.businessId],
+      references: [businesses.id],
+    }),
+
+    warehouses: many(warehouses),
+
+    numberingSequences: many(numberingSequences),
+
+    businessSettings: many(businessSettings),
   })
 );

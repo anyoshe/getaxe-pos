@@ -13,18 +13,6 @@ export const businessTypeEnum = pgEnum("business_type", [
   "HOSPITAL",
 ]);
 
-/* =====================================================
-   Users
-===================================================== */
-
-export const userRoleEnum = pgEnum("user_role", [
-  "SUPER_ADMIN",
-  "ADMIN",
-  "MANAGER",
-  "PHARMACIST",
-  "CASHIER",
-  "STORE_KEEPER",
-]);
 
 /* =====================================================
    Stock

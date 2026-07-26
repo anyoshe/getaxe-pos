@@ -14,6 +14,9 @@ import { consultations } from "../clinical/consultations";
 import { dispensations } from "../pharmacy/dispensations";
 import { insuranceMemberships } from "./insurance_memberships";
 import { insuranceClaimStatusEnum } from "../shared";
+import { relations } from "drizzle-orm";
+
+import { insuranceClaimItems } from "./insurance_claim_items";
 
 export const insuranceClaims = pgTable(
   "insurance_claims",
@@ -114,5 +117,36 @@ export const insuranceClaims = pgTable(
       table.businessId,
       table.claimNumber
     ),
+  })
+);
+export const insuranceClaimsRelations = relations(
+  insuranceClaims,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [insuranceClaims.businessId],
+      references: [businesses.id],
+    }),
+
+    customer: one(customers, {
+      fields: [insuranceClaims.customerId],
+      references: [customers.id],
+    }),
+
+    membership: one(insuranceMemberships, {
+      fields: [insuranceClaims.insuranceMembershipId],
+      references: [insuranceMemberships.id],
+    }),
+
+    consultation: one(consultations, {
+      fields: [insuranceClaims.consultationId],
+      references: [consultations.id],
+    }),
+
+    dispensation: one(dispensations, {
+      fields: [insuranceClaims.dispensationId],
+      references: [dispensations.id],
+    }),
+
+    items: many(insuranceClaimItems),
   })
 );

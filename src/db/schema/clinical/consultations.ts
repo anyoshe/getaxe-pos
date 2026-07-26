@@ -12,6 +12,10 @@ import { branches } from "../settings/branches";
 import { customers } from "../sales/customers";
 import { users } from "../users/users";
 import { consultationStatusEnum } from "../shared";
+import { relations } from "drizzle-orm";
+
+import { consultationDiagnoses } from "./consultation_diagnoses";
+import { prescriptions } from "../pharmacy/prescriptions";
 
 export const consultations = pgTable(
   "consultations",
@@ -87,5 +91,33 @@ export const consultations = pgTable(
       table.businessId,
       table.consultationNumber
     ),
+  })
+);
+export const consultationsRelations = relations(
+  consultations,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [consultations.businessId],
+      references: [businesses.id],
+    }),
+
+    branch: one(branches, {
+      fields: [consultations.branchId],
+      references: [branches.id],
+    }),
+
+    customer: one(customers, {
+      fields: [consultations.customerId],
+      references: [customers.id],
+    }),
+
+    clinician: one(users, {
+      fields: [consultations.clinicianId],
+      references: [users.id],
+    }),
+
+    diagnoses: many(consultationDiagnoses),
+
+    prescriptions: many(prescriptions),
   })
 );

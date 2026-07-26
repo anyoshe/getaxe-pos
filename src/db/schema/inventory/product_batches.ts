@@ -14,6 +14,10 @@ import {
 import { businesses } from "../core/businesses";
 import { products } from "./products";
 import { suppliers } from "./suppliers";
+import { relations } from "drizzle-orm";
+import { stockMovements } from "./stock_movements";
+import { saleReturnItems } from "../sales/sale_return_items";
+import { saleItemBatches } from "../sales/sale_item_batches";
 
 export const productBatches = pgTable(
   "product_batches",
@@ -83,5 +87,29 @@ export const productBatches = pgTable(
       table.productId,
       table.batchNumber
     ),
+  })
+);
+
+export const productBatchesRelations = relations(
+  productBatches,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [productBatches.businessId],
+      references: [businesses.id],
+    }),
+
+    product: one(products, {
+      fields: [productBatches.productId],
+      references: [products.id],
+    }),
+
+    supplier: one(suppliers, {
+      fields: [productBatches.supplierId],
+      references: [suppliers.id],
+    }),
+
+    stockMovements: many(stockMovements),
+    saleReturnItems: many(saleReturnItems),
+    saleItemBatches: many(saleItemBatches),
   })
 );

@@ -11,6 +11,9 @@ import {
 
 import { businesses } from "../core/businesses";
 import { dispensingLevelEnum } from "../shared";
+import { relations } from "drizzle-orm";
+
+import { products } from "../inventory/products";
 
 export const prescriptionTypes = pgTable(
   "prescription_types",
@@ -32,13 +35,6 @@ export const prescriptionTypes = pgTable(
 
     description: text("description"),
 
-    // requiresPrescription: boolean("requires_prescription")
-    //   .default(false)
-    //   .notNull(),
-
-    // isControlledDrug: boolean("is_controlled_drug")
-    //   .default(false)
-    //   .notNull(),
     dispensingLevel: dispensingLevelEnum("dispensing_level")
   .notNull(),
 
@@ -77,3 +73,14 @@ export const prescriptionTypes = pgTable(
   })
 );
 
+export const prescriptionTypesRelations = relations(
+  prescriptionTypes,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [prescriptionTypes.businessId],
+      references: [businesses.id],
+    }),
+
+    products: many(products),
+  })
+);

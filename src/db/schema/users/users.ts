@@ -10,6 +10,7 @@ import {
 
 import { businesses } from "../core/businesses";
 import { roles } from "./roles";
+import { relations } from "drizzle-orm";
 
 export const users = pgTable(
   "users",
@@ -69,3 +70,14 @@ export const users = pgTable(
     ),
   })
 );
+export const usersRelations = relations(users, ({ one }) => ({
+  business: one(businesses, {
+    fields: [users.businessId],
+    references: [businesses.id],
+  }),
+
+  role: one(roles, {
+    fields: [users.roleId],
+    references: [roles.id],
+  }),
+}));

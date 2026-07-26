@@ -10,6 +10,8 @@ import {
 
 import { businesses } from "../core/businesses";
 import { cashAccounts } from "../finance/cash_accounts";
+import { relations } from "drizzle-orm";
+
 
 export const paymentMethods = pgTable(
   "payment_methods",
@@ -83,5 +85,20 @@ export const paymentMethods = pgTable(
       table.businessId,
       table.name
     ),
+  })
+);
+
+export const paymentMethodsRelations = relations(
+  paymentMethods,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [paymentMethods.businessId],
+      references: [businesses.id],
+    }),
+
+    defaultCashAccount: one(cashAccounts, {
+      fields: [paymentMethods.defaultCashAccountId],
+      references: [cashAccounts.id],
+    }),
   })
 );

@@ -1,0 +1,582 @@
+.
+├── AGENTS.md
+├── architecture.txt
+├── CLAUDE.md
+├── components.json
+├── docs
+│   ├── design-system.md
+│   ├── product-vision.md
+│   └── system-architecture.md
+├── drizzle.config.ts
+├── .env
+├── .env.local
+├── eslint.config.mjs
+├── .gitignore
+├── migration_backup
+│   └── migrations
+│       ├── 0000_initial_schema.sql
+│       ├── 0001_inventory_categories.sql
+│       ├── 0002_inventory_suppliers.sql
+│       ├── 0003_inventory_products.sql
+│       ├── 0004_inventory_product_batches.sql
+│       ├── 0005_inventory_stock_movements.sql
+│       ├── 0006_stock_movement_enum.sql
+│       ├── 0007_purchase_orders.sql
+│       ├── 0008_sales.sql
+│       ├── 0009_cashAccounts.sql
+│       ├── 0010_true_the_hand.sql
+│       └── meta
+│           ├── 0000_snapshot.json
+│           ├── 0001_snapshot.json
+│           ├── 0002_snapshot.json
+│           ├── 0003_snapshot.json
+│           ├── 0004_snapshot.json
+│           ├── 0005_snapshot.json
+│           ├── 0006_snapshot.json
+│           ├── 0007_snapshot.json
+│           ├── 0008_snapshot.json
+│           ├── 0009_snapshot.json
+│           ├── 0010_snapshot.json
+│           └── _journal.json
+├── next.config.ts
+├── next-env.d.ts
+├── package.json
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── postcss.config.mjs
+├── project-tree.txt
+├── public
+│   ├── 1.png
+│   ├── 2.png
+│   ├── file.svg
+│   ├── gat-icon1.svg
+│   ├── gat-icon.jpg
+│   ├── gat-icon.png
+│   ├── gat-icon.svg
+│   ├── globe.svg
+│   ├── g.png
+│   ├── iconwitoutbg.png
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── purchases.ts
+├── README.md
+├── relations.txt
+├── sales.ts
+├── scripts
+├── src
+│   ├── actions
+│   │   └── index.ts
+│   ├── api
+│   │   └── index.ts
+│   ├── app
+│   │   ├── (auth)
+│   │   │   ├── forgot-password
+│   │   │   │   └── page.tsx
+│   │   │   ├── login
+│   │   │   │   └── page.tsx
+│   │   │   └── reset-password
+│   │   │       └── page.tsx
+│   │   ├── (dashboard)
+│   │   │   ├── clinical
+│   │   │   ├── customers
+│   │   │   ├── dashboard
+│   │   │   │   └── page.tsx
+│   │   │   ├── finance
+│   │   │   ├── insurance
+│   │   │   ├── inventory
+│   │   │   │   └── products
+│   │   │   │       └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   ├── pharmacy
+│   │   │   ├── purchases
+│   │   │   ├── reports
+│   │   │   ├── sales
+│   │   │   │   └── page.tsx
+│   │   │   ├── settings
+│   │   │   ├── suppliers
+│   │   │   └── users
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── auth
+│   │   ├── clinical
+│   │   ├── common
+│   │   ├── customers
+│   │   ├── dashboard
+│   │   ├── finance
+│   │   ├── forms
+│   │   ├── insurance
+│   │   ├── inventory
+│   │   │   ├── product-form.tsx
+│   │   │   ├── product-table.tsx
+│   │   │   └── product-toolbar.tsx
+│   │   ├── layout
+│   │   │   ├── app-shell.tsx
+│   │   │   ├── index.ts
+│   │   │   ├── logo.tsx
+│   │   │   ├── mobile-sidebar.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── topbar.tsx
+│   │   │   └── user-menu.tsx
+│   │   ├── motion
+│   │   │   ├── animated-button.tsx
+│   │   │   ├── fade-in.tsx
+│   │   │   ├── hover-card.tsx
+│   │   │   ├── index.ts
+│   │   │   ├── page-transition.tsx
+│   │   │   └── stagger.tsx
+│   │   ├── navigation
+│   │   ├── pharmacy
+│   │   ├── purchases
+│   │   ├── reports
+│   │   ├── sales
+│   │   ├── settings
+│   │   ├── shared
+│   │   │   ├── index.ts
+│   │   │   ├── page-header.tsx
+│   │   │   ├── quick-action-card.tsx
+│   │   │   ├── section-header.tsx
+│   │   │   └── stat-card.tsx
+│   │   ├── suppliers
+│   │   ├── tables
+│   │   └── ui
+│   │       ├── alert-dialog.tsx
+│   │       ├── avatar.tsx
+│   │       ├── badge.tsx
+│   │       ├── button.tsx
+│   │       ├── calendar.tsx
+│   │       ├── card.tsx
+│   │       ├── dialog.tsx
+│   │       ├── dropdown-menu.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       ├── popover.tsx
+│   │       ├── select.tsx
+│   │       ├── separator.tsx
+│   │       ├── sheet.tsx
+│   │       ├── sonner.tsx
+│   │       ├── table.tsx
+│   │       ├── textarea.tsx
+│   │       └── tooltip.tsx
+│   ├── config
+│   │   ├── navigation.ts
+│   │   ├── sidebar.ts
+│   │   └── theme.ts
+│   ├── constants
+│   │   ├── permissions.ts
+│   │   └── routes.ts
+│   ├── db
+│   │   ├── index.ts
+│   │   ├── migrate.ts
+│   │   ├── migrations
+│   │   │   ├── 0000_true_big_bertha.sql
+│   │   │   ├── 0001_plain_catseye.sql
+│   │   │   └── meta
+│   │   │       ├── 0000_snapshot.json
+│   │   │       ├── 0001_snapshot.json
+│   │   │       └── _journal.json
+│   │   ├── migration.ts
+│   │   ├── schema
+│   │   │   ├── clinical
+│   │   │   │   ├── consultation_diagnoses.ts
+│   │   │   │   ├── consultations.ts
+│   │   │   │   ├── diagnoses.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── core
+│   │   │   │   ├── businesses.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── finance
+│   │   │   │   ├── account_categories.ts
+│   │   │   │   ├── account_types.ts
+│   │   │   │   ├── cash_accounts.ts
+│   │   │   │   ├── chart_of_accounts.ts
+│   │   │   │   ├── expense_categories.ts
+│   │   │   │   ├── expenses.ts
+│   │   │   │   ├── income_categories.ts
+│   │   │   │   ├── incomes.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── journal_entries.ts
+│   │   │   │   ├── journal_entry_lines.ts
+│   │   │   │   └── tax_rates.ts
+│   │   │   ├── index.ts
+│   │   │   ├── infrastructure
+│   │   │   │   ├── activity_logs.ts
+│   │   │   │   ├── api_keys.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   └── login_history.ts
+│   │   │   ├── insurance
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── insurance_claim_items.ts
+│   │   │   │   ├── insurance_claims.ts
+│   │   │   │   ├── insurance_memberships.ts
+│   │   │   │   ├── insurance_plans.ts
+│   │   │   │   └── insurance_providers.ts
+│   │   │   ├── inventory
+│   │   │   │   ├── categories.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── price_lists.ts
+│   │   │   │   ├── product_batches.ts
+│   │   │   │   ├── product_prices.ts
+│   │   │   │   ├── products.ts
+│   │   │   │   ├── stock_movements.ts
+│   │   │   │   └── suppliers.ts
+│   │   │   ├── pharmacy
+│   │   │   │   ├── dispensation_items.ts
+│   │   │   │   ├── dispensations.ts
+│   │   │   │   ├── dosage_forms.ts
+│   │   │   │   ├── drug_categories.ts
+│   │   │   │   ├── drug_strengths.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── manufacturers.ts
+│   │   │   │   ├── prescription_items.ts
+│   │   │   │   ├── prescriptions.ts
+│   │   │   │   └── prescription_types.ts
+│   │   │   ├── purchasing
+│   │   │   │   ├── goods_receipt_items.ts
+│   │   │   │   ├── goods_receipts.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── purchase_order_items.ts
+│   │   │   │   ├── purchase_orders.ts
+│   │   │   │   ├── supplier_return_items.ts
+│   │   │   │   └── supplier_returns.ts
+│   │   │   ├── sales
+│   │   │   │   ├── customers.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── payments.ts
+│   │   │   │   ├── sale_item_batches.ts
+│   │   │   │   ├── sale_items.ts
+│   │   │   │   ├── sale_return_items.ts
+│   │   │   │   ├── sale_returns.ts
+│   │   │   │   └── sales.ts
+│   │   │   ├── settings
+│   │   │   │   ├── branches.ts
+│   │   │   │   ├── business_settings.ts
+│   │   │   │   ├── currencies.ts
+│   │   │   │   ├── fiscal_years.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── numbering_sequences.ts
+│   │   │   │   ├── payment_methods.ts
+│   │   │   │   ├── units.ts
+│   │   │   │   └── warehouses.ts
+│   │   │   ├── shared
+│   │   │   │   ├── enums.ts
+│   │   │   │   └── index.ts
+│   │   │   └── users
+│   │   │       ├── index.ts
+│   │   │       ├── permissions.ts
+│   │   │       ├── role_permissions.ts
+│   │   │       ├── roles.ts
+│   │   │       └── users.ts
+│   │   ├── seed
+│   │   │   └── admin.ts
+│   │   ├── status.ts
+│   │   └── test.ts
+│   ├── features
+│   │   ├── auth
+│   │   │   ├── actions
+│   │   │   │   ├── login.ts
+│   │   │   │   └── logout.ts
+│   │   │   ├── components
+│   │   │   │   ├── animated-background.tsx
+│   │   │   │   ├── floating-input.tsx
+│   │   │   │   ├── login-card.tsx
+│   │   │   │   ├── login-form.tsx
+│   │   │   │   ├── login-header.tsx
+│   │   │   │   ├── login-layout.tsx
+│   │   │   │   ├── login-side-panel.tsx
+│   │   │   │   ├── password-input.tsx
+│   │   │   │   └── remember-checkbox.tsx
+│   │   │   ├── hooks
+│   │   │   │   └── use-auth.ts
+│   │   │   ├── schemas
+│   │   │   │   └── login-schema.ts
+│   │   │   ├── services
+│   │   │   │   └── auth-service.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── clinical
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── customers
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── dashboard
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── finance
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── insurance
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── inventory
+│   │   │   ├── actions
+│   │   │   │   ├── index.ts
+│   │   │   │   └── products.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   ├── index.ts
+│   │   │   │   └── products.ts
+│   │   │   ├── services
+│   │   │   │   ├── index.ts
+│   │   │   │   └── products.ts
+│   │   │   ├── types
+│   │   │   │   ├── index.ts
+│   │   │   │   └── products.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── pharmacy
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── purchases
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── reports
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── sales
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── settings
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   ├── suppliers
+│   │   │   ├── actions
+│   │   │   │   └── index.ts
+│   │   │   ├── components
+│   │   │   │   └── index.ts
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   │   └── index.ts
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   │   └── index.ts
+│   │   │   ├── services
+│   │   │   │   └── index.ts
+│   │   │   ├── types
+│   │   │   │   └── index.ts
+│   │   │   └── utils
+│   │   │       └── index.ts
+│   │   └── users
+│   │       ├── actions
+│   │       │   └── index.ts
+│   │       ├── components
+│   │       │   └── index.ts
+│   │       ├── constants
+│   │       ├── hooks
+│   │       │   └── index.ts
+│   │       ├── lib
+│   │       ├── schemas
+│   │       │   └── index.ts
+│   │       ├── services
+│   │       │   └── index.ts
+│   │       ├── types
+│   │       │   └── index.ts
+│   │       └── utils
+│   │           └── index.ts
+│   ├── hooks
+│   ├── lib
+│   │   ├── auth
+│   │   │   ├── auth.ts
+│   │   │   ├── cookies.ts
+│   │   │   ├── current-user.ts
+│   │   │   ├── jwt.ts
+│   │   │   ├── password.ts
+│   │   │   ├── permissions.ts
+│   │   │   └── session.ts
+│   │   ├── constants
+│   │   │   ├── index.ts
+│   │   │   ├── purchases.ts
+│   │   │   ├── sales.ts
+│   │   │   ├── stock.ts
+│   │   │   └── users.ts
+│   │   ├── db
+│   │   │   └── index.ts
+│   │   ├── formatters
+│   │   │   └── index.ts
+│   │   ├── helpers
+│   │   │   └── index.ts
+│   │   └── utils.ts
+│   ├── providers
+│   ├── proxy.ts
+│   ├── repositories
+│   │   └── index.ts
+│   ├── services
+│   │   ├── clinical
+│   │   ├── customers
+│   │   ├── finance
+│   │   ├── insurance
+│   │   ├── inventory
+│   │   ├── pharmacy
+│   │   ├── purchases
+│   │   ├── reports
+│   │   ├── sales
+│   │   ├── settings
+│   │   └── suppliers
+│   ├── store
+│   │   ├── auth-store.ts
+│   │   ├── index.ts
+│   │   └── ui-store.ts
+│   ├── styles
+│   ├── types
+│   ├── utils
+│   └── validators
+│       └── index.ts
+├── stock.ts
+├── test-password.ts
+├── tests
+├── tsconfig.json
+├── tsconfig.tsbuildinfo
+└── users.ts
+
+237 directories, 343 files

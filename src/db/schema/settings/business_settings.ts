@@ -13,6 +13,9 @@ import { currencies } from "./currencies";
 import { paymentMethods } from "./payment_methods";
 import { fiscalYears } from "./fiscal_years";
 import { taxRates } from "../finance/tax_rates";
+import { relations } from "drizzle-orm";
+
+
 
 export const businessSettings = pgTable(
   "business_settings",
@@ -85,5 +88,45 @@ export const businessSettings = pgTable(
     businessUnique: uniqueIndex(
       "business_settings_business_unique"
     ).on(table.businessId),
+  })
+);
+
+export const businessSettingsRelations = relations(
+  businessSettings,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [businessSettings.businessId],
+      references: [businesses.id],
+    }),
+
+    defaultBranch: one(branches, {
+      fields: [businessSettings.defaultBranchId],
+      references: [branches.id],
+    }),
+
+    defaultWarehouse: one(warehouses, {
+      fields: [businessSettings.defaultWarehouseId],
+      references: [warehouses.id],
+    }),
+
+    defaultCurrency: one(currencies, {
+      fields: [businessSettings.defaultCurrencyId],
+      references: [currencies.id],
+    }),
+
+    defaultPaymentMethod: one(paymentMethods, {
+      fields: [businessSettings.defaultPaymentMethodId],
+      references: [paymentMethods.id],
+    }),
+
+    defaultTaxRate: one(taxRates, {
+      fields: [businessSettings.defaultTaxRateId],
+      references: [taxRates.id],
+    }),
+
+    currentFiscalYear: one(fiscalYears, {
+      fields: [businessSettings.currentFiscalYearId],
+      references: [fiscalYears.id],
+    }),
   })
 );

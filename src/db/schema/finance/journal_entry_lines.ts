@@ -12,6 +12,7 @@ import { sql } from "drizzle-orm";
 
 import { journalEntries } from "./journal_entries";
 import { chartOfAccounts } from "./chart_of_accounts";
+import { relations } from "drizzle-orm";
 
 export const journalEntryLines = pgTable(
     "journal_entry_lines",
@@ -63,11 +64,27 @@ export const journalEntryLines = pgTable(
 
         debitOrCreditCheck: check(
             "journal_entry_lines_debit_credit_check",
-            sql`NOT (
-        ${table.debit} > 0
-        AND
-        ${table.credit} > 0
-      )`
+            sql`
+    (
+      (${table.debit} > 0 AND ${table.credit} = 0)
+      OR
+      (${table.credit} > 0 AND ${table.debit} = 0)
+    )
+  `
         ),
+    })
+);
+export const journalEntryLinesRelations = relations(
+    journalEntryLines,
+    ({ one }) => ({
+        journalEntry: one(journalEntries, {
+            fields: [journalEntryLines.journalEntryId],
+            references: [journalEntries.id],
+        }),
+
+        account: one(chartOfAccounts, {
+            fields: [journalEntryLines.accountId],
+            references: [chartOfAccounts.id],
+        }),
     })
 );

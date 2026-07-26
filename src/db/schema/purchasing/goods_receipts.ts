@@ -13,6 +13,10 @@ import { purchaseOrders } from "./purchase_orders";
 import { users } from "../users/users";
 import { goodsReceiptStatusEnum } from "../shared";
 
+import { relations } from "drizzle-orm";
+
+import { goodsReceiptItems } from "./goods_receipt_items";
+
 export const goodsReceipts = pgTable(
   "goods_receipts",
   {
@@ -80,5 +84,32 @@ export const goodsReceipts = pgTable(
     purchaseOrderIdx: index("grn_po_idx").on(table.purchaseOrderId),
 
     receiptNumberIdx: index("grn_number_idx").on(table.receiptNumber),
+  })
+);
+
+export const goodsReceiptsRelations = relations(
+  goodsReceipts,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [goodsReceipts.businessId],
+      references: [businesses.id],
+    }),
+
+    purchaseOrder: one(purchaseOrders, {
+      fields: [goodsReceipts.purchaseOrderId],
+      references: [purchaseOrders.id],
+    }),
+
+    supplier: one(suppliers, {
+      fields: [goodsReceipts.supplierId],
+      references: [suppliers.id],
+    }),
+
+    receivedByUser: one(users, {
+      fields: [goodsReceipts.receivedBy],
+      references: [users.id],
+    }),
+
+    items: many(goodsReceiptItems),
   })
 );

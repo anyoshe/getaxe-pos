@@ -10,6 +10,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { businesses } from "../core/businesses";
+import { relations } from "drizzle-orm";
+import { products } from "../inventory/products";
 
 export const drugStrengths = pgTable(
   "drug_strengths",
@@ -65,4 +67,14 @@ export const drugStrengths = pgTable(
     ),
   })
 );
+export const drugStrengthsRelations = relations(
+  drugStrengths,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [drugStrengths.businessId],
+      references: [businesses.id],
+    }),
 
+    products: many(products),
+  })
+);

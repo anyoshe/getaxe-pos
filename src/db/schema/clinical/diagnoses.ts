@@ -9,6 +9,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { businesses } from "../core/businesses";
+import { relations } from "drizzle-orm";
+
+import { consultationDiagnoses } from "./consultation_diagnoses";
 
 export const diagnoses = pgTable(
   "diagnoses",
@@ -62,5 +65,16 @@ export const diagnoses = pgTable(
       table.businessId,
       table.name
     ),
+  })
+);
+export const diagnosesRelations = relations(
+  diagnoses,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [diagnoses.businessId],
+      references: [businesses.id],
+    }),
+
+    consultationDiagnoses: many(consultationDiagnoses),
   })
 );

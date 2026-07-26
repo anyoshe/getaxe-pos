@@ -5,10 +5,12 @@ import {
   boolean,
   timestamp,
   index,
- uniqueIndex,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { businesses } from "../core/businesses";
+import { relations } from "drizzle-orm";
+import { users } from "./users";
 
 export const roles = pgTable(
   "roles",
@@ -61,3 +63,6 @@ export const roles = pgTable(
     ),
   })
 );
+export const rolesRelations = relations(roles, ({ many }) => ({
+  users: many(users),
+}));

@@ -13,6 +13,8 @@ import { customers } from "./customers";
 import { sales } from "./sales";
 import { users } from "../users/users";
 import { saleReturnReasonEnum } from "../shared";
+import { relations } from "drizzle-orm";
+import { saleReturnItems } from "./sale_return_items";
 
 export const saleReturns = pgTable(
     "sale_returns",
@@ -103,4 +105,36 @@ export const saleReturns = pgTable(
             table.returnNumber
         ),
     })
+);
+
+export const saleReturnsRelations = relations(
+  saleReturns,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [saleReturns.businessId],
+      references: [businesses.id],
+    }),
+
+    sale: one(sales, {
+      fields: [saleReturns.saleId],
+      references: [sales.id],
+    }),
+
+    customer: one(customers, {
+      fields: [saleReturns.customerId],
+      references: [customers.id],
+    }),
+
+    createdByUser: one(users, {
+      fields: [saleReturns.createdBy],
+      references: [users.id],
+    }),
+
+    approvedByUser: one(users, {
+      fields: [saleReturns.approvedBy],
+      references: [users.id],
+    }),
+
+    items: many(saleReturnItems),
+  })
 );

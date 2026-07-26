@@ -8,6 +8,17 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { relations } from "drizzle-orm";
+
+import { users } from "../users/users";
+import { roles } from "../users/roles";
+
+import { branches } from "../settings/branches";
+import { warehouses } from "../settings/warehouses";
+import { businessSettings } from "../settings/business_settings";
+import { units } from "../settings/units";
+import { numberingSequences } from "../settings/numbering_sequences";
+
 import { businessTypeEnum } from "../shared";
 
 export const businesses = pgTable(
@@ -83,5 +94,27 @@ export const businesses = pgTable(
     kraPinIdx: uniqueIndex(
       "businesses_kra_pin_unique"
     ).on(table.kraPin),
+  })
+);
+
+export const businessesRelations = relations(
+  businesses,
+  ({ many, one }) => ({
+    users: many(users),
+
+    roles: many(roles),
+
+    branches: many(branches),
+
+    warehouses: many(warehouses),
+
+    units: many(units),
+
+    numberingSequences: many(numberingSequences),
+
+    settings: one(businessSettings, {
+      fields: [businesses.id],
+      references: [businessSettings.businessId],
+    }),
   })
 );

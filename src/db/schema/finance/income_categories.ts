@@ -10,6 +10,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { businesses } from "../core/businesses";
+import { relations } from "drizzle-orm";
+
+import { incomes } from "./incomes";
 
 export const incomeCategories = pgTable(
   "income_categories",
@@ -52,5 +55,17 @@ export const incomeCategories = pgTable(
       table.businessId,
       table.name
     ),
+  })
+);
+
+export const incomeCategoriesRelations = relations(
+  incomeCategories,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [incomeCategories.businessId],
+      references: [businesses.id],
+    }),
+
+    incomes: many(incomes),
   })
 );

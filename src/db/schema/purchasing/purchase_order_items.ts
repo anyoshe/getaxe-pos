@@ -5,7 +5,9 @@ import {
   numeric,
   index,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
+import { goodsReceiptItems } from "./goods_receipt_items";
 import { purchaseOrders } from "./purchase_orders";
 import { products } from "../inventory/products";
 
@@ -55,5 +57,22 @@ export const purchaseOrderItems = pgTable(
     orderIdx: index("poi_order_idx").on(table.purchaseOrderId),
 
     productIdx: index("poi_product_idx").on(table.productId),
+  })
+);
+
+export const purchaseOrderItemsRelations = relations(
+  purchaseOrderItems,
+  ({ one, many }) => ({
+    purchaseOrder: one(purchaseOrders, {
+      fields: [purchaseOrderItems.purchaseOrderId],
+      references: [purchaseOrders.id],
+    }),
+
+    product: one(products, {
+      fields: [purchaseOrderItems.productId],
+      references: [products.id],
+    }),
+
+    goodsReceiptItems: many(goodsReceiptItems),
   })
 );

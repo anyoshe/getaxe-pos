@@ -11,6 +11,9 @@ import {
 
 import { businesses } from "../core/businesses";
 import { accountTypes } from "./account_types";
+import { relations } from "drizzle-orm";
+
+import { chartOfAccounts } from "./chart_of_accounts";
 
 export const accountCategories = pgTable(
   "account_categories",
@@ -75,5 +78,22 @@ export const accountCategories = pgTable(
       table.businessId,
       table.code
     ),
+  })
+);
+export const accountCategoriesRelations = relations(
+  accountCategories,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [accountCategories.businessId],
+      references: [businesses.id],
+    }),
+
+    accountType: one(accountTypes, {
+      fields: [accountCategories.accountTypeId],
+      references: [accountTypes.id],
+    }),
+
+    // Chart of accounts under this category
+    accounts: many(chartOfAccounts),
   })
 );

@@ -12,6 +12,7 @@ import {
 import { businesses } from "../core/businesses";
 import { products } from "./products";
 import { priceLists } from "./price_lists";
+import { relations } from "drizzle-orm";
 
 export const productPrices = pgTable(
   "product_prices",
@@ -78,4 +79,22 @@ export const productPrices = pgTable(
     ),
   })
 );
+export const productPricesRelations = relations(
+  productPrices,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [productPrices.businessId],
+      references: [businesses.id],
+    }),
 
+    product: one(products, {
+      fields: [productPrices.productId],
+      references: [products.id],
+    }),
+
+    priceList: one(priceLists, {
+      fields: [productPrices.priceListId],
+      references: [priceLists.id],
+    }),
+  })
+);

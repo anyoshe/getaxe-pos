@@ -1,0 +1,239 @@
+.
+├── docs
+├── migration_backup
+│   └── migrations
+│       └── meta
+├── public
+├── scripts
+├── src
+│   ├── actions
+│   ├── api
+│   ├── app
+│   │   ├── (auth)
+│   │   │   ├── forgot-password
+│   │   │   ├── login
+│   │   │   └── reset-password
+│   │   └── (dashboard)
+│   │       ├── clinical
+│   │       ├── customers
+│   │       ├── dashboard
+│   │       ├── finance
+│   │       ├── insurance
+│   │       ├── inventory
+│   │       │   └── products
+│   │       ├── pharmacy
+│   │       ├── purchases
+│   │       ├── reports
+│   │       ├── sales
+│   │       ├── settings
+│   │       ├── suppliers
+│   │       └── users
+│   ├── components
+│   │   ├── auth
+│   │   ├── clinical
+│   │   ├── common
+│   │   ├── customers
+│   │   ├── dashboard
+│   │   ├── finance
+│   │   ├── forms
+│   │   ├── insurance
+│   │   ├── inventory
+│   │   ├── layout
+│   │   ├── motion
+│   │   ├── navigation
+│   │   ├── pharmacy
+│   │   ├── purchases
+│   │   ├── reports
+│   │   ├── sales
+│   │   ├── settings
+│   │   ├── shared
+│   │   ├── suppliers
+│   │   ├── tables
+│   │   └── ui
+│   ├── config
+│   ├── constants
+│   ├── db
+│   │   ├── migrations
+│   │   │   └── meta
+│   │   ├── schema
+│   │   │   ├── clinical
+│   │   │   ├── core
+│   │   │   ├── finance
+│   │   │   ├── infrastructure
+│   │   │   ├── insurance
+│   │   │   ├── inventory
+│   │   │   ├── pharmacy
+│   │   │   ├── purchasing
+│   │   │   ├── sales
+│   │   │   ├── settings
+│   │   │   ├── shared
+│   │   │   └── users
+│   │   └── seed
+│   ├── features
+│   │   ├── auth
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── hooks
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── clinical
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── customers
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── dashboard
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── finance
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── insurance
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── inventory
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── pharmacy
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── purchases
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── reports
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── sales
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── settings
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   ├── suppliers
+│   │   │   ├── actions
+│   │   │   ├── components
+│   │   │   ├── constants
+│   │   │   ├── hooks
+│   │   │   ├── lib
+│   │   │   ├── schemas
+│   │   │   ├── services
+│   │   │   ├── types
+│   │   │   └── utils
+│   │   └── users
+│   │       ├── actions
+│   │       ├── components
+│   │       ├── constants
+│   │       ├── hooks
+│   │       ├── lib
+│   │       ├── schemas
+│   │       ├── services
+│   │       ├── types
+│   │       └── utils
+│   ├── hooks
+│   ├── lib
+│   │   ├── auth
+│   │   ├── constants
+│   │   ├── db
+│   │   ├── formatters
+│   │   └── helpers
+│   ├── providers
+│   ├── repositories
+│   ├── services
+│   │   ├── clinical
+│   │   ├── customers
+│   │   ├── finance
+│   │   ├── insurance
+│   │   ├── inventory
+│   │   ├── pharmacy
+│   │   ├── purchases
+│   │   ├── reports
+│   │   ├── sales
+│   │   ├── settings
+│   │   └── suppliers
+│   ├── store
+│   ├── styles
+│   ├── types
+│   ├── utils
+│   └── validators
+└── tests
+
+237 directories

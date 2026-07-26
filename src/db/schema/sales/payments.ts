@@ -15,6 +15,7 @@ import {
 } from "../shared";
 import { users } from "../users/users";
 import { cashAccounts } from "../finance/cash_accounts";
+import { relations } from "drizzle-orm";
 
 export const payments = pgTable(
     "payments",
@@ -93,4 +94,29 @@ export const payments = pgTable(
             "payments_paid_at_idx"
         ).on(table.paidAt),
     })
+);
+
+export const paymentsRelations = relations(
+  payments,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [payments.businessId],
+      references: [businesses.id],
+    }),
+
+    sale: one(sales, {
+      fields: [payments.saleId],
+      references: [sales.id],
+    }),
+
+    cashAccount: one(cashAccounts, {
+      fields: [payments.cashAccountId],
+      references: [cashAccounts.id],
+    }),
+
+    receivedByUser: one(users, {
+      fields: [payments.receivedBy],
+      references: [users.id],
+    }),
+  })
 );

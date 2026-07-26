@@ -17,6 +17,7 @@ import {
   bloodGroupEnum,
 } from "../shared";
 
+import { relations } from "drizzle-orm";
 export const customers = pgTable(
   "customers",
   {
@@ -121,5 +122,15 @@ export const customers = pgTable(
       table.businessId,
       table.customerNumber
     ),
+  })
+);
+
+export const customersRelations = relations(
+  customers,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [customers.businessId],
+      references: [businesses.id],
+    }),
   })
 );

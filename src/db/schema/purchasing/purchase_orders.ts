@@ -7,6 +7,11 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+import { relations } from "drizzle-orm";
+
+import { purchaseOrderItems } from "./purchase_order_items";
+import { goodsReceipts } from "./goods_receipts";
+
 import { businesses } from "../core/businesses";
 import { suppliers } from "../inventory/suppliers";
 import { users } from "../users/users";
@@ -84,5 +89,34 @@ export const purchaseOrders = pgTable(
     orderIdx: index("po_order_idx").on(table.orderNumber),
 
     statusIdx: index("po_status_idx").on(table.status),
+  })
+);
+
+export const purchaseOrdersRelations = relations(
+  purchaseOrders,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [purchaseOrders.businessId],
+      references: [businesses.id],
+    }),
+
+    supplier: one(suppliers, {
+      fields: [purchaseOrders.supplierId],
+      references: [suppliers.id],
+    }),
+
+    orderedByUser: one(users, {
+      fields: [purchaseOrders.orderedBy],
+      references: [users.id],
+    }),
+
+    approvedByUser: one(users, {
+      fields: [purchaseOrders.approvedBy],
+      references: [users.id],
+    }),
+
+    items: many(purchaseOrderItems),
+
+    goodsReceipts: many(goodsReceipts),
   })
 );

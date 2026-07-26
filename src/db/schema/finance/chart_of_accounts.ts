@@ -13,6 +13,10 @@ import {
 import { businesses } from "../core/businesses";
 import { accountTypes } from "./account_types";
 import { accountCategories } from "./account_categories";
+import { relations } from "drizzle-orm";
+
+import { cashAccounts } from "./cash_accounts";
+import { journalEntryLines } from "./journal_entry_lines";
 
 export const chartOfAccounts = pgTable(
     "chart_of_accounts",
@@ -101,4 +105,33 @@ export const chartOfAccounts = pgTable(
             table.accountCode
         ),
     })
+);
+
+export const chartOfAccountsRelations = relations(
+  chartOfAccounts,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [chartOfAccounts.businessId],
+      references: [businesses.id],
+    }),
+
+    accountCategory: one(accountCategories, {
+      fields: [chartOfAccounts.accountCategoryId],
+      references: [accountCategories.id],
+    }),
+
+    parentAccount: one(chartOfAccounts, {
+      fields: [chartOfAccounts.parentAccountId],
+      references: [chartOfAccounts.id],
+      relationName: "accountHierarchy",
+    }),
+
+    childAccounts: many(chartOfAccounts, {
+      relationName: "accountHierarchy",
+    }),
+
+    cashAccounts: many(cashAccounts),
+
+    journalEntryLines: many(journalEntryLines),
+  })
 );

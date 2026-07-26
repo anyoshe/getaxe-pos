@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import { saleReturns } from "./sale_returns";
 import { saleItems } from "./sale_items";
 import { productBatches } from "../inventory/product_batches";
+import { relations } from "drizzle-orm";
 
 export const saleReturnItems = pgTable(
   "sale_return_items",
@@ -76,5 +77,25 @@ export const saleReturnItems = pgTable(
       "sale_return_items_quantity_positive",
       sql`${table.quantity} > 0`
     ),
+  })
+);
+
+export const saleReturnItemsRelations = relations(
+  saleReturnItems,
+  ({ one }) => ({
+    saleReturn: one(saleReturns, {
+      fields: [saleReturnItems.saleReturnId],
+      references: [saleReturns.id],
+    }),
+
+    saleItem: one(saleItems, {
+      fields: [saleReturnItems.saleItemId],
+      references: [saleItems.id],
+    }),
+
+    productBatch: one(productBatches, {
+      fields: [saleReturnItems.productBatchId],
+      references: [productBatches.id],
+    }),
   })
 );

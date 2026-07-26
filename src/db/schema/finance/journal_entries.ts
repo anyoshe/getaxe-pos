@@ -12,6 +12,9 @@ import { businesses } from "../core/businesses";
 import { users } from "../users/users";
 import { journalStatusEnum } from "../shared";
 import { journalSourceTypeEnum } from "../shared";
+import { relations } from "drizzle-orm";
+
+import { journalEntryLines } from "./journal_entry_lines";
 
 export const journalEntries = pgTable(
     "journal_entries",
@@ -75,4 +78,20 @@ export const journalEntries = pgTable(
         statusIdx: index("journal_entries_status_idx")
             .on(table.status),
     })
+);
+export const journalEntriesRelations = relations(
+  journalEntries,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [journalEntries.businessId],
+      references: [businesses.id],
+    }),
+
+    postedByUser: one(users, {
+      fields: [journalEntries.postedBy],
+      references: [users.id],
+    }),
+
+    lines: many(journalEntryLines),
+  })
 );

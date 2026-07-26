@@ -10,6 +10,8 @@ import {
 
 import { businesses } from "../core/businesses";
 import { branches } from "./branches";
+import { relations } from "drizzle-orm";
+import { businessSettings } from "./business_settings";
 
 export const warehouses = pgTable(
   "warehouses",
@@ -73,5 +75,21 @@ export const warehouses = pgTable(
       table.branchId,
       table.name
     ),
+  })
+);
+export const warehousesRelations = relations(
+  warehouses,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [warehouses.businessId],
+      references: [businesses.id],
+    }),
+
+    branch: one(branches, {
+      fields: [warehouses.branchId],
+      references: [branches.id],
+    }),
+
+    businessSettings: many(businessSettings),
   })
 );

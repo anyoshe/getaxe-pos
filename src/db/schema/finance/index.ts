@@ -7,5 +7,5 @@ export * from "./expenses";
 export * from "./income_categories";
 export * from "./incomes";
 export * from "./journal_entries";
-export * from "./journal_entry_lines"
+export * from "./journal_entry_lines";
 export * from "./tax_rates";

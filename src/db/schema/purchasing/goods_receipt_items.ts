@@ -11,6 +11,7 @@ import {
 import { goodsReceipts } from "./goods_receipts";
 import { products } from "../inventory/products";
 
+import { relations } from "drizzle-orm";
 export const goodsReceiptItems = pgTable(
   "goods_receipt_items",
   {
@@ -47,5 +48,20 @@ export const goodsReceiptItems = pgTable(
     receiptIdx: index("gri_receipt_idx").on(table.goodsReceiptId),
 
     productIdx: index("gri_product_idx").on(table.productId),
+  })
+);
+
+export const goodsReceiptItemsRelations = relations(
+  goodsReceiptItems,
+  ({ one }) => ({
+    goodsReceipt: one(goodsReceipts, {
+      fields: [goodsReceiptItems.goodsReceiptId],
+      references: [goodsReceipts.id],
+    }),
+
+    product: one(products, {
+      fields: [goodsReceiptItems.productId],
+      references: [products.id],
+    }),
   })
 );

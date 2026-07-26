@@ -8,8 +8,11 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { relations } from "drizzle-orm";
+
 import { customers } from "../sales/customers";
 import { insurancePlans } from "./insurance_plans";
+import { insuranceClaims } from "./insurance_claims";
 
 export const insuranceMemberships = pgTable(
   "insurance_memberships",
@@ -67,5 +70,22 @@ export const insuranceMemberships = pgTable(
     membershipNumberIdx: uniqueIndex(
       "insurance_memberships_number_unique"
     ).on(table.membershipNumber),
+  })
+);
+
+export const insuranceMembershipsRelations = relations(
+  insuranceMemberships,
+  ({ one, many }) => ({
+    customer: one(customers, {
+      fields: [insuranceMemberships.customerId],
+      references: [customers.id],
+    }),
+
+    insurancePlan: one(insurancePlans, {
+      fields: [insuranceMemberships.insurancePlanId],
+      references: [insurancePlans.id],
+    }),
+
+    claims: many(insuranceClaims),
   })
 );

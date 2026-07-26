@@ -12,6 +12,7 @@ import { incomeCategories } from "./income_categories";
 import { cashAccounts } from "./cash_accounts";
 import { users } from "../users/users";
 import { transactionStatusEnum } from "../shared";
+import { relations } from "drizzle-orm";
 
 export const incomes = pgTable(
   "incomes",
@@ -77,5 +78,29 @@ export const incomes = pgTable(
 
     statusIdx: index("incomes_status_idx")
       .on(table.status),
+  })
+);
+export const incomesRelations = relations(
+  incomes,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [incomes.businessId],
+      references: [businesses.id],
+    }),
+
+    category: one(incomeCategories, {
+      fields: [incomes.categoryId],
+      references: [incomeCategories.id],
+    }),
+
+    cashAccount: one(cashAccounts, {
+      fields: [incomes.cashAccountId],
+      references: [cashAccounts.id],
+    }),
+
+    receivedByUser: one(users, {
+      fields: [incomes.receivedBy],
+      references: [users.id],
+    }),
   })
 );

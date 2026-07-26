@@ -9,6 +9,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { businesses } from "../core/businesses";
+import { relations } from "drizzle-orm";
+
 
 export const units = pgTable(
   "units",
@@ -71,5 +73,15 @@ export const units = pgTable(
       table.businessId,
       table.symbol
     ),
+  })
+);
+
+export const unitsRelations = relations(
+  units,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [units.businessId],
+      references: [businesses.id],
+    }),
   })
 );

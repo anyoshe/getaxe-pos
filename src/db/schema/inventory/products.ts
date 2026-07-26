@@ -25,6 +25,12 @@ import { units } from "../settings/units";
 import { chartOfAccounts } from "../finance/chart_of_accounts";
 import { taxRates } from "../finance/tax_rates";
 
+import { relations } from "drizzle-orm";
+
+import { productPrices } from "./product_prices";
+import { productBatches } from "./product_batches";
+import { stockMovements } from "./stock_movements";
+
 export const products = pgTable(
   "products",
   {
@@ -180,3 +186,91 @@ export const products = pgTable(
       ),
   })
 );
+export const productsRelations = relations(
+  products,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [products.businessId],
+      references: [businesses.id],
+    }),
+
+    category: one(categories, {
+      fields: [products.categoryId],
+      references: [categories.id],
+    }),
+
+    supplier: one(suppliers, {
+      fields: [products.supplierId],
+      references: [suppliers.id],
+    }),
+    purchaseUnit: one(units, {
+      fields: [products.purchaseUnitId],
+      references: [units.id],
+    }),
+
+    salesUnit: one(units, {
+      fields: [products.salesUnitId],
+      references: [units.id],
+    }),
+
+    stockUnit: one(units, {
+      fields: [products.stockUnitId],
+      references: [units.id],
+    }),
+
+    // Pharmacy
+
+    manufacturer: one(manufacturers, {
+      fields: [products.manufacturerId],
+      references: [manufacturers.id],
+    }),
+
+    drugCategory: one(drugCategories, {
+      fields: [products.drugCategoryId],
+      references: [drugCategories.id],
+    }),
+
+    dosageForm: one(dosageForms, {
+      fields: [products.dosageFormId],
+      references: [dosageForms.id],
+    }),
+
+    drugStrength: one(drugStrengths, {
+      fields: [products.drugStrengthId],
+      references: [drugStrengths.id],
+    }),
+
+    prescriptionType: one(prescriptionTypes, {
+      fields: [products.prescriptionTypeId],
+      references: [prescriptionTypes.id],
+    }),
+
+    // Finance
+
+    incomeAccount: one(chartOfAccounts, {
+      fields: [products.incomeAccountId],
+      references: [chartOfAccounts.id],
+    }),
+
+    expenseAccount: one(chartOfAccounts, {
+      fields: [products.expenseAccountId],
+      references: [chartOfAccounts.id],
+    }),
+
+    inventoryAccount: one(chartOfAccounts, {
+      fields: [products.inventoryAccountId],
+      references: [chartOfAccounts.id],
+    }),
+
+    taxRate: one(taxRates, {
+      fields: [products.taxRateId],
+      references: [taxRates.id],
+    }),
+    prices: many(productPrices),
+
+    batches: many(productBatches),
+
+    stockMovements: many(stockMovements),
+  })
+);
+

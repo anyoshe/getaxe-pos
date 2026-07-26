@@ -10,6 +10,7 @@ import {
 import { consultations } from "./consultations";
 import { diagnoses } from "./diagnoses";
 import { diagnosisTypeEnum } from "../shared";
+import { relations } from "drizzle-orm";
 
 export const consultationDiagnoses = pgTable(
   "consultation_diagnoses",
@@ -53,5 +54,19 @@ export const consultationDiagnoses = pgTable(
       table.consultationId,
       table.diagnosisId
     ),
+  })
+);
+export const consultationDiagnosesRelations = relations(
+  consultationDiagnoses,
+  ({ one }) => ({
+    consultation: one(consultations, {
+      fields: [consultationDiagnoses.consultationId],
+      references: [consultations.id],
+    }),
+
+    diagnosis: one(diagnoses, {
+      fields: [consultationDiagnoses.diagnosisId],
+      references: [diagnoses.id],
+    }),
   })
 );

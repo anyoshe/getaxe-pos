@@ -11,6 +11,8 @@ import {
 
 import { businesses } from "../core/businesses";
 import { normalBalanceEnum } from "../shared";
+import { relations } from "drizzle-orm";
+import { accountCategories } from "./account_categories";
 
 export const accountTypes = pgTable(
   "account_types",
@@ -76,5 +78,18 @@ export const accountTypes = pgTable(
       table.businessId,
       table.code
     ),
+  })
+);
+
+export const accountTypesRelations = relations(
+  accountTypes,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [accountTypes.businessId],
+      references: [businesses.id],
+    }),
+
+    // Added when account_categories.ts is wired
+    accountCategories: many(accountCategories),
   })
 );

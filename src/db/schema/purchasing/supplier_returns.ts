@@ -11,6 +11,9 @@ import { businesses } from "../core/businesses";
 import { suppliers } from "../inventory/suppliers";
 import { users } from "../users/users";
 import { returnReasonEnum } from "../shared";
+import { relations } from "drizzle-orm";
+
+import { supplierReturnItems } from "./supplier_return_items";
 
 export const supplierReturns = pgTable(
     "supplier_returns",
@@ -67,4 +70,26 @@ export const supplierReturns = pgTable(
 
         numberIdx: index("supplier_return_number_idx").on(table.returnNumber),
     })
+);
+
+export const supplierReturnsRelations = relations(
+  supplierReturns,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [supplierReturns.businessId],
+      references: [businesses.id],
+    }),
+
+    supplier: one(suppliers, {
+      fields: [supplierReturns.supplierId],
+      references: [suppliers.id],
+    }),
+
+    createdBy: one(users, {
+      fields: [supplierReturns.createdBy],
+      references: [users.id],
+    }),
+
+    items: many(supplierReturnItems),
+  })
 );

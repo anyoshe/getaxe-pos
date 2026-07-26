@@ -12,6 +12,11 @@ import { businesses } from "../core/businesses";
 import { customers } from "./customers";
 import { users } from "../users/users";
 import { saleStatusEnum } from "../shared";
+import { relations } from "drizzle-orm";
+import { branches } from "../settings/branches";
+import { warehouses } from "../settings/warehouses";
+import { saleItems } from "./sale_items";
+import { payments } from "./payments";
 
 export const sales = pgTable(
   "sales",
@@ -30,6 +35,14 @@ export const sales = pgTable(
       .references(() => customers.id, {
         onDelete: "set null",
       }),
+
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+
+    warehouseId: uuid("warehouse_id")
+      .notNull()
+      .references(() => warehouses.id),
 
     invoiceNumber: text("invoice_number")
       .notNull(),
@@ -85,6 +98,12 @@ export const sales = pgTable(
       "sales_customer_idx"
     ).on(table.customerId),
 
+    branchIdx: index("sales_branch_idx")
+      .on(table.branchId),
+
+    warehouseIdx: index("sales_warehouse_idx")
+      .on(table.warehouseId),
+
     invoiceUnique: uniqueIndex(
       "sales_business_invoice_unique"
     ).on(
@@ -107,5 +126,39 @@ export const sales = pgTable(
     createdAtIdx: index(
       "sales_created_at_idx"
     ).on(table.createdAt),
+  })
+);
+
+export const salesRelations = relations(
+  sales,
+  ({ one, many })=> ({
+    business: one(businesses, {
+      fields: [sales.businessId],
+      references: [businesses.id],
+    }),
+
+    customer: one(customers, {
+      fields: [sales.customerId],
+      references: [customers.id],
+    }),
+
+    branch: one(branches, {
+      fields: [sales.branchId],
+      references: [branches.id],
+    }),
+
+    warehouse: one(warehouses, {
+      fields: [sales.warehouseId],
+      references: [warehouses.id],
+    }),
+
+    soldBy: one(users, {
+      fields: [sales.soldBy],
+      references: [users.id],
+    }),
+
+
+    items: many(saleItems),
+    payments: many(payments),
   })
 );

@@ -1,3 +1,4 @@
+import type { NavigationSection } from "./navigation.types";
 import {
   LayoutDashboard,
   Package,
@@ -11,11 +12,22 @@ import {
   Wallet,
   BarChart3,
   Settings,
+  GitBranch,
+  Warehouse,
+  Users,
+  ShieldCheck,
+  Building2,
+  Hash,
+  Ruler
 } from "lucide-react";
 
-export const navigation = [
+
+
+export const navigation: NavigationSection[] = [
+
   {
     title: "Main",
+
     items: [
       {
         label: "Dashboard",
@@ -25,14 +37,17 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Sales",
+
     items: [
       {
         label: "Sales",
         href: "/sales",
         icon: ShoppingCart,
       },
+
       {
         label: "Customers",
         href: "/customers",
@@ -41,19 +56,23 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Inventory",
+
     items: [
       {
         label: "Products",
         href: "/inventory/products",
         icon: Package,
       },
+
       {
         label: "Stock",
         href: "/inventory/stock",
         icon: Boxes,
       },
+
       {
         label: "Suppliers",
         href: "/inventory/suppliers",
@@ -62,8 +81,10 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Pharmacy",
+
     items: [
       {
         label: "Dispensing",
@@ -73,8 +94,10 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Clinical",
+
     items: [
       {
         label: "Consultations",
@@ -84,8 +107,10 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Insurance",
+
     items: [
       {
         label: "Claims",
@@ -95,8 +120,10 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Finance",
+
     items: [
       {
         label: "Finance",
@@ -106,8 +133,10 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Reports",
+
     items: [
       {
         label: "Reports",
@@ -117,14 +146,64 @@ export const navigation = [
     ],
   },
 
+
   {
     title: "Settings",
+
     items: [
+
       {
         label: "Settings",
-        href: "/settings",
         icon: Settings,
+
+        children: [
+
+          {
+            label: "Branches",
+            href: "/settings/branches",
+            icon: GitBranch,
+          },
+
+          {
+            label: "Warehouses",
+            href: "/settings/warehouses",
+            icon: Warehouse,
+          },
+
+          {
+  label: "Units",
+  href: "/settings/units",
+  icon: Ruler,
+},
+
+          {
+            label: "Business Profile",
+            href: "/settings/business",
+            icon: Building2,
+          },
+
+          {
+            label: "Users",
+            href: "/settings/users",
+            icon: Users,
+          },
+
+          {
+            label: "Roles & Permissions",
+            href: "/settings/roles",
+            icon: ShieldCheck,
+          },
+
+          {
+            label: "Numbering",
+            href: "/settings/numbering",
+            icon: Hash,
+          },
+
+        ],
       },
+
     ],
   },
+
 ];

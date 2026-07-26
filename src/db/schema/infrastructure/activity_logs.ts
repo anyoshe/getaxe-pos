@@ -12,6 +12,7 @@ import {
   activityActionEnum,
   entityTypeEnum,
 } from "../shared";
+import { relations } from "drizzle-orm";
 
 export const activityLogs = pgTable(
   "activity_logs",
@@ -57,5 +58,21 @@ export const activityLogs = pgTable(
 
     createdIdx: index("activity_logs_created_idx")
       .on(table.createdAt),
+  })
+);
+
+
+export const activityLogsRelations = relations(
+  activityLogs,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [activityLogs.businessId],
+      references: [businesses.id],
+    }),
+
+    user: one(users, {
+      fields: [activityLogs.userId],
+      references: [users.id],
+    }),
   })
 );

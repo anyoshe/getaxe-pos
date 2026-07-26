@@ -9,6 +9,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { businesses } from "../core/businesses";
+import { relations } from "drizzle-orm";
+
+import { expenses } from "./expenses";
 
 export const expenseCategories = pgTable(
   "expense_categories",
@@ -48,5 +51,17 @@ export const expenseCategories = pgTable(
     businessNameUnique: uniqueIndex(
       "expense_categories_business_name_unique"
     ).on(table.businessId, table.name),
+  })
+);
+
+export const expenseCategoriesRelations = relations(
+  expenseCategories,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [expenseCategories.businessId],
+      references: [businesses.id],
+    }),
+
+    expenses: many(expenses),
   })
 );

@@ -12,6 +12,7 @@ import { expenseCategories } from "./expense_categories";
 import { cashAccounts } from "./cash_accounts";
 import { users } from "../users/users";
 import { expenseStatusEnum } from "../shared"
+import { relations } from "drizzle-orm";
 
 export const expenses = pgTable(
   "expenses",
@@ -74,5 +75,29 @@ export const expenses = pgTable(
 
     expenseDateIdx: index("expenses_date_idx")
       .on(table.expenseDate),
+  })
+);
+export const expensesRelations = relations(
+  expenses,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [expenses.businessId],
+      references: [businesses.id],
+    }),
+
+    category: one(expenseCategories, {
+      fields: [expenses.categoryId],
+      references: [expenseCategories.id],
+    }),
+
+    cashAccount: one(cashAccounts, {
+      fields: [expenses.cashAccountId],
+      references: [cashAccounts.id],
+    }),
+
+    createdByUser: one(users, {
+      fields: [expenses.createdBy],
+      references: [users.id],
+    }),
   })
 );

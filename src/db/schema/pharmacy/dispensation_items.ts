@@ -12,6 +12,7 @@ import { prescriptionItems } from "./prescription_items";
 import { saleItems } from "../sales/sale_items";
 import { products } from "../inventory/products";
 import { productBatches } from "../inventory/product_batches";
+import { relations } from "drizzle-orm";
 
 export const dispensationItems = pgTable(
     "dispensation_items",
@@ -102,4 +103,33 @@ export const dispensationItems = pgTable(
             "dispensation_items_batch_idx"
         ).on(table.productBatchId),
     })
+);
+export const dispensationItemsRelations = relations(
+  dispensationItems,
+  ({ one }) => ({
+    dispensation: one(dispensations, {
+      fields: [dispensationItems.dispensationId],
+      references: [dispensations.id],
+    }),
+
+    prescriptionItem: one(prescriptionItems, {
+      fields: [dispensationItems.prescriptionItemId],
+      references: [prescriptionItems.id],
+    }),
+
+    saleItem: one(saleItems, {
+      fields: [dispensationItems.saleItemId],
+      references: [saleItems.id],
+    }),
+
+    product: one(products, {
+      fields: [dispensationItems.productId],
+      references: [products.id],
+    }),
+
+    productBatch: one(productBatches, {
+      fields: [dispensationItems.productBatchId],
+      references: [productBatches.id],
+    }),
+  })
 );

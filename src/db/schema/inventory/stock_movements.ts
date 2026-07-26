@@ -8,7 +8,7 @@ import {
     numeric,
 } from "drizzle-orm/pg-core";
 
-
+import { relations } from "drizzle-orm";
 import { businesses } from "../core/businesses";
 import { products } from "./products";
 import { productBatches } from "./product_batches";
@@ -73,4 +73,34 @@ export const stockMovements = pgTable(
 
         createdIdx: index("stock_created_idx").on(table.createdAt),
     })
+);
+
+export const stockMovementsRelations = relations(
+  stockMovements,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [stockMovements.businessId],
+      references: [businesses.id],
+    }),
+
+    product: one(products, {
+      fields: [stockMovements.productId],
+      references: [products.id],
+    }),
+
+    batch: one(productBatches, {
+      fields: [stockMovements.batchId],
+      references: [productBatches.id],
+    }),
+
+    warehouse: one(warehouses, {
+      fields: [stockMovements.warehouseId],
+      references: [warehouses.id],
+    }),
+
+    user: one(users, {
+      fields: [stockMovements.userId],
+      references: [users.id],
+    }),
+  })
 );

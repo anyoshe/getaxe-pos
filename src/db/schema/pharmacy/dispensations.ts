@@ -15,6 +15,10 @@ import { dispensationStatusEnum } from "../shared";
 import { branches } from "../settings/branches";
 import { warehouses } from "../settings/warehouses";
 
+import { relations } from "drizzle-orm";
+
+import { dispensationItems } from "./dispensation_items";
+
 export const dispensations = pgTable(
     "dispensations",
     {
@@ -92,4 +96,45 @@ export const dispensations = pgTable(
             table.dispensationNumber
         ),
     })
+);
+export const dispensationsRelations = relations(
+  dispensations,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [dispensations.businessId],
+      references: [businesses.id],
+    }),
+
+    branch: one(branches, {
+      fields: [dispensations.branchId],
+      references: [branches.id],
+    }),
+
+    warehouse: one(warehouses, {
+      fields: [dispensations.warehouseId],
+      references: [warehouses.id],
+    }),
+
+    prescription: one(prescriptions, {
+      fields: [dispensations.prescriptionId],
+      references: [prescriptions.id],
+    }),
+
+    sale: one(sales, {
+      fields: [dispensations.saleId],
+      references: [sales.id],
+    }),
+
+    dispensedByUser: one(users, {
+      fields: [dispensations.dispensedBy],
+      references: [users.id],
+    }),
+
+    checkedByUser: one(users, {
+      fields: [dispensations.checkedBy],
+      references: [users.id],
+    }),
+
+    items: many(dispensationItems),
+  })
 );

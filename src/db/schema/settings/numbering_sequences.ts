@@ -12,6 +12,8 @@ import {
 import { businesses } from "../core/businesses";
 import { branches } from "./branches";
 import { documentTypeEnum } from "../shared";
+import { relations } from "drizzle-orm";
+
 
 export const numberingSequences = pgTable(
   "numbering_sequences",
@@ -87,5 +89,20 @@ export const numberingSequences = pgTable(
       table.branchId,
       table.documentType
     ),
+  })
+);
+
+export const numberingSequencesRelations = relations(
+  numberingSequences,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [numberingSequences.businessId],
+      references: [businesses.id],
+    }),
+
+    branch: one(branches, {
+      fields: [numberingSequences.branchId],
+      references: [branches.id],
+    }),
   })
 );

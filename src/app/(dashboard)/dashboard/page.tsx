@@ -10,8 +10,16 @@ import {
 
 import { PageHeader, StatCard, QuickActionCard, SectionHeader } from "@/components/shared";
 
+import { getCurrentUser } from "@/lib/auth/current-user";
 
-export default function DashboardPage() {
+
+export default async function DashboardPage() {
+
+    const user = await getCurrentUser();
+
+    console.log("CURRENT USER:", user);
+
+    
     return (
         <div className="space-y-8">
 
@@ -95,3 +103,4 @@ export default function DashboardPage() {
         </div>
     );
 }
+

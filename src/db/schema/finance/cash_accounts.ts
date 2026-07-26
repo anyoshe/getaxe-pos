@@ -14,6 +14,9 @@ import {
 import { businesses } from "../core/businesses";
 import { chartOfAccounts } from "./chart_of_accounts";
 import { cashAccountTypeEnum } from "../shared";
+import { relations } from "drizzle-orm";
+
+import { payments } from "../sales/payments";
 
 export const cashAccounts = pgTable(
   "cash_accounts",
@@ -109,5 +112,22 @@ export const cashAccounts = pgTable(
       table.businessId,
       table.name
     ),
+  })
+);
+
+export const cashAccountsRelations = relations(
+  cashAccounts,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [cashAccounts.businessId],
+      references: [businesses.id],
+    }),
+
+    account: one(chartOfAccounts, {
+      fields: [cashAccounts.accountId],
+      references: [chartOfAccounts.id],
+    }),
+
+    payments: many(payments),
   })
 );

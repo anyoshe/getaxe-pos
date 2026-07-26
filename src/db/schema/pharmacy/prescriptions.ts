@@ -13,6 +13,9 @@ import { businesses } from "../core/businesses";
 import { customers } from "../sales/customers";
 import { prescriptionStatusEnum } from "../shared";
 import { consultations } from "../clinical/consultations";
+import { relations } from "drizzle-orm";
+
+import { prescriptionItems } from "./prescription_items";
 
 export const prescriptions = pgTable(
   "prescriptions",
@@ -77,5 +80,26 @@ export const prescriptions = pgTable(
       table.businessId,
       table.prescriptionNumber
     ),
+  })
+);
+export const prescriptionsRelations = relations(
+  prescriptions,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [prescriptions.businessId],
+      references: [businesses.id],
+    }),
+
+    customer: one(customers, {
+      fields: [prescriptions.customerId],
+      references: [customers.id],
+    }),
+
+    consultation: one(consultations, {
+      fields: [prescriptions.consultationId],
+      references: [consultations.id],
+    }),
+
+    items: many(prescriptionItems),
   })
 );
