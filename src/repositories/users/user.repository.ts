@@ -1,4 +1,11 @@
-import { and, eq } from "drizzle-orm";
+import {
+  and,
+  eq,
+  ilike,
+  or,
+  desc,
+  sql,
+} from "drizzle-orm";
 
 import { users } from "@/db/schema/users/users";
 import { roles } from "@/db/schema/users/roles";
@@ -61,6 +68,157 @@ export class UserRepository {
     return result[0] ?? null;
   }
 
+  async findMany(
+    options?: {
+      search?: string;
+      roleId?: string;
+      active?: boolean;
+      page?: number;
+      pageSize?: number;
+    },
+  ) {
+
+    const page =
+      options?.page ?? 1;
+
+    const pageSize =
+      options?.pageSize ?? 10;
+
+    const conditions = [];
+
+    if (options?.search) {
+
+      conditions.push(
+
+        or(
+
+          ilike(
+            users.name,
+            `%${options.search}%`,
+          ),
+
+          ilike(
+            users.email,
+            `%${options.search}%`,
+          ),
+
+          ilike(
+            users.phone,
+            `%${options.search}%`,
+          ),
+
+        ),
+
+      );
+
+    }
+
+    if (options?.roleId) {
+
+      conditions.push(
+        eq(
+          users.roleId,
+          options.roleId,
+        ),
+      );
+
+    }
+
+    if (
+      options?.active !==
+      undefined
+    ) {
+
+      conditions.push(
+        eq(
+          users.active,
+          options.active,
+        ),
+      );
+
+    }
+
+    const where =
+      conditions.length > 0
+        ? and(...conditions)
+        : undefined;
+
+    const [items, total] =
+      await Promise.all([
+
+        Repository.db.query.users.findMany({
+
+          where,
+
+          with: {
+            role: true,
+            business: true,
+          },
+
+          orderBy: [
+            desc(users.createdAt),
+          ],
+
+          limit: pageSize,
+
+          offset:
+            (page - 1) *
+            pageSize,
+
+        }),
+
+        Repository.db
+          .select({
+            count:
+              sql<number>`count(*)`,
+          })
+          .from(users)
+          .where(where),
+
+      ]);
+
+    return {
+
+      items,
+
+      total:
+        Number(
+          total[0]?.count ??
+          0,
+        ),
+
+      page,
+
+      pageSize,
+
+    };
+
+  }
+
+  async activate(id: string) {
+    const [user] = await Repository.db
+      .update(users)
+      .set({
+        active: true,
+      })
+      .where(eq(users.id, id))
+      .returning();
+
+    return user;
+  }
+
+  async deactivate(id: string) {
+    const [user] = await Repository.db
+      .update(users)
+      .set({
+        active: false,
+      })
+      .where(eq(users.id, id))
+      .returning();
+
+    return user;
+  }
+
   async exists(id: string) {
     const user = await Repository.db.query.users.findFirst({
       where: eq(users.id, id),
@@ -87,7 +245,10 @@ export class UserRepository {
   ) {
     const [user] = await Repository.db
       .update(users)
-      .set(values)
+      .set({
+        ...values,
+        updatedAt: new Date(),
+      })
       .where(eq(users.id, id))
       .returning();
 

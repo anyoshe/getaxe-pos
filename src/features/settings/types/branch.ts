@@ -26,7 +26,8 @@ export interface Branch {
   updatedAt: Date;
 }
 
-export interface BranchListItem extends Branch {}
+export type BranchListItem =
+  Branch;
 
 export interface BranchOption {
   id: string;

@@ -11,7 +11,7 @@ import {
 import { businesses } from "../core/businesses";
 import { customers } from "./customers";
 import { users } from "../users/users";
-import { saleStatusEnum } from "../shared";
+import { saleStatusEnum, paymentStatusEnum } from "../shared";
 import { relations } from "drizzle-orm";
 import { branches } from "../settings/branches";
 import { warehouses } from "../settings/warehouses";
@@ -70,6 +70,24 @@ export const sales = pgTable(
       precision: 12,
       scale: 2,
     }).default("0"),
+
+    amountPaid: numeric("amount_paid", {
+      precision: 12,
+      scale: 2,
+    })
+      .default("0")
+      .notNull(),
+
+    balanceDue: numeric("balance_due", {
+      precision: 12,
+      scale: 2,
+    })
+      .default("0")
+      .notNull(),
+
+    paymentStatus: paymentStatusEnum("payment_status")
+      .default("PENDING")
+      .notNull(),
 
     notes: text("notes"),
 
@@ -131,7 +149,7 @@ export const sales = pgTable(
 
 export const salesRelations = relations(
   sales,
-  ({ one, many })=> ({
+  ({ one, many }) => ({
     business: one(businesses, {
       fields: [sales.businessId],
       references: [businesses.id],

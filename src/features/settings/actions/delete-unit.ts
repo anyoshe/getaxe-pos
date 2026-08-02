@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+
+import { requirePermission } from "@/lib/auth/permissions";
+
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 import { unitsService } from "../services/units.service";
@@ -11,6 +14,17 @@ export async function deleteUnitAction(
   id: string
 ) {
 
+   try {
+          await requirePermission(
+            "units.delete"
+          );
+        } catch {
+          return {
+            success: false,
+            message:
+              "You do not have permission to delete units.",
+          };
+        }
   const user = await getCurrentUser();
 
 

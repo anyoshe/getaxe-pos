@@ -42,6 +42,13 @@ export const getCurrentUser = cache(async () => {
   };
 });
 
+export type CurrentUser =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof getCurrentUser>
+    >
+  >;
+
 export async function requireCurrentUser() {
   const user = await getCurrentUser();
 

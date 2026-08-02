@@ -67,6 +67,8 @@ export const goodsReceiptStatusEnum = pgEnum(
 export const saleStatusEnum = pgEnum("sale_status", [
   "DRAFT",
   "COMPLETED",
+  "PARTIALLY_PAID",
+  "CREDIT",
   "VOIDED",
   "REFUNDED",
 ]);

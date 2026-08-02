@@ -19,8 +19,8 @@ export interface Unit {
 }
 
 
-export interface UnitListItem
-  extends Unit {}
+export type UnitListItem =
+  Unit;
 
 
 export interface UnitOption {

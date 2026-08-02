@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requirePermission } from "@/lib/auth/permissions";
+
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 import { createUnitSchema } from "../schemas/unit";
@@ -11,6 +13,19 @@ import { unitsService } from "../services/units.service";
 export async function createUnitAction(
   formData: FormData
 ) {
+
+  try {
+        await requirePermission(
+          "units.create"
+        );
+      } catch {
+        return {
+          success: false,
+          message:
+            "You do not have permission to create units.",
+        };
+      }
+      
   const user = await getCurrentUser();
 
   if (!user) {

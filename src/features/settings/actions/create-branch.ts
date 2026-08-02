@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requirePermission } from "@/lib/auth/permissions";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
 
@@ -8,6 +9,19 @@ import { createBranchSchema } from "../schemas/branch";
 import { branchesService } from "../services/branches.service";
 
 export async function createBranchAction(formData: FormData) {
+
+  try {
+      await requirePermission(
+        "branches.create"
+      );
+    } catch {
+      return {
+        success: false,
+        message:
+          "You do not have permission to create branches.",
+      };
+    }
+  
   const user = await getCurrentUser();
 
   if (!user) {

@@ -30,6 +30,7 @@ import { relations } from "drizzle-orm";
 import { productPrices } from "./product_prices";
 import { productBatches } from "./product_batches";
 import { stockMovements } from "./stock_movements";
+import { inventoryBalances } from "./inventory_balances";
 
 export const products = pgTable(
   "products",
@@ -271,6 +272,8 @@ export const productsRelations = relations(
     batches: many(productBatches),
 
     stockMovements: many(stockMovements),
+
+    inventoryBalances: many(inventoryBalances),
   })
 );
 

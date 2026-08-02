@@ -8,6 +8,9 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { relations } from "drizzle-orm";
+import { products } from "./products";
+
 import { businesses } from "../core/businesses";
 
 export const suppliers = pgTable(
@@ -59,5 +62,17 @@ export const suppliers = pgTable(
       table.businessId,
       table.name
     ),
+  })
+);
+
+export const suppliersRelations = relations(
+  suppliers,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [suppliers.businessId],
+      references: [businesses.id],
+    }),
+
+    products: many(products),
   })
 );

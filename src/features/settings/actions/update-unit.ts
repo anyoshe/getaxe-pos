@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requirePermission } from "@/lib/auth/permissions";
+
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 import { updateUnitSchema } from "../schemas/unit";
@@ -12,6 +14,18 @@ export async function updateUnitAction(
   id: string,
   formData: FormData
 ) {
+
+  try {
+        await requirePermission(
+          "units.update"
+        );
+      } catch {
+        return {
+          success: false,
+          message:
+            "You do not have permission to update units.",
+        };
+      }
 
   const user = await getCurrentUser();
 

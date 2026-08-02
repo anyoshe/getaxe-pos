@@ -33,3 +33,10 @@ export interface ListRepositoryResult<T> {
 }
 
 export type RepositoryId = string;
+
+import { db } from "@/db";
+
+export type Database = typeof db;
+export type Transaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0];

@@ -24,8 +24,8 @@ export interface Warehouse {
   };
 }
 
-export interface WarehouseListItem
-  extends Warehouse {}
+export type WarehouseListItem =
+  Warehouse;
 
 export interface WarehouseOption {
   id: string;

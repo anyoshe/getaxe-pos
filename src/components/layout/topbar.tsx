@@ -17,7 +17,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { MobileSidebar } from "./mobile-sidebar";
 
-
+import type {
+  CurrentUser,
+} from "@/lib/auth/current-user";
 
 
 import {
@@ -31,7 +33,7 @@ import {
 import { logout } from "@/features/auth/actions/logout";
 
 interface TopbarProps {
-  user: any;
+  user: CurrentUser;
 }
 
 export function Topbar({ user }: TopbarProps) {

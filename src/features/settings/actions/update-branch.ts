@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requirePermission } from "@/lib/auth/permissions";
+
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 import { updateBranchSchema } from "../schemas/branch";
@@ -11,6 +13,18 @@ export async function updateBranchAction(
   id: string,
   formData: FormData
 ) {
+
+  try {
+        await requirePermission(
+          "branches.update"
+        );
+      } catch {
+        return {
+          success: false,
+          message:
+            "You do not have permission to update branches.",
+        };
+      }
   const user = await getCurrentUser();
 
   if (!user) {
