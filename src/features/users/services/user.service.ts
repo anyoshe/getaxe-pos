@@ -25,12 +25,17 @@ export class UserService {
     return userRepository.findMany(options);
 }
 
-    async getUser(
-        id: string,
-    ): Promise<User | null> {
-        return userRepository.findById(id) as Promise<User | null>;
-    }
+  async getUser(
+    id: string,
+    businessId: string,
+): Promise<User | null> {
 
+    return userRepository.findById(
+        id,
+        businessId,
+    ) as Promise<User | null>;
+
+}
 
     async createUser(
         data: Omit<

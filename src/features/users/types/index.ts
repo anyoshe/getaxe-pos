@@ -1,3 +1,7 @@
 export type {
-  User,
+    User,
 } from "./user";
+
+export type {
+    Role,
+} from "./role";

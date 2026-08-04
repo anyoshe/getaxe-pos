@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+
 import { authenticateUser } from "../services/auth-service";
 import type { LoginInput } from "../schemas/login-schema";
 
@@ -17,31 +18,51 @@ export type LoginResult =
     };
 
 export async function login(
-  credentials: LoginInput
+  credentials: LoginInput,
 ): Promise<LoginResult> {
-  const user = await authenticateUser(credentials);
 
-  if (!user) {
-    return {
-      success: false,
-      message: "Invalid email or password.",
-    };
+  const result =
+    await authenticateUser(
+      credentials,
+    );
+
+  switch (result.type) {
+
+    case "INVALID":
+
+      return {
+        success: false,
+        message: "Invalid email or password.",
+      };
+
+    case "CREATE_PASSWORD":
+
+      redirect(
+        `/create-password?email=${encodeURIComponent(result.email)}`,
+      );
+
+    case "BUSINESS_SETUP":
+
+      redirect(
+        `/setup?email=${encodeURIComponent(result.email)}`,
+      );
+
+    case "USER":
+
+      await createSession({
+
+        userId: result.user.id,
+
+        businessId: result.user.businessId,
+
+        roleId: result.user.roleId,
+
+        email: result.user.email,
+
+      });
+
+      redirect("/dashboard");
+
   }
 
-  await createSession({
-    userId: user.id,
-    businessId: user.businessId,
-    roleId: user.roleId,
-    email: user.email,
-  });
-
-  /**
-   * redirect() throws a NEXT_REDIRECT response.
-   * The line below satisfies TypeScript but is never reached.
-   */
-  redirect("/dashboard");
-
-  return {
-    success: true,
-  };
 }

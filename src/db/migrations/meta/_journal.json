@@ -43,6 +43,48 @@
       "when": 1785320513717,
       "tag": "0005_kind_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785837948295,
+      "tag": "0006_peaceful_odin",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785840072578,
+      "tag": "0007_late_otto_octavius",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785843809830,
+      "tag": "0008_clean_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785846896522,
+      "tag": "0009_flashy_cable",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785865776269,
+      "tag": "0010_magenta_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785870289555,
+      "tag": "0011_third_bloodscream",
+      "breakpoints": true
     }
   ]
 }

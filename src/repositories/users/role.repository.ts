@@ -4,6 +4,10 @@ import {
   isNull,
 } from "drizzle-orm";
 
+import {
+  users,
+} from "@/db/schema/users/users";
+
 import { Repository } from "../base/repository";
 
 import { roles } from "@/db/schema/users/roles";
@@ -11,23 +15,41 @@ import { roles } from "@/db/schema/users/roles";
 export class RoleRepository {
 
   async findAll() {
-    return Repository.db.query.roles.findMany({
-      orderBy: (roles, { asc }) => [
-        asc(roles.name),
-      ],
-    });
-  }
+  return Repository.db.query.roles.findMany({
+    with: {
+      rolePermissions: {
+        with: {
+          permission: true,
+        },
+      },
+    },
+
+    orderBy: (roles, { asc }) => [
+      asc(roles.name),
+    ],
+  });
+
+  
+}
 
   async findById(
-    id: string,
-  ) {
-    return Repository.db.query.roles.findFirst({
-      where: eq(
-        roles.id,
-        id,
-      ),
-    });
-  }
+  id: string,
+) {
+  return Repository.db.query.roles.findFirst({
+    where: eq(
+      roles.id,
+      id,
+    ),
+
+    with: {
+      rolePermissions: {
+        with: {
+          permission: true,
+        },
+      },
+    },
+  });
+}
 
   async findByName(
     name: string,
@@ -145,7 +167,36 @@ export class RoleRepository {
       );
   }
 
+  async findUsers(
+  roleId: string,
+) {
+
+  return Repository.db.query.users.findMany({
+
+    where: eq(
+      users.roleId,
+      roleId,
+    ),
+
+    columns: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      active: true,
+    },
+
+    orderBy: (users, { asc }) => [
+      asc(users.name),
+    ],
+
+  });
+
 }
+
+}
+
+
 
 export const roleRepository =
   new RoleRepository();

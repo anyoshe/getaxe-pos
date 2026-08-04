@@ -10,3 +10,4 @@ export * from "./finance";
 export * from "./settings";
 export * from "./infrastructure";
 export * from "./insurance";
+export * from "./platform";

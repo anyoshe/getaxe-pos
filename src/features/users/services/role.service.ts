@@ -1,21 +1,38 @@
-import {
+ import {
   roleRepository,
+  rolePermissionRepository,
+  userRepository,
 } from "@/repositories";
-
 
 export class RoleService {
 
   async getRoles() {
-    return roleRepository.findAll();
-  }
+    const roles = await roleRepository.findAll();
 
+    return roles.map((role) => ({
+        ...role,
+        permissions: role.rolePermissions.map(
+            (rp) => rp.permission,
+        ),
+    }));
+}
 
   async getRole(
     id: string,
-  ) {
-    return roleRepository.findById(id);
-  }
+) {
+    const role = await roleRepository.findById(id);
 
+    if (!role) {
+        return null;
+    }
+
+    return {
+        ...role,
+        permissions: role.rolePermissions.map(
+            (rp) => rp.permission,
+        ),
+    };
+}
 
   async createRole(
     data: Parameters<
@@ -24,7 +41,6 @@ export class RoleService {
   ) {
     return roleRepository.create(data);
   }
-
 
   async updateRole(
     id: string,
@@ -38,13 +54,11 @@ export class RoleService {
     );
   }
 
-
   async activateRole(
     id: string,
   ) {
     return roleRepository.activate(id);
   }
-
 
   async deactivateRole(
     id: string,
@@ -52,16 +66,108 @@ export class RoleService {
     return roleRepository.deactivate(id);
   }
 
+ async deleteRole(
+  id: string,
+) {
 
-  async deleteRole(
-    id: string,
-  ) {
-    return roleRepository.delete(id);
+  const assignedUsers =
+    await userRepository.countByRole(
+      id,
+    );
+
+
+  if (assignedUsers > 0) {
+
+    throw new Error(
+      "Cannot delete a role assigned to users",
+    );
+
   }
 
 
+  return roleRepository.delete(
+    id,
+  );
+
 }
 
+  // -------------------------------------------------
+  // Role Permissions
+  // -------------------------------------------------
+
+  async getRolePermissions(
+    roleId: string,
+  ) {
+    return rolePermissionRepository.findByRole(
+      roleId,
+    );
+  }
+
+  async getRoleUsers(
+  roleId: string,
+) {
+
+  return roleRepository.findUsers(
+    roleId,
+  );
+
+}
+
+  async assignPermission(
+    roleId: string,
+    permissionId: string,
+  ) {
+    return rolePermissionRepository.assignIfMissing(
+      roleId,
+      permissionId,
+    );
+  }
+
+  async removePermission(
+    roleId: string,
+    permissionId: string,
+  ) {
+    return rolePermissionRepository.remove(
+      roleId,
+      permissionId,
+    );
+  }
+
+  async replacePermissions(
+    roleId: string,
+    permissionIds: string[],
+  ) {
+
+    await rolePermissionRepository.removeAll(
+      roleId,
+    );
+
+    for (const permissionId of permissionIds) {
+
+      await rolePermissionRepository.assign(
+        roleId,
+        permissionId,
+      );
+
+    }
+
+    return this.getRolePermissions(
+      roleId,
+    );
+
+  }
+
+  async getSystemRoleByName(
+  name: string,
+) {
+
+  return roleRepository.findByName(
+    name,
+  );
+
+}
+
+}
 
 export const roleService =
   new RoleService();

@@ -11,6 +11,7 @@ import {
 import { businesses } from "../core/businesses";
 import { relations } from "drizzle-orm";
 import { users } from "./users";
+import { rolePermissions } from "./role_permissions";
 
 export const roles = pgTable(
   "roles",
@@ -63,6 +64,11 @@ export const roles = pgTable(
     ),
   })
 );
-export const rolesRelations = relations(roles, ({ many }) => ({
-  users: many(users),
-}));
+
+export const rolesRelations = relations(
+  roles,
+  ({ many }) => ({
+    users: many(users),
+    rolePermissions: many(rolePermissions),
+  }),
+);

@@ -1,132 +1,75 @@
-import {
-    and,
-    asc,
-    eq,
-} from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
-import type {
-    InferInsertModel,
-} from "drizzle-orm";
+import type { InferInsertModel } from "drizzle-orm";
 
-import {
-    customers,
-} from "@/db/schema/sales/customers";
+import { customers } from "@/db/schema/sales/customers";
 
-import {
-    BaseRepository,
-} from "../base";
+import { BaseRepository } from "../base";
 
-type CustomerInsert =
-    InferInsertModel<typeof customers>;
+type CustomerInsert = InferInsertModel<typeof customers>;
 
-export class CustomerRepository
-    extends BaseRepository {
+export class CustomerRepository extends BaseRepository {
+  async findAll(businessId: string) {
+    return this.database.query.customers.findMany({
+      where: eq(customers.businessId, businessId),
 
-    async findAll(
-        businessId: string
-    ) {
+      orderBy: [asc(customers.firstName)],
+    });
+  }
 
-        return this.database.query.customers.findMany({
-            where: eq(
-                customers.businessId,
-                businessId
-            ),
+  async findById(id: string) {
+    return this.database.query.customers.findFirst({
+      where: eq(customers.id, id),
+    });
+  }
 
-            orderBy: [
-                asc(customers.firstName),
-            ],
-        });
+  async create(data: CustomerInsert) {
+    const [customer] = await this.database
+      .insert(customers)
+      .values(data)
+      .returning();
 
-    }
+    return customer;
+  }
 
-    async findById(
-        id: string
-    ) {
+  async update(id: string, data: Partial<CustomerInsert>) {
+    const [customer] = await this.database
+      .update(customers)
+      .set(data)
+      .where(eq(customers.id, id))
+      .returning();
 
-        return this.database.query.customers.findFirst({
-            where: eq(
-                customers.id,
-                id
-            ),
-        });
+    return customer;
+  }
 
-    }
+  async delete(id: string) {
+    const [customer] = await this.database
+      .delete(customers)
+      .where(eq(customers.id, id))
+      .returning();
 
-    async create(
-        data: CustomerInsert
-    ) {
+    return customer;
+  }
 
-        const [customer] =
-            await this.database
-                .insert(customers)
-                .values(data)
-                .returning();
+  async findByCustomerNumber(businessId: string, customerNumber: string) {
+    return this.database.query.customers.findFirst({
+      where: and(
+        eq(customers.businessId, businessId),
+        eq(customers.customerNumber, customerNumber),
+      ),
+    });
+  }
 
-        return customer;
+  async count(businessId: string) {
+    const result = await this.database
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(customers)
+      .where(eq(customers.businessId, businessId));
 
-    }
-
-    async update(
-        id: string,
-        data: Partial<CustomerInsert>
-    ) {
-
-        const [customer] =
-            await this.database
-                .update(customers)
-                .set(data)
-                .where(
-                    eq(
-                        customers.id,
-                        id
-                    )
-                )
-                .returning();
-
-        return customer;
-
-    }
-
-    async delete(
-        id: string
-    ) {
-
-        const [customer] =
-            await this.database
-                .delete(customers)
-                .where(
-                    eq(
-                        customers.id,
-                        id
-                    )
-                )
-                .returning();
-
-        return customer;
-
-    }
-
-    async findByCustomerNumber(
-        businessId: string,
-        customerNumber: string
-    ) {
-
-        return this.database.query.customers.findFirst({
-            where: and(
-                eq(
-                    customers.businessId,
-                    businessId
-                ),
-                eq(
-                    customers.customerNumber,
-                    customerNumber
-                )
-            ),
-        });
-
-    }
-
+    return Number(result[0]?.count ?? 0);
+  }
 }
 
-export const customerRepository =
-    new CustomerRepository();
+export const customerRepository = new CustomerRepository();

@@ -9,6 +9,10 @@ const SYSTEM_ROLES = [
     description: "Platform super administrator",
   },
   {
+    name: "BUSINESS_OWNER",
+    description: "Business owner awaiting or managing business provisioning",
+  },
+  {
     name: "ADMINISTRATOR",
     description: "Business administrator",
   },

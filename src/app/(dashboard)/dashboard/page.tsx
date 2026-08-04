@@ -10,14 +10,13 @@ import {
 
 import { PageHeader, StatCard, QuickActionCard, SectionHeader } from "@/components/shared";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { getOwnerDashboardAction } from "@/features/dashboard/actions";
 
 
 export default async function DashboardPage() {
 
-    const user = await getCurrentUser();
-
-    console.log("CURRENT USER:", user);
+    const dashboard =
+     await getOwnerDashboardAction();
 
     
     return (
@@ -31,7 +30,7 @@ export default async function DashboardPage() {
 
                 <StatCard
                     title="Today's Sales"
-                    value="KSh 0"
+                    value={`KSh ${dashboard.summary.todaySales.toLocaleString()}`}
                     subtitle="No sales yet"
                     icon={ShoppingCart}
                     gradient="bg-gradient-to-r from-indigo-600 to-violet-600"
@@ -39,7 +38,7 @@ export default async function DashboardPage() {
 
                 <StatCard
                     title="Customers"
-                    value="0"
+                    value={dashboard.summary.customers.toString()}
                     subtitle="Registered customers"
                     icon={Users}
                     gradient="bg-gradient-to-r from-emerald-500 to-teal-500"
@@ -47,7 +46,7 @@ export default async function DashboardPage() {
 
                 <StatCard
                     title="Products"
-                    value="0"
+                    value={dashboard.summary.products.toString()}
                     subtitle="Available products"
                     icon={Package}
                     gradient="bg-gradient-to-r from-amber-500 to-orange-500"
@@ -55,7 +54,7 @@ export default async function DashboardPage() {
 
                 <StatCard
                     title="Low Stock"
-                    value="0"
+                    value={dashboard.summary.lowStock.toString()}
                     subtitle="Requires attention"
                     icon={AlertTriangle}
                     gradient="bg-gradient-to-r from-cyan-500 to-sky-500"

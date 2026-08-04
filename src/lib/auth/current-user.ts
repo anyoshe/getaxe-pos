@@ -9,7 +9,7 @@ import { getSession } from "./session";
 
 export const getCurrentUser = cache(async () => {
   const session = await getSession();
-
+  console.log("SESSION:", session);
   if (!session) {
     return null;
   }

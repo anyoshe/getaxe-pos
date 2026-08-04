@@ -13,16 +13,23 @@ export interface SessionPayload extends JWTPayload {
   email: string;
 }
 
-export async function signJwt(payload: SessionPayload) {
+export async function signJwt(
+  payload: SessionPayload,
+) {
   return await new SignJWT(payload)
-    .setProtectedHeader({ alg: algorithm })
+    .setProtectedHeader({
+      alg: algorithm,
+    })
     .setIssuedAt()
     .setExpirationTime("8h")
     .sign(secret);
 }
 
-export async function verifyJwt(token: string) {
-  const { payload } = await jwtVerify(token, secret);
+export async function verifyJwt(
+  token: string,
+) {
+  const { payload } =
+    await jwtVerify(token, secret);
 
   return payload as SessionPayload;
 }

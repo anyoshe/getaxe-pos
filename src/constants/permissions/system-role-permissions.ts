@@ -3,6 +3,11 @@ export const SYSTEM_ROLE_PERMISSIONS = {
     "*",
   ],
 
+  BUSINESS_OWNER: [
+    // No ERP permissions.
+    // Can only authenticate and complete onboarding.
+  ],
+
   ADMINISTRATOR: [
     "*",
   ],
