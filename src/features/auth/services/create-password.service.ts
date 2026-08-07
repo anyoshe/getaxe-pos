@@ -25,18 +25,26 @@ export class CreatePasswordService {
     }
 
     switch (invitation.status) {
-  case "INVITED":
-    break;
 
-  case "PASSWORD_CREATED":
-    throw new Error("Password has already been created.");
+      case "INVITED":
+        break;
 
-  case "COMPLETED":
-    throw new Error("Business has already been created.");
+      case "PASSWORD_CREATED":
+        throw new Error(
+          "Password has already been created.",
+        );
 
-  default:
-    throw new Error("Invitation is no longer valid.");
-}
+      case "COMPLETED":
+        throw new Error(
+          "Business has already been created.",
+        );
+
+      default:
+        throw new Error(
+          "Invitation is no longer valid.",
+        );
+
+    }
 
     const passwordHash =
       await hashPassword(
@@ -46,6 +54,11 @@ export class CreatePasswordService {
     await userInvitationsRepository.updatePassword(
       invitation.id,
       passwordHash,
+    );
+
+    await userInvitationsRepository.updateStatus(
+      invitation.id,
+      "PASSWORD_CREATED",
     );
 
     return {

@@ -6,9 +6,20 @@ import {
   userInvitations,
 } from "@/db/schema";
 
-
 export class UserInvitationsRepository {
 
+  async findById(id: string) {
+
+    return Repository.db.query.userInvitations.findFirst({
+
+      where: eq(
+        userInvitations.id,
+        id,
+      ),
+
+    });
+
+  }
 
   async findByEmail(email: string) {
 
@@ -23,8 +34,6 @@ export class UserInvitationsRepository {
 
   }
 
-
-
   async create(
     values: typeof userInvitations.$inferInsert,
   ) {
@@ -35,20 +44,23 @@ export class UserInvitationsRepository {
         .values(values)
         .returning();
 
-
     return invite;
 
   }
 
-
-
-  async markAccepted(id: string) {
+  async updateStatus(
+    id: string,
+    status:
+      | "INVITED"
+      | "PASSWORD_CREATED"
+      | "COMPLETED",
+  ) {
 
     const [invite] =
       await Repository.db
         .update(userInvitations)
         .set({
-          status: "PASSWORD_CREATED",
+          status,
           updatedAt: new Date(),
         })
         .where(
@@ -59,37 +71,35 @@ export class UserInvitationsRepository {
         )
         .returning();
 
-
     return invite;
 
   }
 
   async updatePassword(
-  id: string,
-  passwordHash: string,
-) {
+    id: string,
+    passwordHash: string,
+  ) {
 
-  const [invite] =
-    await Repository.db
-      .update(userInvitations)
-      .set({
-        passwordHash,
-        updatedAt: new Date(),
-      })
-      .where(
-        eq(
-          userInvitations.id,
-          id,
-        ),
-      )
-      .returning();
+    const [invite] =
+      await Repository.db
+        .update(userInvitations)
+        .set({
+          passwordHash,
+          updatedAt: new Date(),
+        })
+        .where(
+          eq(
+            userInvitations.id,
+            id,
+          ),
+        )
+        .returning();
 
-  return invite;
+    return invite;
+
+  }
 
 }
-
-}
-
 
 export const userInvitationsRepository =
   new UserInvitationsRepository();

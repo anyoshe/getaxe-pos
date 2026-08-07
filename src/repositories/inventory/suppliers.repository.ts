@@ -21,9 +21,9 @@ export class SupplierRepository extends BaseRepository {
     });
   }
 
-  async findById(id: string) {
+  async findById(id: string, businessId: string) {
     return this.database.query.suppliers.findFirst({
-      where: eq(suppliers.id, id),
+      where: and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)),
       with: {
         products: true,
       },
@@ -39,32 +39,32 @@ export class SupplierRepository extends BaseRepository {
     return supplier;
   }
 
-  async update(id: string, data: Partial<SupplierInsert>) {
+  async update(id: string, businessId: string, data: Partial<SupplierInsert>) {
     const [supplier] = await this.database
       .update(suppliers)
       .set(data)
-      .where(eq(suppliers.id, id))
+      .where(and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)))
       .returning();
 
     return supplier;
   }
 
-  async delete(id: string) {
+  async delete(id: string, businessId: string) {
     const [supplier] = await this.database
       .delete(suppliers)
-      .where(eq(suppliers.id, id))
+      .where(and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)))
       .returning();
 
     return supplier;
   }
 
-  async deactivate(id: string) {
+  async deactivate(id: string, businessId: string) {
     const [supplier] = await this.database
       .update(suppliers)
       .set({
         active: false,
       })
-      .where(eq(suppliers.id, id))
+      .where(and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)))
       .returning();
 
     return supplier;

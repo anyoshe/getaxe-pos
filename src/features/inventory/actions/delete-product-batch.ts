@@ -11,13 +11,15 @@ import {
 export async function deleteProductBatchAction(
   id: string
 ) {
-  await requireAuthorizedUser(
-    "product-batches.delete"
-  );
-
   try {
+    const user =
+      await requireAuthorizedUser(
+        "product-batches.delete"
+      );
+
     await productBatchService.deleteProductBatch(
-      id
+      id,
+      user.businessId
     );
 
     revalidatePath(

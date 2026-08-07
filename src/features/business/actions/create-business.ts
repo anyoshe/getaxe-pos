@@ -1,5 +1,7 @@
 "use server";
 
+import { redirect } from "next/navigation";
+
 import {
   businessProvisioningService,
 } from "../services";
@@ -10,12 +12,21 @@ import {
 } from "../schemas/business-setup-schema";
 
 import {
-  requireCurrentUser,
-} from "@/lib/auth/current-user";
+  requireOnboardingUser,
+} from "@/lib/onboarding-auth/current-onboarding-user";
+
+import {
+  destroyOnboardingSession,
+} from "@/lib/onboarding-auth/session";
+
+import {
+  createSession,
+} from "@/lib/auth/session";
 
 export async function createBusinessAction(
   input: BusinessSetupInput,
 ) {
+
   //
   // Validate input
   //
@@ -24,29 +35,73 @@ export async function createBusinessAction(
     businessSetupSchema.parse(input);
 
   //
-  // Current logged-in user
+  // Current onboarding user
   //
 
-  const currentUser =
-    await requireCurrentUser();
-
-  //
-  // User already owns a business
-  //
-
-  if (currentUser.businessId) {
-    throw new Error(
-      "Business already exists.",
-    );
-  }
+  const onboardingUser =
+    await requireOnboardingUser();
 
   //
   // Provision business
   //
 
-  return businessProvisioningService.provision({
-  ...data,
+  const business =
+    await businessProvisioningService.provision({
 
-  ownerUserId: currentUser.id,
-});
+      ...data,
+
+      ownerUserId:
+        onboardingUser.createdBy,
+
+      ownerInvitationId:
+        onboardingUser.id,
+
+      ownerName:
+        onboardingUser.name,
+
+      ownerEmail:
+        onboardingUser.email,
+
+      ownerPhone:
+        onboardingUser.phone ?? undefined,
+
+      ownerPasswordHash:
+        onboardingUser.passwordHash!,
+
+    });
+
+  //
+  // Onboarding finished
+  //
+
+  await destroyOnboardingSession();
+
+  //
+  // Create ERP session
+  //
+
+  await createSession({
+
+    userId:
+      business.createdBy!,
+
+    businessId:
+      business.id,
+
+    roleId:
+      (
+        await requireOnboardingUser()
+      ).roleId,
+
+    email:
+      onboardingUser.email,
+
+  });
+
+  //
+  // Go to Dashboard
+  //
+
+  redirect("/dashboard");
+
 }

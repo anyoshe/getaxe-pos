@@ -8,7 +8,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import {
   Avatar,
@@ -48,10 +48,84 @@ export function Topbar({ user }: TopbarProps) {
 
           <MobileSidebar />
 
-          <h1 className="text-xl font-bold text-slate-800">
-            Dashboard
-          </h1>
+          <div className="flex items-center gap-3">
 
+                  <div
+                    className="
+                      relative
+                      h-9
+                      w-9
+                      overflow-hidden
+                      rounded-xl
+                      border
+                      border-slate-200
+                      bg-white
+                      shadow-sm
+                    "
+                  >
+
+                    {user.business.logo ? (
+
+                      <Image
+                        src={user.business.logo}
+                        alt={user.business.name}
+                        fill
+                        className="object-contain p-1"
+                      />
+
+                    ) : (
+
+                      <div
+                        className="
+                          flex
+                          h-full
+                          w-full
+                          items-center
+                          justify-center
+                          bg-gradient-to-r
+                          from-indigo-600
+                          via-violet-600
+                          to-purple-600
+                          text-sm
+                          font-bold
+                          text-white
+                        "
+                      >
+                        {user.business.name.charAt(0)}
+                      </div>
+
+                    )}
+
+                  </div>
+
+
+                  <div className="flex flex-col">
+
+                    <h1
+                      className="
+                        text-lg
+                        font-extrabold
+                        tracking-tight
+                        bg-gradient-to-r
+                        from-indigo-600
+                        via-violet-600
+                        to-purple-600
+                        bg-clip-text
+                        text-transparent
+                      "
+                    >
+                      {user.business.name}
+                    </h1>
+
+
+                    <p className="text-xs font-medium text-slate-500">
+                      Dashboard
+                    </p>
+
+
+                  </div>
+
+                </div>
         </div>
 
         {/* Search */}

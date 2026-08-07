@@ -6,8 +6,3 @@ export interface NavigationItem {
   icon: LucideIcon;
   children?: NavigationItem[];
 }
-
-export interface NavigationSection {
-  title: string;
-  items: NavigationItem[];
-}

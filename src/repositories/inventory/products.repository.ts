@@ -76,9 +76,9 @@ export class ProductRepository extends BaseRepository {
     return rows.map(toDomainProduct);
   }
 
-  async findById(id: string) {
+  async findById(id: string, businessId: string) {
     const row = await this.database.query.products.findFirst({
-      where: eq(products.id, id),
+      where: and(eq(products.id, id), eq(products.businessId, businessId)),
 
       with: {
         category: true,
@@ -119,20 +119,20 @@ export class ProductRepository extends BaseRepository {
     return toDomainProduct(product);
   }
 
-  async update(id: string, data: Partial<ProductInsert>) {
+  async update(id: string, businessId: string, data: Partial<ProductInsert>) {
     const [product] = await this.database
       .update(products)
       .set(toDatabaseUpdate(data))
-      .where(eq(products.id, id))
+      .where(and(eq(products.id, id), eq(products.businessId, businessId)))
       .returning();
 
     return toDomainProduct(product);
   }
 
-  async delete(id: string) {
+  async delete(id: string, businessId: string) {
     const [product] = await this.database
       .delete(products)
-      .where(eq(products.id, id))
+      .where(and(eq(products.id, id), eq(products.businessId, businessId)))
       .returning();
 
     return toDomainProduct(product);
@@ -165,13 +165,13 @@ export class ProductRepository extends BaseRepository {
     return !!product;
   }
 
-  async deactivate(id: string) {
+  async deactivate(id: string, businessId: string) {
     const [product] = await this.database
       .update(products)
       .set({
         active: false,
       })
-      .where(eq(products.id, id))
+      .where(and(eq(products.id, id), eq(products.businessId, businessId)))
       .returning();
 
     return toDomainProduct(product);

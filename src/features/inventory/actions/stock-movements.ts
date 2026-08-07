@@ -21,11 +21,13 @@ export async function getStockMovements(
 export async function getStockMovement(
   id: string
 ) {
+  const user =
   await requireAuthorizedUser(
     "stock-movements.view"
   );
 
   return stockMovementService.getStockMovement(
-    id
-  );
+  id,
+  user.businessId
+);
 }

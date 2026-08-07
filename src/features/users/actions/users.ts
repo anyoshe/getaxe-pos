@@ -9,41 +9,44 @@ import {
 } from "@/lib/auth/authorize";
 
 export async function getUsersAction(
-    options?: {
-        search?: string;
-        roleId?: string;
-        active?: boolean;
-        page?: number;
-        pageSize?: number;
-    },
+  options?: {
+    search?: string;
+    roleId?: string;
+    active?: boolean;
+    page?: number;
+    pageSize?: number;
+  },
 ) {
-    try {
+  try {
+    await requireAuthorizedUser(
+      "users.view",
+    );
 
-        await requireAuthorizedUser(
-            "users.view",
-        );
+    const {
+      requireCurrentUser,
+    } = await import("@/lib/auth/current-user");
 
-        const users =
-            await userService.getUsers(
-                options,
-            );
+    const currentUser =
+      await requireCurrentUser();
 
-        return {
-            success: true,
-            data: users,
-        };
+    const users =
+      await userService.getUsers(
+        currentUser.businessId,
+        options,
+      );
 
-    } catch {
+    return {
+      success: true,
+      data: users,
+    };
 
-        return {
-            success: false,
-            message:
-                "Failed to load users",
-        };
-
-    }
+  } catch {
+    return {
+      success: false,
+      message: "Failed to load users",
+    };
+  }
 }
-
 
 export async function createUserAction(
   data: Omit<

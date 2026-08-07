@@ -44,13 +44,21 @@ export class StockMovementRepository
   }
 
   async findById(
-    id: string
-  ) {
-    return this.database.query.stockMovements.findFirst({
-      where: eq(
-        stockMovements.id,
-        id
-      ),
+  id: string,
+  businessId: string
+)
+{
+ return this.database.query.stockMovements.findFirst({
+   where: and(
+     eq(
+       stockMovements.id,
+       id
+     ),
+     eq(
+       stockMovements.businessId,
+       businessId
+     )
+   ),
 
       with: {
         product: true,
@@ -74,13 +82,20 @@ export class StockMovementRepository
   }
 
   async findByProduct(
-    productId: string
-  ) {
+  productId: string,
+  businessId: string
+) {
     return this.database.query.stockMovements.findMany({
-      where: eq(
-        stockMovements.productId,
-        productId
-      ),
+      where: and(
+  eq(
+    stockMovements.productId,
+    productId
+  ),
+  eq(
+    stockMovements.businessId,
+    businessId
+  )
+),
 
       with: {
         batch: true,
@@ -95,13 +110,20 @@ export class StockMovementRepository
   }
 
   async findByBatch(
-    batchId: string
-  ) {
+ batchId:string,
+ businessId:string
+) {
     return this.database.query.stockMovements.findMany({
-      where: eq(
-        stockMovements.batchId,
-        batchId
-      ),
+      where: and(
+  eq(
+    stockMovements.batchId,
+    batchId
+  ),
+  eq(
+    stockMovements.businessId,
+    businessId
+  )
+),
 
       with: {
         product: true,

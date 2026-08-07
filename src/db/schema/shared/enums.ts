@@ -4,15 +4,14 @@ import { pgEnum } from "drizzle-orm/pg-core";
    Business
 ===================================================== */
 
-export const businessTypeEnum = pgEnum("business_type", [
-  "RETAIL",
-  "WHOLESALE",
-  "PHARMACY",
-  "CHEMIST",
-  "CLINIC",
-  "HOSPITAL",
-]);
-
+/*
+ * Business types are now application-managed.
+ *
+ * Source of truth:
+ * src/features/business/constants/business-types.ts
+ *
+ * Database stores business_type as TEXT.
+ */
 
 /* =====================================================
    Stock

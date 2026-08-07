@@ -12,7 +12,8 @@
     "db:status": "tsx src/db/status.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed/index.ts"
+    "db:seed": "tsx src/db/seed/index.ts",
+    "db:sync-capabilities": "tsx src/db/seed/sync-capabilities.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

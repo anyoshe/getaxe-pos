@@ -1,23 +1,57 @@
-import { redirect } from "next/navigation";
+import { requireOnboardingUser } from "@/lib/onboarding-auth/current-onboarding-user";
 
-import { requireCurrentUser } from "@/lib/auth/current-user";
+import {
+  OnboardingLayout,
+} from "@/features/business/components/setup/onboarding-layout";
+
+import {
+  currenciesService,
+  countriesService,
+} from "@/features/settings/services";
 
 import { BusinessSetupForm } from "@/features/business/components/setup/business-setup-form";
 
-export default async function BusinessSetupPage() {
-  const user = await requireCurrentUser();
+type Props = {
+  searchParams: Promise<{
+    email?: string;
+  }>;
+};
 
-  //
-  // Business already provisioned.
-  //
+export default async function BusinessSetupPage({
+  searchParams,
+}: Props) {
 
-  if (user.businessId) {
-    redirect("/dashboard");
+  const {
+    email,
+  } = await searchParams;
+
+  const [
+    currencies,
+    countries,
+  ] = await Promise.all([
+    currenciesService.getActiveCurrencies(),
+    countriesService.getActiveCountries(),
+  ]);
+
+  let user = null;
+
+  if (!email) {
+
+    const user = await requireOnboardingUser();
+
+    
+
   }
-
   return (
-    <main className="container mx-auto max-w-3xl py-12">
-      <BusinessSetupForm />
-    </main>
+
+    <OnboardingLayout>
+
+      <BusinessSetupForm
+        currencies={currencies}
+        countries={countries}
+      />
+
+    </OnboardingLayout>
+
   );
 }

@@ -1,107 +1,70 @@
-import {
-    SalesUnitOfWork,
-} from "./unit-of-work";
+import { SalesUnitOfWork } from "./unit-of-work";
 
 export interface RestoreStockRequest {
+  productId: string;
 
-    productId: string;
+  batchId: string;
 
-    batchId: string;
+  warehouseId: string;
 
-    warehouseId: string;
+  businessId: string;
 
-    businessId: string;
+  quantity: number;
 
-    quantity: number;
+  userId: string;
 
-    userId: string;
-
-    reference: string;
-
+  reference: string;
 }
 
 export class SalesStockReturnService {
-
-    async restore(
-    uow: SalesUnitOfWork,
-    request: RestoreStockRequest,
-) {
-
-    const balance =
-        await uow.balances.findByBatchWarehouse(
-            request.batchId,
-            request.warehouseId
-        );
+  async restore(uow: SalesUnitOfWork, request: RestoreStockRequest) {
+    const balance = await uow.balances.findByBatchWarehouse(
+      request.batchId,
+      request.warehouseId,
+    );
 
     if (!balance) {
+      await uow.balances.create({
+        businessId: request.businessId,
 
-        await uow.balances.create({
+        productId: request.productId,
 
-            businessId:
-                request.businessId,
+        batchId: request.batchId,
 
-            productId:
-                request.productId,
+        warehouseId: request.warehouseId,
 
-            batchId:
-                request.batchId,
-
-            warehouseId:
-                request.warehouseId,
-
-            quantity:
-                request.quantity,
-
-        });
-
+        quantity: request.quantity,
+      });
     } else {
-
-        await uow.balances.increaseQuantity(
-            balance.id,
-            request.quantity
-        );
-
+      await uow.balances.increaseQuantity(balance.id, request.quantity);
     }
 
     await uow.batches.increaseQuantity(
-        request.batchId,
-        request.quantity
+      request.batchId,
+      request.businessId,
+      request.quantity,
     );
 
     await uow.movements.create({
+      businessId: request.businessId,
 
-        businessId:
-            request.businessId,
+      productId: request.productId,
 
-        productId:
-            request.productId,
+      batchId: request.batchId,
 
-        batchId:
-            request.batchId,
+      warehouseId: request.warehouseId,
 
-        warehouseId:
-            request.warehouseId,
+      userId: request.userId,
 
-        userId:
-            request.userId,
+      movementType: "SALE_RETURN",
 
-        movementType:
-            "SALE_RETURN",
+      quantity: request.quantity,
 
-        quantity:
-            request.quantity,
+      reference: request.reference,
 
-        reference:
-            request.reference,
-
-        notes:
-            "Sale return",
-
+      notes: "Sale return",
     });
-
+  }
 }
 
-}
-
-export const salesStockReturnService =
-    new SalesStockReturnService();
+export const salesStockReturnService = new SalesStockReturnService();

@@ -1,4 +1,4 @@
-import { and, eq, ilike, or, desc, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
 import { users } from "@/db/schema/users/users";
 import { roles } from "@/db/schema/users/roles";
@@ -58,29 +58,32 @@ export class UserRepository {
     return result[0] ?? null;
   }
 
-  async findMany(options?: {
-    search?: string;
-    roleId?: string;
-    active?: boolean;
-    page?: number;
-    pageSize?: number;
-  }) {
+  async findMany(
+    businessId: string,
+    options?: {
+      search?: string;
+      roleId?: string;
+      active?: boolean;
+      page?: number;
+      pageSize?: number;
+    },
+  ) {
     const page = options?.page ?? 1;
 
     const pageSize = options?.pageSize ?? 10;
 
-    const conditions = [];
+    const conditions: SQL[] = [eq(users.businessId, businessId)];
 
     if (options?.search) {
-      conditions.push(
-        or(
-          ilike(users.name, `%${options.search}%`),
-
-          ilike(users.email, `%${options.search}%`),
-
-          ilike(users.phone, `%${options.search}%`),
-        ),
+      const searchCondition = or(
+        ilike(users.name, `%${options.search}%`),
+        ilike(users.email, `%${options.search}%`),
+        ilike(users.phone, `%${options.search}%`),
       );
+
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     if (options?.roleId) {
@@ -91,8 +94,7 @@ export class UserRepository {
       conditions.push(eq(users.active, options.active));
     }
 
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
-
+    const where = and(...conditions);
     const [items, total] = await Promise.all([
       Repository.db.query.users.findMany({
         where,
@@ -193,7 +195,6 @@ export class UserRepository {
     return Number(result[0]?.count ?? 0);
   }
 
-  
   async countByRole(roleId: string) {
     const result = await Repository.db
       .select({

@@ -17,10 +17,14 @@ export class StockMovementService {
   }
 
   async getStockMovement(
-    id: string
-  ) {
+  id: string,
+  businessId: string
+) {
     const movement =
-      await stockMovementRepository.findById(id);
+  await stockMovementRepository.findById(
+    id,
+    businessId
+  );
 
     if (!movement) {
       throw new Error(
@@ -46,19 +50,23 @@ export class StockMovementService {
   }
 
   async getProductHistory(
-    productId: string
+    productId: string,
+    businessId: string
   ) {
-    return stockMovementRepository.findByProduct(
-      productId
-    );
+   return stockMovementRepository.findByProduct(
+  productId,
+  businessId
+);
   }
 
   async getBatchHistory(
-    batchId: string
+    batchId: string,
+    businessId: string
   ) {
     return stockMovementRepository.findByBatch(
-      batchId
-    );
+  batchId,
+  businessId
+);
   }
 
   async getReferenceHistory(

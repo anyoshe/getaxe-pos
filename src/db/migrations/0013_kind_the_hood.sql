@@ -1,0 +1,1 @@
+ALTER TABLE "businesses" ALTER COLUMN "business_type" SET DATA TYPE text;

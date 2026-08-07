@@ -1,0 +1,2 @@
+ALTER TABLE "platform_users" ADD COLUMN "business_id" uuid;--> statement-breakpoint
+ALTER TABLE "platform_users" ADD CONSTRAINT "platform_users_business_id_businesses_id_fk" FOREIGN KEY ("business_id") REFERENCES "public"."businesses"("id") ON DELETE no action ON UPDATE no action;

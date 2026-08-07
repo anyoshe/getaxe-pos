@@ -16,66 +16,70 @@ export async function updateProductBatchAction(
   id: string,
   formData: FormData
 ) {
-  await requireAuthorizedUser(
-    "product-batches.update"
-  );
-
-  const parsed =
-    createProductBatchSchema.safeParse({
-      businessId:
-        formData.get("businessId"),
-
-      productId:
-        formData.get("productId"),
-
-      supplierId:
-        formData.get("supplierId") || null,
-
-      batchNumber:
-        formData.get("batchNumber"),
-
-      manufactureDate:
-        formData.get("manufactureDate") || null,
-
-      expiryDate:
-        formData.get("expiryDate") || null,
-
-      purchaseInvoice:
-        formData.get("purchaseInvoice") || null,
-
-      costPrice:
-        formData.get("costPrice"),
-
-      sellingPrice:
-        formData.get("sellingPrice")
-          ? Number(formData.get("sellingPrice"))
-          : null,
-
-      quantityReceived:
-        formData.get("quantityReceived"),
-
-      quantityRemaining:
-        formData.get("quantityRemaining"),
-
-      active:
-        formData.get("active") === "true",
-    });
-
-  if (!parsed.success) {
-    return {
-      success: false,
-      errors:
-        parsed.error.flatten().fieldErrors,
-    };
-  }
-
   try {
+    const user =
+      await requireAuthorizedUser(
+        "product-batches.update"
+      );
+
+    const parsed =
+      createProductBatchSchema.safeParse({
+        businessId:
+          user.businessId,
+
+        productId:
+          formData.get("productId"),
+
+        supplierId:
+          formData.get("supplierId") || null,
+
+        batchNumber:
+          formData.get("batchNumber"),
+
+        manufactureDate:
+          formData.get("manufactureDate") || null,
+
+        expiryDate:
+          formData.get("expiryDate") || null,
+
+        purchaseInvoice:
+          formData.get("purchaseInvoice") || null,
+
+        costPrice:
+          formData.get("costPrice"),
+
+        sellingPrice:
+          formData.get("sellingPrice")
+            ? Number(formData.get("sellingPrice"))
+            : null,
+
+        quantityReceived:
+          formData.get("quantityReceived"),
+
+        quantityRemaining:
+          formData.get("quantityRemaining"),
+
+        active:
+          formData.get("active") === "true",
+      });
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        errors:
+          parsed.error.flatten().fieldErrors,
+      };
+    }
+
     await productBatchService.updateProductBatch(
       id,
+      user.businessId,
       {
         ...parsed.data,
+
         costPrice:
           parsed.data.costPrice.toString(),
+
         sellingPrice:
           parsed.data.sellingPrice?.toString() ??
           null,

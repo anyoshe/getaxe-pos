@@ -1,15 +1,22 @@
 import { businessService } from "./business.service";
 
-import { branchesService } from "@/features/settings/services";
+import {
+  branchesService,
+  warehousesService,
+  fiscalYearsService,
+  businessSettingsService,
+  numberingSequencesService,
+} from "@/features/settings/services";
 
-import { warehousesService } from "@/features/settings/services";
+import { businessCapabilityService } from "@/features/capabilities/services";
 
-import { fiscalYearsService } from "@/features/settings/services";
+import type { BusinessType } from "../constants/business-types";
 
-import { businessSettingsService } from "@/features/settings/services";
-
-import { numberingSequencesService } from "@/features/settings/services";
 import { userService, roleService } from "@/features/users/services";
+
+import { businessOwnerService } from "@/features/platform/services";
+
+import { userInvitationsRepository } from "@/repositories";
 
 export interface ProvisionBusinessInput {
   name: string;
@@ -20,8 +27,7 @@ export interface ProvisionBusinessInput {
 
   kraPin?: string;
 
-  businessType:
-    "RETAIL" | "WHOLESALE" | "PHARMACY" | "CHEMIST" | "CLINIC" | "HOSPITAL";
+  businessType: BusinessType;
 
   email?: string;
 
@@ -42,14 +48,29 @@ export interface ProvisionBusinessInput {
   timezone?: string;
 
   logo?: string;
-  
+
+  //
+  // Platform Business Owner
+  //
+
   ownerUserId: string;
+
+  ownerInvitationId: string;
+
+  ownerName: string;
+
+  ownerEmail: string;
+
+  ownerPhone?: string;
+
+  ownerPasswordHash: string;
 }
 
 export class BusinessProvisioningService {
   async provision(input: ProvisionBusinessInput) {
     //
     // Step 1
+    // Create Business
     //
 
     const business = await businessService.createBusiness({
@@ -148,60 +169,99 @@ export class BusinessProvisioningService {
 
     //
     // Step 6
-    // Create default numbering sequences
+    // Create Numbering Sequences
     //
 
     await numberingSequencesService.createDefaultSequences(
       business.id,
       branch.id,
     );
+
     //
-// Step 7
-// Assign business owner
-//
+    // Step 7
+    // Provision Business Capabilities
+    //
 
-const adminRole =
-  await roleService.getSystemRoleByName(
-    "ADMINISTRATOR",
-  );
+    await businessCapabilityService.provision(
+      business.id,
 
-if (!adminRole) {
-  throw new Error(
-    "Administrator role not found.",
-  );
-}
+      input.businessType,
+    );
 
-const owner =
-  await userService.updateUser(
-    input.ownerUserId,
-    {
+    //
+    // Step 8
+    // Load Administrator Role
+    //
+
+    const adminRole = await roleService.getSystemRoleByName("ADMINISTRATOR");
+
+    if (!adminRole) {
+      throw new Error("Administrator role not found.");
+    }
+
+    //
+    // Step 9
+    // Create ERP Owner
+    //
+
+    const owner = await userService.createUserFromPlatform({
       businessId: business.id,
+
       roleId: adminRole.id,
-    },
-  );
 
-if (!owner) {
-  throw new Error(
-    "Business owner not found.",
-  );
-}
+      name: input.ownerName,
 
-//
-// Step 8
-// Link creator to business
-//
+      email: input.ownerEmail,
 
-await businessService.updateBusiness(
-  business.id,
-  {
-    createdBy: owner.id,
-  },
-);
+      phone: input.ownerPhone,
 
-return business;
+      passwordHash: input.ownerPasswordHash,
 
+      active: true,
+    });
+
+    if (!owner) {
+      throw new Error("Failed to create ERP owner.");
+    }
+
+    //
+    // Step 10
+    // Link ERP Owner
+    //
+
+    await businessService.updateBusiness(business.id, {
+      createdBy: owner.id,
+    });
+
+    //
+    // Step 11
+    // Link Platform User
+    //
+
+    await businessOwnerService.updateBusinessOwner(
+      input.ownerUserId,
+
+      {
+        businessId: business.id,
+      },
+    );
+
+    //
+    // Step 12
+    // Complete Invitation
+    //
+
+    await userInvitationsRepository.updateStatus(
+      input.ownerInvitationId,
+      "COMPLETED",
+    );
+
+    //
+    // Done
+    //
+
+    return business;
   }
-
 }
 
 export const businessProvisioningService = new BusinessProvisioningService();

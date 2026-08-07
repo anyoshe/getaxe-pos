@@ -19,8 +19,6 @@ import { businessSettings } from "../settings/business_settings";
 import { units } from "../settings/units";
 import { numberingSequences } from "../settings/numbering_sequences";
 
-import { businessTypeEnum } from "../shared";
-
 export const businesses = pgTable(
   "businesses",
   {
@@ -37,7 +35,7 @@ export const businesses = pgTable(
 
     kraPin: text("kra_pin"),
 
-    businessType: businessTypeEnum("business_type")
+    businessType: text("business_type")
       .notNull(),
 
     email: text("email"),
@@ -88,13 +86,13 @@ export const businesses = pgTable(
       .on(table.active),
 
     registrationNumberIdx: uniqueIndex(
-      "businesses_registration_number_unique"
+      "businesses_registration_number_unique",
     ).on(table.registrationNumber),
 
     kraPinIdx: uniqueIndex(
-      "businesses_kra_pin_unique"
+      "businesses_kra_pin_unique",
     ).on(table.kraPin),
-  })
+  }),
 );
 
 export const businessesRelations = relations(
@@ -116,5 +114,5 @@ export const businessesRelations = relations(
       fields: [businesses.id],
       references: [businessSettings.businessId],
     }),
-  })
+  }),
 );

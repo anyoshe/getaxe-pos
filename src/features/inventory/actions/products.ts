@@ -23,5 +23,8 @@ export async function getProduct(
         "products.view"
     );
 
-  return productService.getProduct(id);
+  return productService.getProduct(
+  id,
+  user.businessId
+);
 }

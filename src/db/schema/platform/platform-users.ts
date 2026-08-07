@@ -8,6 +8,8 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+import { businesses } from "../core/businesses";
+
 export const platformUsers = pgTable(
   "platform_users",
   {
@@ -22,6 +24,8 @@ export const platformUsers = pgTable(
     passwordHash: text("password_hash").notNull(),
 
     role: text("role").notNull(),
+
+    businessId: uuid("business_id").references(() => businesses.id),
 
     active: boolean("active").default(true).notNull(),
 

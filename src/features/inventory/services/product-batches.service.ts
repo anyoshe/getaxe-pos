@@ -15,11 +15,16 @@ export class ProductBatchService {
     );
   }
 
+
   async getProductBatch(
-    id: string
+    id: string,
+    businessId: string
   ) {
     const batch =
-      await productBatchRepository.findById(id);
+      await productBatchRepository.findById(
+        id,
+        businessId
+      );
 
     if (!batch) {
       throw new Error(
@@ -29,6 +34,7 @@ export class ProductBatchService {
 
     return batch;
   }
+
 
   async createProductBatch(
     data: ProductBatchInsert
@@ -46,6 +52,7 @@ export class ProductBatchService {
       );
     }
 
+
     if (
       data.manufactureDate &&
       data.expiryDate &&
@@ -56,6 +63,7 @@ export class ProductBatchService {
       );
     }
 
+
     if (
       data.quantityRemaining >
       data.quantityReceived
@@ -65,17 +73,24 @@ export class ProductBatchService {
       );
     }
 
+
     return productBatchRepository.create(
       data
     );
   }
 
+
   async updateProductBatch(
     id: string,
+    businessId: string,
     data: Partial<ProductBatchInsert>
   ) {
     const existing =
-      await productBatchRepository.findById(id);
+      await productBatchRepository.findById(
+        id,
+        businessId
+      );
+
 
     if (!existing) {
       throw new Error(
@@ -83,24 +98,29 @@ export class ProductBatchService {
       );
     }
 
+
     const batchNumber =
       data.batchNumber ??
       existing.batchNumber;
+
 
     const productId =
       data.productId ??
       existing.productId;
 
+
     if (
       batchNumber !== existing.batchNumber ||
       productId !== existing.productId
     ) {
+
       const exists =
         await productBatchRepository.existsByBatchNumber(
-          existing.businessId,
+          businessId,
           productId,
           batchNumber
         );
+
 
       if (exists) {
         throw new Error(
@@ -109,13 +129,16 @@ export class ProductBatchService {
       }
     }
 
+
     const manufactureDate =
       data.manufactureDate ??
       existing.manufactureDate;
 
+
     const expiryDate =
       data.expiryDate ??
       existing.expiryDate;
+
 
     if (
       manufactureDate &&
@@ -127,13 +150,16 @@ export class ProductBatchService {
       );
     }
 
+
     const quantityReceived =
       data.quantityReceived ??
       existing.quantityReceived;
 
+
     const quantityRemaining =
       data.quantityRemaining ??
       existing.quantityRemaining;
+
 
     if (
       quantityRemaining >
@@ -144,23 +170,33 @@ export class ProductBatchService {
       );
     }
 
+
     return productBatchRepository.update(
       id,
+      businessId,
       data
     );
   }
 
+
   async deleteProductBatch(
-    id: string
+    id: string,
+    businessId: string
   ) {
+
     const existing =
-      await productBatchRepository.findById(id);
+      await productBatchRepository.findById(
+        id,
+        businessId
+      );
+
 
     if (!existing) {
       throw new Error(
         "Product batch not found."
       );
     }
+
 
     if (
       existing.quantityRemaining > 0
@@ -170,26 +206,35 @@ export class ProductBatchService {
       );
     }
 
+
     return productBatchRepository.deactivate(
-      id
+      id,
+      businessId
     );
   }
 
+
   async getAvailableQuantity(
+    businessId: string,
     productId: string
   ) {
     return productBatchRepository.getAvailableQuantity(
+      businessId,
       productId
     );
   }
 
+
   async getAvailableBatches(
+    businessId: string,
     productId: string
   ) {
     return productBatchRepository.findAvailableBatches(
+      businessId,
       productId
     );
   }
+
 
   async getExpiringBatches(
     businessId: string,
@@ -201,6 +246,7 @@ export class ProductBatchService {
     );
   }
 }
+
 
 export const productBatchService =
   new ProductBatchService();

@@ -4,20 +4,19 @@ import { revalidatePath } from "next/cache";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 
-import {
-  productService,
-} from "../services";
+import { productService } from "../services";
 
+export async function deleteProductAction(id: string) {
 
-export async function deleteProductAction(
-  id: string
-) {
-  await requireAuthorizedUser(
-    "products.delete"
-);
   try {
+    const user =
+      await requireAuthorizedUser(
+        "products.delete"
+      );
+
     await productService.deleteProduct(
-      id
+      id,
+      user.businessId
     );
 
     revalidatePath(
@@ -29,7 +28,9 @@ export async function deleteProductAction(
       message:
         "Product archived successfully.",
     };
+
   } catch (error) {
+
     return {
       success: false,
       message:
@@ -37,5 +38,6 @@ export async function deleteProductAction(
           ? error.message
           : "Failed to archive product.",
     };
+
   }
 }

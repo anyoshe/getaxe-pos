@@ -1,6 +1,15 @@
 import { z } from "zod";
 
+import {
+  BUSINESS_TYPE_VALUES,
+} from "../constants/business-types";
+
 export const businessSetupSchema = z.object({
+
+  // =====================
+  // Business Information
+  // =====================
+
   name: z
     .string()
     .trim()
@@ -21,14 +30,12 @@ export const businessSetupSchema = z.object({
     .trim()
     .optional(),
 
-  businessType: z.enum([
-    "RETAIL",
-    "WHOLESALE",
-    "PHARMACY",
-    "CHEMIST",
-    "CLINIC",
-    "HOSPITAL",
-  ]),
+  businessType:
+    z.enum(BUSINESS_TYPE_VALUES),
+
+  // =====================
+  // Business Contact
+  // =====================
 
   phone: z
     .string()
@@ -44,6 +51,10 @@ export const businessSetupSchema = z.object({
     .string()
     .trim()
     .optional(),
+
+  // =====================
+  // Location
+  // =====================
 
   country: z
     .string()
@@ -64,6 +75,10 @@ export const businessSetupSchema = z.object({
     .trim()
     .optional(),
 
+  // =====================
+  // Preferences
+  // =====================
+
   currency: z
     .string()
     .default("KES"),
@@ -71,6 +86,7 @@ export const businessSetupSchema = z.object({
   timezone: z
     .string()
     .default("Africa/Nairobi"),
+
 });
 
 export type BusinessSetupInput =

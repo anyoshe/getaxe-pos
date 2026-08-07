@@ -26,6 +26,32 @@ export class PlatformUserRepository {
     });
   }
 
+    async update(
+    id: string,
+    values: Partial<
+      typeof platformUsers.$inferInsert
+    >,
+  ) {
+
+    const [user] =
+      await Repository.db
+        .update(platformUsers)
+        .set({
+          ...values,
+          updatedAt: new Date(),
+        })
+        .where(
+          eq(
+            platformUsers.id,
+            id,
+          ),
+        )
+        .returning();
+
+    return user;
+
+  }
+  
   async findBusinessOwners() {
     return Repository.db.query.platformUsers.findMany({
       where: eq(

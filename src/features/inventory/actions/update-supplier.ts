@@ -16,6 +16,7 @@ export async function updateSupplierAction(
   id: string,
   formData: FormData
 ) {
+  const user =
   await requireAuthorizedUser(
     "suppliers.update"
   );
@@ -71,9 +72,10 @@ export async function updateSupplierAction(
 
   try {
     await supplierService.updateSupplier(
-      id,
-      parsed.data
-    );
+  id,
+  parsed.data,
+  user.businessId
+);
 
     revalidatePath(
       "/inventory/suppliers"

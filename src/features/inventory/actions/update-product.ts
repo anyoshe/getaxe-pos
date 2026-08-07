@@ -95,9 +95,10 @@ export async function updateProductAction(
 
   try {
     await productService.updateProduct(
-      id,
-      parsed.data
-    );
+  id,
+  parsed.data,
+  user.businessId
+);
 
     revalidatePath(
       "/inventory/products"

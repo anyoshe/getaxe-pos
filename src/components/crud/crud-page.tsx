@@ -15,26 +15,22 @@ export function CrudPage({
   children,
 }: CrudPageProps) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6">
 
       {/* Hero */}
 
-      <div className="overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-xl">
+      <div className="overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-sm">
 
-        <div className="flex flex-col gap-6 p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-1 p-2.5 sm:p-3 lg:flex-row lg:items-center lg:justify-between lg:gap-2">
 
-          <div className="space-y-3">
+          <div className="space-y-0.5">
 
-            <span className="inline-flex rounded-full bg-white/15 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] backdrop-blur">
-              GetAxe ERP
-            </span>
-
-            <h1 className="text-4xl font-bold tracking-tight">
+            <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
               {title}
             </h1>
 
             {description && (
-              <p className="max-w-2xl text-base text-indigo-100">
+              <p className="max-w-2xl text-xs text-indigo-100 sm:text-sm">
                 {description}
               </p>
             )}
@@ -44,17 +40,17 @@ export function CrudPage({
           {onCreate && (
             <Button
               onClick={onCreate}
-              size="lg"
+              size="sm"
               className="
-                rounded-2xl
+                rounded-md
                 bg-white
-                px-6
+                px-2.5
                 text-indigo-700
-                shadow-xl
+                shadow-sm
                 hover:bg-indigo-50
               "
             >
-              <Plus className="mr-2 h-5 w-5" />
+              <Plus className="mr-1 h-4 w-4" />
               {createLabel}
             </Button>
           )}

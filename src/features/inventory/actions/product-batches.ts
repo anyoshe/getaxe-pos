@@ -21,11 +21,13 @@ export async function getProductBatches(
 export async function getProductBatch(
   id: string
 ) {
-  await requireAuthorizedUser(
-    "product-batches.view"
-  );
+  const user =
+    await requireAuthorizedUser(
+      "product-batches.view"
+    );
 
   return productBatchService.getProductBatch(
-    id
+    id,
+    user.businessId
   );
 }
