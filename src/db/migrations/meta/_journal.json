@@ -113,6 +113,27 @@
       "when": 1786109328619,
       "tag": "0015_sturdy_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1786211683221,
+      "tag": "0016_abandoned_purple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1786212583593,
+      "tag": "0017_real_quasar",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786838400000,
+      "tag": "0018_normalize_permissions",
+      "breakpoints": true
     }
   ]
 }

@@ -53,7 +53,7 @@ export const SUPPLIER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "suppliers.manage",
+      "suppliers.update",
     ],
 
     featureFlags: [
@@ -107,7 +107,7 @@ export const SUPPLIER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "suppliers.categories.manage",
+      "suppliers.update",
     ],
 
     featureFlags: [
@@ -165,7 +165,7 @@ export const SUPPLIER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "suppliers.pricing.manage",
+      "suppliers.update",
     ],
 
     featureFlags: [
@@ -222,7 +222,7 @@ export const SUPPLIER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "suppliers.performance.view",
+      "suppliers.view",
     ],
 
     featureFlags: [

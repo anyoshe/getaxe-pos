@@ -54,7 +54,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -112,7 +112,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -165,7 +165,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "product.create",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -173,7 +173,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -230,7 +230,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -285,7 +285,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -344,7 +344,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -352,7 +352,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [

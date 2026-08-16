@@ -52,7 +52,7 @@ export const INVENTORY_ANALYTICS_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.reports.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -105,7 +105,7 @@ export const INVENTORY_ANALYTICS_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.reports.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -159,7 +159,7 @@ export const INVENTORY_ANALYTICS_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.reports.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -214,7 +214,7 @@ export const INVENTORY_ANALYTICS_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.reports.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -271,7 +271,7 @@ export const INVENTORY_ANALYTICS_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.analytics.view",
+      "analytics.view",
     ],
 
     featureFlags: [

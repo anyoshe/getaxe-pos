@@ -6,7 +6,7 @@ import type {
 export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
 
   {
-    id: "pharmacy.dispensing",
+    id: "products.update",
 
     code: "DISPENSING",
 
@@ -32,7 +32,7 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.prescriptions",
+      "products.update",
       "inventory.batch-control",
       "inventory.expiry-control",
     ],
@@ -68,17 +68,17 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.dispensing.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.dispensing",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.partial-dispensing",
+    id: "products.update",
 
     code: "PARTIAL_DISPENSING",
 
@@ -104,7 +104,7 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.dispensing",
+      "products.update",
     ],
 
     conflicts: [],
@@ -132,17 +132,17 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.partial-dispensing.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.partial-dispensing",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.pharmacist-verification",
+    id: "products.update",
 
     code: "PHARMACIST_VERIFICATION",
 
@@ -167,7 +167,7 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.dispensing",
+      "products.update",
     ],
 
     conflicts: [],
@@ -195,17 +195,17 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.dispensing.verify",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.pharmacist-verification",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.medicine-substitution",
+    id: "products.update",
 
     code: "MEDICINE_SUBSTITUTION",
 
@@ -230,8 +230,8 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.generic-brand-management",
-      "pharmacy.dispensing",
+      "products.update",
+      "products.update",
     ],
 
     conflicts: [],
@@ -258,11 +258,11 @@ export const DISPENSING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.substitution.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.medicine-substitution",
+      "products.update",
     ],
   },
 

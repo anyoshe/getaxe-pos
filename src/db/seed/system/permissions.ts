@@ -1,4 +1,4 @@
-import { PERMISSION_REGISTRY } from "@/constants/permissions";
+import { permissionRegistry } from "@/features/permissions/services/permission-registry";
 import { permissionRepository } from "@/repositories";
 
 export async function seedSystemPermissions() {
@@ -6,7 +6,7 @@ export async function seedSystemPermissions() {
 
   let total = 0;
 
-  for (const permissionModule of PERMISSION_REGISTRY) {
+  for (const permissionModule of permissionRegistry.getModules()) {
     for (const permission of permissionModule.permissions) {
       await permissionRepository.upsert({
         code: permission.code,
@@ -20,6 +20,6 @@ export async function seedSystemPermissions() {
   }
 
   console.log(
-    `System permissions synchronized (${total} permissions).`
+    `System permissions synchronized (${total} permissions).`,
   );
 }

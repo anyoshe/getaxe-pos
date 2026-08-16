@@ -56,7 +56,7 @@ export const INCOME_EXPENSE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.income.manage",
+      "income.update",
     ],
 
     featureFlags: [
@@ -107,8 +107,8 @@ export const INCOME_EXPENSE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "expense.create",
-      "expense.approve",
+      "expenses.create",
+      "expenses.approve",
     ],
 
     validators: [
@@ -116,7 +116,7 @@ export const INCOME_EXPENSE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.expenses.manage",
+      "expenses.update",
     ],
 
     featureFlags: [
@@ -166,8 +166,8 @@ export const INCOME_EXPENSE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "expense.submit",
-      "expense.approve",
+      "expenses.create",
+      "expenses.approve",
     ],
 
     validators: [
@@ -175,7 +175,7 @@ export const INCOME_EXPENSE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.expenses.approve",
+      "expenses.approve",
     ],
 
     featureFlags: [
@@ -229,7 +229,7 @@ export const INCOME_EXPENSE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "finance.expenses.manage",
+      "expenses.update",
     ],
 
     featureFlags: [

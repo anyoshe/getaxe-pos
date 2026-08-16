@@ -57,7 +57,7 @@ export const DASHBOARD_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.dashboard.manage",
+      "dashboard.view",
     ],
 
     featureFlags: [
@@ -118,7 +118,7 @@ export const DASHBOARD_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.kpi.manage",
+      "kpis.update",
     ],
 
     featureFlags: [
@@ -178,7 +178,7 @@ export const DASHBOARD_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.dashboard.assign",
+      "dashboard.view",
     ],
 
     featureFlags: [
@@ -233,7 +233,7 @@ export const DASHBOARD_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.analytics.view",
+      "analytics.view",
     ],
 
     featureFlags: [

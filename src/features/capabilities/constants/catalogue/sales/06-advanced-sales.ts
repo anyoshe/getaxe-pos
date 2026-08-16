@@ -47,9 +47,9 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "order.create",
-      "order.confirm",
-      "order.complete",
+      "sales.orders.create",
+      "sales.orders.approve",
+      "sales.orders.complete",
     ],
 
     validators: [
@@ -58,7 +58,7 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.orders.manage",
+      "sales.orders.update",
     ],
 
     featureFlags: [
@@ -114,8 +114,8 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "delivery.create",
-      "delivery.complete",
+      "deliveries.create",
+      "deliveries.complete",
     ],
 
     validators: [
@@ -123,7 +123,7 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.delivery.manage",
+      "deliveries.update",
     ],
 
     featureFlags: [
@@ -173,13 +173,13 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "quotation.convert",
+      "quotations.convert",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.quotation.manage",
+      "quotations.update",
     ],
 
     featureFlags: [
@@ -233,13 +233,13 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.recurring",
+      "sales.create",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.recurring.manage",
+      "sales.create",
     ],
 
     featureFlags: [
@@ -289,13 +289,13 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.branch.manage",
+      "branches.view",
     ],
 
     featureFlags: [
@@ -346,7 +346,7 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.sync",
+      "sales.update",
     ],
 
     validators: [
@@ -354,7 +354,7 @@ export const ADVANCED_SALES_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.offline.manage",
+      "sales.update",
     ],
 
     featureFlags: [

@@ -56,7 +56,7 @@ export const PURCHASE_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.returns.manage",
+      "supplier_returns.create",
     ],
 
     featureFlags: [
@@ -116,7 +116,7 @@ export const PURCHASE_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.stock.adjust",
+      "stock.adjust",
     ],
 
     featureFlags: [
@@ -175,7 +175,7 @@ export const PURCHASE_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.returns.approve",
+      "supplier_returns.approve",
     ],
 
     featureFlags: [
@@ -233,7 +233,7 @@ export const PURCHASE_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "finance.credit-notes.manage",
+      "finance.approve",
     ],
 
     featureFlags: [

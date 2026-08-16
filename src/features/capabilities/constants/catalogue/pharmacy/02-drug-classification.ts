@@ -6,7 +6,7 @@ import type {
 export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
 
   {
-    id: "pharmacy.drug-categories",
+    id: "products.update",
 
     code: "DRUG_CATEGORIES",
 
@@ -33,7 +33,7 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -58,17 +58,17 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "pharmacy.categories.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.drug-categories",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.active-ingredients",
+    id: "products.update",
 
     code: "ACTIVE_INGREDIENTS",
 
@@ -94,7 +94,7 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -121,17 +121,17 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.ingredients.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.active-ingredients",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.generic-brand-management",
+    id: "products.update",
 
     code: "GENERIC_BRAND_MANAGEMENT",
 
@@ -157,7 +157,7 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -182,17 +182,17 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "pharmacy.medicines.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.generic-brand-management",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.controlled-medicines",
+    id: "products.update",
 
     code: "CONTROLLED_MEDICINES",
 
@@ -217,7 +217,7 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
       "inventory.serial-numbers",
     ],
 
@@ -246,11 +246,11 @@ export const DRUG_CLASSIFICATION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.controlled.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.controlled-medicines",
+      "products.update",
     ],
   },
 

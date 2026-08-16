@@ -51,7 +51,7 @@ export const PRODUCT_MASTER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -108,7 +108,7 @@ export const PRODUCT_MASTER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -164,7 +164,7 @@ export const PRODUCT_MASTER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -218,7 +218,7 @@ export const PRODUCT_MASTER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -272,7 +272,7 @@ export const PRODUCT_MASTER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [

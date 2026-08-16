@@ -59,7 +59,7 @@ export const COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.reports.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -124,7 +124,7 @@ export const COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.recall.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -183,13 +183,13 @@ export const COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.traceability.view",
+      "product_batches.view",
     ],
 
     featureFlags: [
@@ -244,7 +244,7 @@ export const COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -252,7 +252,7 @@ export const COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.controlled.manage",
+      "products.update",
     ],
 
     featureFlags: [

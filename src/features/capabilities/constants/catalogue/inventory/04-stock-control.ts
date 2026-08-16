@@ -58,7 +58,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -66,7 +66,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -125,7 +125,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -134,7 +134,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -189,7 +189,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -245,7 +245,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -293,13 +293,13 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.settings.manage",
+      "business_settings.update",
     ],
 
     featureFlags: [
@@ -348,14 +348,14 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.allocate",
-      "sale.release",
+      "stock.allocate",
+      "stock.release",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -406,13 +406,13 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.products.view",
+      "products.view",
     ],
 
     featureFlags: [
@@ -467,7 +467,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -520,7 +520,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -573,7 +573,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -628,7 +628,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -679,13 +679,13 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -738,7 +738,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.stock.transfer",
+      "stock.transfer",
     ],
 
     featureFlags: [
@@ -791,7 +791,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.stock.freeze",
+      "stock.freeze",
     ],
 
     featureFlags: [
@@ -846,7 +846,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.stock.adjust",
+      "stock.adjust",
     ],
 
     featureFlags: [
@@ -899,7 +899,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.reports.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -952,7 +952,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.stock.count",
+      "stock_movements.view",
     ],
 
     featureFlags: [
@@ -1005,7 +1005,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.reports.view",
+      "reports.view",
     ],
 
     featureFlags: [

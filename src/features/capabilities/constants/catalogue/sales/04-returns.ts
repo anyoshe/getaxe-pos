@@ -48,7 +48,7 @@ export const SALES_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.return",
+      "sales.returns.create",
     ],
 
     validators: [
@@ -56,7 +56,7 @@ export const SALES_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.returns.manage",
+      "sales.returns.create",
     ],
 
     featureFlags: [
@@ -116,7 +116,7 @@ export const SALES_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.stock.adjust",
+      "stock.adjust",
     ],
 
     featureFlags: [
@@ -229,13 +229,13 @@ export const SALES_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.exchange",
+      "sales.returns.exchange",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.exchange.manage",
+      "sales.returns.exchange",
     ],
 
     featureFlags: [
@@ -288,7 +288,7 @@ export const SALES_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.refund",
+      "sales.returns.refund",
     ],
 
     validators: [
@@ -296,7 +296,7 @@ export const SALES_RETURN_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.refunds.manage",
+      "sales.returns.refund",
     ],
 
     featureFlags: [

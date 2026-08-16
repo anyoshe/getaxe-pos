@@ -47,8 +47,8 @@ export const SALES_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.create",
-      "sale.complete",
+      "sales.create",
+      "sales.complete",
     ],
 
     validators: [
@@ -108,13 +108,13 @@ export const SALES_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.invoice.manage",
+      "sales.print",
     ],
 
     featureFlags: [
@@ -166,13 +166,13 @@ export const SALES_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.complete",
+      "payments.post",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.receipts.manage",
+      "sales.print",
     ],
 
     featureFlags: [
@@ -220,14 +220,14 @@ export const SALES_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "quotation.create",
-      "quotation.convert",
+      "quotations.create",
+      "quotations.convert",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.quotation.manage",
+      "quotations.update",
     ],
 
     featureFlags: [

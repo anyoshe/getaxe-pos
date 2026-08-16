@@ -53,7 +53,7 @@ export const FINANCIAL_REPORTING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.profit-loss.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -112,7 +112,7 @@ export const FINANCIAL_REPORTING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.balance-sheet.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -169,7 +169,7 @@ export const FINANCIAL_REPORTING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.cash-flow.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -227,7 +227,7 @@ export const FINANCIAL_REPORTING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.trial-balance.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -285,7 +285,7 @@ export const FINANCIAL_REPORTING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.financial-dashboard.view",
+      "finance.view",
     ],
 
     featureFlags: [

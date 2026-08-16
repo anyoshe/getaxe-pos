@@ -45,8 +45,8 @@ export const REPORT_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "report.create",
-      "report.update",
+      "reports.create",
+      "reports.update",
     ],
 
     validators: [
@@ -54,7 +54,7 @@ export const REPORT_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.builder.manage",
+      "reports.create",
     ],
 
     featureFlags: [
@@ -108,7 +108,7 @@ export const REPORT_CORE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.standard.view",
+      "reports.view",
     ],
 
     featureFlags: [

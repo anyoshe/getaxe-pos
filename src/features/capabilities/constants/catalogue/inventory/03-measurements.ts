@@ -49,7 +49,7 @@ export const MEASUREMENT_CAPABILITIES: CapabilityDefinition[] = [
     workflows: [
       "product.create",
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -57,7 +57,7 @@ export const MEASUREMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -113,7 +113,7 @@ export const MEASUREMENT_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -164,13 +164,13 @@ export const MEASUREMENT_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "product.create",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -221,14 +221,14 @@ export const MEASUREMENT_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
       "stock.transfer",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -282,7 +282,7 @@ export const MEASUREMENT_CAPABILITIES: CapabilityDefinition[] = [
 
     workflows: [
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -290,7 +290,7 @@ export const MEASUREMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [

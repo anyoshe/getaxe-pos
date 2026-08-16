@@ -44,14 +44,14 @@ export const CUSTOMER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "customer.create",
-      "sale.complete",
+      "customers.create",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "customers.manage",
+      "customers.update",
     ],
 
     featureFlags: [
@@ -101,13 +101,13 @@ export const CUSTOMER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "customer.assign-group",
+      "customers.update",
     ],
 
     validators: [],
 
     permissions: [
-      "customers.groups.manage",
+      "customers.update",
     ],
 
     featureFlags: [
@@ -161,8 +161,8 @@ export const CUSTOMER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.credit",
-      "payment.receive",
+      "sales.create",
+      "sales.payments.receive",
     ],
 
     validators: [
@@ -170,7 +170,7 @@ export const CUSTOMER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "customers.credit.manage",
+      "customers.update",
     ],
 
     featureFlags: [
@@ -224,13 +224,13 @@ export const CUSTOMER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.pricing.manage",
+      "product_prices.update",
     ],
 
     featureFlags: [
@@ -287,7 +287,7 @@ export const CUSTOMER_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "customers.history.view",
+      "customers.view",
     ],
 
     featureFlags: [

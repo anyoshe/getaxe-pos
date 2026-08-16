@@ -55,7 +55,7 @@ export const BUSINESS_INTELLIGENCE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.metrics.manage",
+      "metrics.update",
     ],
 
     featureFlags: [
@@ -114,7 +114,7 @@ export const BUSINESS_INTELLIGENCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.sales.analytics",
+      "analytics.view",
     ],
 
     featureFlags: [
@@ -173,7 +173,7 @@ export const BUSINESS_INTELLIGENCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.inventory.analytics",
+      "analytics.view",
     ],
 
     featureFlags: [
@@ -232,7 +232,7 @@ export const BUSINESS_INTELLIGENCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.finance.analytics",
+      "analytics.view",
     ],
 
     featureFlags: [
@@ -290,7 +290,7 @@ export const BUSINESS_INTELLIGENCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.forecasting.manage",
+      "forecasts.execute",
     ],
 
     featureFlags: [

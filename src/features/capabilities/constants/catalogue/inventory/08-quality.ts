@@ -59,7 +59,7 @@ export const QUALITY_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.quality.manage",
+      "stock_adjustments.view",
     ],
 
     featureFlags: [
@@ -122,7 +122,7 @@ export const QUALITY_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.quality.manage",
+      "stock_adjustments.view",
     ],
 
     featureFlags: [
@@ -179,7 +179,7 @@ export const QUALITY_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.stock.adjust",
+      "stock.adjust",
     ],
 
     featureFlags: [
@@ -232,7 +232,7 @@ export const QUALITY_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.view",
+      "products.view",
     ],
 
     featureFlags: [

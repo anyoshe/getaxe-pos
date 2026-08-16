@@ -46,8 +46,8 @@ export const TAX_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "tax.create",
-      "tax.update",
+      "taxes.create",
+      "taxes.update",
     ],
 
     validators: [
@@ -55,7 +55,7 @@ export const TAX_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.tax.manage",
+      "taxes.update",
     ],
 
     featureFlags: [
@@ -115,7 +115,7 @@ export const TAX_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "tax.calculate",
+      "taxes.view",
     ],
 
     validators: [
@@ -123,7 +123,7 @@ export const TAX_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.vat.manage",
+      "taxes.update",
     ],
 
     featureFlags: [
@@ -175,7 +175,7 @@ export const TAX_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.calculate-tax",
+      "taxes.view",
     ],
 
     validators: [
@@ -183,7 +183,7 @@ export const TAX_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.withholding.manage",
+      "taxes.update",
     ],
 
     featureFlags: [
@@ -245,7 +245,7 @@ export const TAX_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.tax.pricing.manage",
+      "taxes.update",
     ],
 
     featureFlags: [

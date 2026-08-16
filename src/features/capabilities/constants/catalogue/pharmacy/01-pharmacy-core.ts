@@ -6,7 +6,7 @@ import type {
 export const PHARMACY_CORE_CAPABILITIES: CapabilityDefinition[] = [
 
   {
-    id: "pharmacy.core",
+    id: "products.update",
 
     code: "PHARMACY_CORE",
 
@@ -68,17 +68,17 @@ export const PHARMACY_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.core",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.medicine-catalogue",
+    id: "products.update",
 
     code: "MEDICINE_CATALOGUE",
 
@@ -104,7 +104,7 @@ export const PHARMACY_CORE_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.core",
+      "products.update",
     ],
 
     conflicts: [],
@@ -132,11 +132,11 @@ export const PHARMACY_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.medicines.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
   },
 

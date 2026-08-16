@@ -54,7 +54,7 @@ export const AUDIT_COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.audit.view",
+      "audit.view",
     ],
 
     featureFlags: [
@@ -112,7 +112,7 @@ export const AUDIT_COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.user-activity.view",
+      "audit.view",
     ],
 
     featureFlags: [
@@ -176,7 +176,7 @@ export const AUDIT_COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.compliance.view",
+      "audit.view",
     ],
 
     featureFlags: [
@@ -234,7 +234,7 @@ export const AUDIT_COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.security.view",
+      "audit.view",
     ],
 
     featureFlags: [
@@ -298,7 +298,7 @@ export const AUDIT_COMPLIANCE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.regulatory.view",
+      "audit.view",
     ],
 
     featureFlags: [

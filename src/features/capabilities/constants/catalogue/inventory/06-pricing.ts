@@ -50,7 +50,7 @@ export const PRICING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -98,13 +98,13 @@ export const PRICING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.products.manage",
+      "products.update",
     ],
 
     featureFlags: [
@@ -156,13 +156,13 @@ export const PRICING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.pricing.manage",
+      "price_lists.update",
     ],
 
     featureFlags: [
@@ -212,13 +212,13 @@ export const PRICING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.customers.manage",
+      "customers.update",
     ],
 
     featureFlags: [
@@ -268,13 +268,13 @@ export const PRICING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.pricing.manage",
+      "price_lists.update",
     ],
 
     featureFlags: [
@@ -325,7 +325,7 @@ export const PRICING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -333,7 +333,7 @@ export const PRICING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.pricing.manage",
+      "price_lists.update",
     ],
 
     featureFlags: [

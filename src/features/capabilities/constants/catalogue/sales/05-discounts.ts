@@ -47,7 +47,7 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [
@@ -55,7 +55,7 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.discount.manage",
+      "discounts.update",
     ],
 
     featureFlags: [
@@ -107,7 +107,7 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.calculate-discount",
+      "discounts.apply",
     ],
 
     validators: [
@@ -115,7 +115,7 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.discount.rules.manage",
+      "discounts.update",
     ],
 
     featureFlags: [
@@ -167,13 +167,13 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "promotion.apply",
+      "promotions.apply",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.promotions.manage",
+      "promotions.update",
     ],
 
     featureFlags: [
@@ -232,7 +232,7 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.coupons.manage",
+      "promotions.update",
     ],
 
     featureFlags: [
@@ -282,8 +282,8 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "discount.request",
-      "discount.approve",
+      "discounts.create",
+      "discounts.approve",
     ],
 
     validators: [
@@ -291,7 +291,7 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.discount.approve",
+      "discounts.approve",
     ],
 
     featureFlags: [
@@ -350,7 +350,7 @@ export const DISCOUNT_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "customers.loyalty.manage",
+      "loyalty.manage",
     ],
 
     featureFlags: [

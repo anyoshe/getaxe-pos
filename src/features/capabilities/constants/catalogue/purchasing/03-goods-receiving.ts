@@ -59,7 +59,7 @@ export const GOODS_RECEIVING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.receiving.manage",
+      "goods_receipts.create",
     ],
 
     featureFlags: [
@@ -126,7 +126,7 @@ export const GOODS_RECEIVING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.batch.manage",
+      "product_batches.update",
     ],
 
     featureFlags: [
@@ -191,7 +191,7 @@ export const GOODS_RECEIVING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.expiry.manage",
+      "product_batches.update",
     ],
 
     featureFlags: [
@@ -256,7 +256,7 @@ export const GOODS_RECEIVING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "inventory.serial.manage",
+      "product_batches.update",
     ],
 
     featureFlags: [
@@ -320,7 +320,7 @@ export const GOODS_RECEIVING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.quality.manage",
+      "goods_receipts.post",
     ],
 
     featureFlags: [

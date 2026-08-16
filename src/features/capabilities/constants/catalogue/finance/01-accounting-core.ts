@@ -46,8 +46,8 @@ export const ACCOUNTING_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "account.create",
-      "account.update",
+      "accounts.create",
+      "accounts.update",
     ],
 
     validators: [
@@ -55,7 +55,7 @@ export const ACCOUNTING_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.accounts.manage",
+      "accounts.update",
     ],
 
     featureFlags: [
@@ -106,8 +106,8 @@ export const ACCOUNTING_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "journal.create",
-      "journal.post",
+      "journals.create",
+      "journals.post",
     ],
 
     validators: [
@@ -115,7 +115,7 @@ export const ACCOUNTING_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.journal.manage",
+      "journals.update",
     ],
 
     featureFlags: [
@@ -165,7 +165,7 @@ export const ACCOUNTING_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "period.close",
+      "fiscal_periods.close",
     ],
 
     validators: [
@@ -173,7 +173,7 @@ export const ACCOUNTING_CORE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.periods.manage",
+      "fiscal_periods.update",
     ],
 
     featureFlags: [

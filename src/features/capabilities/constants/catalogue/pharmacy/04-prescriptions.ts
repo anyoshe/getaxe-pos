@@ -6,7 +6,7 @@ import type {
 export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
 
   {
-    id: "pharmacy.prescriptions",
+    id: "products.update",
 
     code: "PRESCRIPTIONS",
 
@@ -32,8 +32,8 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
-      "pharmacy.dosage-instructions",
+      "products.update",
+      "products.update",
     ],
 
     conflicts: [],
@@ -64,17 +64,17 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.prescriptions.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.prescriptions",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.prescriber-management",
+    id: "products.update",
 
     code: "PRESCRIBER_MANAGEMENT",
 
@@ -100,7 +100,7 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.prescriptions",
+      "products.update",
     ],
 
     conflicts: [],
@@ -128,17 +128,17 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "clinical.providers.manage",
+      "users.view",
     ],
 
     featureFlags: [
-      "pharmacy.prescriber-management",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.patient-prescription-history",
+    id: "products.update",
 
     code: "PATIENT_PRESCRIPTION_HISTORY",
 
@@ -164,7 +164,7 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.prescriptions",
+      "products.update",
     ],
 
     conflicts: [],
@@ -190,17 +190,17 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "clinical.patient-history.view",
+      "customers.view",
     ],
 
     featureFlags: [
-      "pharmacy.prescription-history",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.refill-control",
+    id: "products.update",
 
     code: "REFILL_CONTROL",
 
@@ -226,7 +226,7 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.prescriptions",
+      "products.update",
     ],
 
     conflicts: [],
@@ -254,11 +254,11 @@ export const PRESCRIPTION_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.refills.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.refill-control",
+      "products.update",
     ],
   },
 

@@ -47,7 +47,7 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.complete",
+      "payments.post",
     ],
 
     validators: [
@@ -55,7 +55,7 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.payments.manage",
+      "sales.payments.receive",
     ],
 
     featureFlags: [
@@ -108,13 +108,13 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.complete",
+      "payments.post",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.payments.manage",
+      "sales.payments.receive",
     ],
 
     featureFlags: [
@@ -165,7 +165,7 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.complete",
+      "payments.post",
     ],
 
     validators: [
@@ -173,7 +173,7 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.payments.manage",
+      "sales.payments.receive",
     ],
 
     featureFlags: [
@@ -225,13 +225,13 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.deposit",
+      "payments.create",
     ],
 
     validators: [],
 
     permissions: [
-      "sales.deposits.manage",
+      "payments.create",
     ],
 
     featureFlags: [
@@ -283,7 +283,7 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.refund",
+      "sales.returns.refund",
     ],
 
     validators: [
@@ -291,7 +291,7 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "sales.refunds.manage",
+      "sales.returns.refund",
     ],
 
     featureFlags: [
@@ -343,13 +343,13 @@ export const PAYMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.reconcile",
+      "payments.reconcile",
     ],
 
     validators: [],
 
     permissions: [
-      "finance.reconciliation.manage",
+      "reconciliations.reconcile",
     ],
 
     featureFlags: [

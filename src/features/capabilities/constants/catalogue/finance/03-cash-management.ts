@@ -55,7 +55,7 @@ export const CASH_MANAGEMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.cash.manage",
+      "payments.view",
     ],
 
     featureFlags: [
@@ -115,7 +115,7 @@ export const CASH_MANAGEMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.cash.transfer",
+      "payments.create",
     ],
 
     featureFlags: [
@@ -166,7 +166,7 @@ export const CASH_MANAGEMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "account.opening-balance",
+      "accounts.update",
     ],
 
     validators: [
@@ -174,7 +174,7 @@ export const CASH_MANAGEMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.opening-balances.manage",
+      "accounts.update",
     ],
 
     featureFlags: [
@@ -228,7 +228,7 @@ export const CASH_MANAGEMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "payment.reconcile",
+      "payments.reconcile",
     ],
 
     validators: [
@@ -236,7 +236,7 @@ export const CASH_MANAGEMENT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "finance.reconciliation.manage",
+      "reconciliations.reconcile",
     ],
 
     featureFlags: [

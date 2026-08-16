@@ -53,7 +53,7 @@ export const EXPORT_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.export.pdf",
+      "reports.export",
     ],
 
     featureFlags: [
@@ -110,7 +110,7 @@ export const EXPORT_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.export.excel",
+      "reports.export",
     ],
 
     featureFlags: [
@@ -167,7 +167,7 @@ export const EXPORT_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.export.csv",
+      "reports.export",
     ],
 
     featureFlags: [
@@ -217,7 +217,7 @@ export const EXPORT_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "report.print",
+      "reports.print",
     ],
 
     validators: [],
@@ -283,7 +283,7 @@ export const EXPORT_ENGINE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.data-export.manage",
+      "reports.export",
     ],
 
     featureFlags: [

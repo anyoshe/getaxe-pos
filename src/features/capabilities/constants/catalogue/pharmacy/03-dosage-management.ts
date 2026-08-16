@@ -6,7 +6,7 @@ import type {
 export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
 
   {
-    id: "pharmacy.dosage-forms",
+    id: "products.update",
 
     code: "DOSAGE_FORMS",
 
@@ -33,7 +33,7 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -61,17 +61,17 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.dosage.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.dosage-forms",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.medicine-strength",
+    id: "products.update",
 
     code: "MEDICINE_STRENGTH",
 
@@ -97,7 +97,7 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -124,17 +124,17 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.strength.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.medicine-strength",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.measurement-units",
+    id: "products.update",
 
     code: "MEDICINE_UNITS",
 
@@ -160,7 +160,7 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -188,17 +188,17 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.units.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.measurement-units",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.administration-routes",
+    id: "products.update",
 
     code: "ADMINISTRATION_ROUTES",
 
@@ -224,7 +224,7 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -252,17 +252,17 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.routes.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.administration-routes",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.dosage-instructions",
+    id: "products.update",
 
     code: "DOSAGE_INSTRUCTIONS",
 
@@ -288,8 +288,8 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.dosage-forms",
-      "pharmacy.measurement-units",
+      "products.update",
+      "products.update",
     ],
 
     conflicts: [],
@@ -316,11 +316,11 @@ export const DOSAGE_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.dosage.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.dosage-instructions",
+      "products.update",
     ],
   },
 

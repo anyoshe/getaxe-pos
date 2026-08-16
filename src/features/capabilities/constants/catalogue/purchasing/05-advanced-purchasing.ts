@@ -59,7 +59,7 @@ export const ADVANCED_PURCHASING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.reorder.manage",
+      "purchase_orders.create",
     ],
 
     featureFlags: [
@@ -115,7 +115,7 @@ export const ADVANCED_PURCHASING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "suppliers.comparison.view",
+      "suppliers.view",
     ],
 
     featureFlags: [
@@ -175,7 +175,7 @@ export const ADVANCED_PURCHASING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.approval.manage",
+      "purchase_orders.approve",
     ],
 
     featureFlags: [
@@ -231,7 +231,7 @@ export const ADVANCED_PURCHASING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.purchase.view",
+      "reports.view",
     ],
 
     featureFlags: [
@@ -291,7 +291,7 @@ export const ADVANCED_PURCHASING_CAPABILITIES: CapabilityDefinition[] = [
   validators: [],
 
   permissions: [
-    "purchasing.costing.manage",
+    "purchase_orders.update",
   ],
 
   featureFlags: [

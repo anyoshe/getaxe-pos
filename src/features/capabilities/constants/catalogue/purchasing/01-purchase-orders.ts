@@ -56,7 +56,7 @@ export const PURCHASE_ORDER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.orders.manage",
+      "purchase_orders.update",
     ],
 
     featureFlags: [
@@ -115,7 +115,7 @@ export const PURCHASE_ORDER_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "purchasing.orders.approve",
+      "purchase_orders.approve",
     ],
 
     featureFlags: [

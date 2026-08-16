@@ -47,13 +47,13 @@ export const WAREHOUSING_CAPABILITIES: CapabilityDefinition[] = [
     workflows: [
       "stock.transfer",
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.warehouses.manage",
+      "warehouses.update",
     ],
 
     featureFlags: [
@@ -106,13 +106,13 @@ export const WAREHOUSING_CAPABILITIES: CapabilityDefinition[] = [
     workflows: [
       "stock.transfer",
       "purchase.receive",
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.warehouses.manage",
+      "warehouses.update",
     ],
 
     featureFlags: [
@@ -168,7 +168,7 @@ export const WAREHOUSING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.warehouses.manage",
+      "warehouses.update",
     ],
 
     featureFlags: [
@@ -223,7 +223,7 @@ export const WAREHOUSING_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "inventory.stock.transfer",
+      "stock.transfer",
     ],
 
     featureFlags: [
@@ -273,13 +273,13 @@ export const WAREHOUSING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.picking.manage",
+      "stock_movements.view",
     ],
 
     featureFlags: [
@@ -329,13 +329,13 @@ export const WAREHOUSING_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "sale.complete",
+      "sales.complete",
     ],
 
     validators: [],
 
     permissions: [
-      "inventory.packing.manage",
+      "stock_movements.view",
     ],
 
     featureFlags: [

@@ -19,7 +19,7 @@ export const SUPERMARKET_PROFILE: CapabilityProfile = {
 
  "sales.discount",
 
- "customer.loyalty",
+ "loyalty.manage",
 
  "reporting.report-builder",
 
@@ -33,5 +33,5 @@ export const SUPERMARKET_PROFILE: CapabilityProfile = {
 
 ],
 
-  disabled: ["inventory.serial-numbers", "pharmacy.prescriptions"],
+  disabled: ["inventory.serial-numbers", "products.update"],
 };

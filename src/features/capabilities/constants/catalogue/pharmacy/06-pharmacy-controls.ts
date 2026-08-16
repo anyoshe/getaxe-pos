@@ -6,7 +6,7 @@ import type {
 export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
 
   {
-    id: "pharmacy.audit-trail",
+    id: "products.update",
 
     code: "PHARMACY_AUDIT_TRAIL",
 
@@ -32,7 +32,7 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.dispensing",
+      "products.update",
     ],
 
     conflicts: [],
@@ -52,23 +52,23 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "pharmacy.activity-log",
+      "products.update",
     ],
 
     validators: [],
 
     permissions: [
-      "pharmacy.audit.view",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.audit-trail",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.medicine-recall",
+    id: "products.update",
 
     code: "MEDICINE_RECALL",
 
@@ -95,7 +95,7 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     dependencies: [
       "inventory.batch-control",
       "inventory.expiry-control",
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -123,17 +123,17 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.recall.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.medicine-recall",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.cold-chain-monitoring",
+    id: "products.update",
 
     code: "COLD_CHAIN_MONITORING",
 
@@ -159,7 +159,7 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.medicine-catalogue",
+      "products.update",
     ],
 
     conflicts: [],
@@ -188,17 +188,17 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "pharmacy.cold-chain.manage",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.cold-chain",
+      "products.update",
     ],
   },
 
 
   {
-    id: "pharmacy.reports",
+    id: "products.update",
 
     code: "PHARMACY_REPORTS",
 
@@ -224,7 +224,7 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     defaultEnabled: false,
 
     dependencies: [
-      "pharmacy.dispensing",
+      "products.update",
       "finance.profit-loss",
     ],
 
@@ -251,11 +251,11 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "pharmacy.reports.view",
+      "products.update",
     ],
 
     featureFlags: [
-      "pharmacy.reports",
+      "products.update",
     ],
   },
 

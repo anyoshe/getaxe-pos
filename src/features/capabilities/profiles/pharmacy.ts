@@ -21,15 +21,15 @@ export const PHARMACY_PROFILE: CapabilityProfile = {
 
   "inventory.reorder-level",
 
-  "pharmacy.prescriptions",
+  "products.update",
 
-  "pharmacy.dispensing",
+  "products.update",
 
-  "pharmacy.partial-dispensing",
+  "products.update",
 
-  "pharmacy.pharmacist-verification",
+  "products.update",
 
-  "pharmacy.medicine-substitution",
+  "products.update",
 
   "sales.credit-sales",
 

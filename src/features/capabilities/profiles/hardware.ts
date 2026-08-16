@@ -45,7 +45,7 @@ export const HARDWARE_PROFILE: CapabilityProfile = {
 
  "inventory.batch-control",
 
- "pharmacy.prescriptions",
+ "products.update",
 
 ],
 

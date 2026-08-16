@@ -47,8 +47,8 @@ export const SCHEDULED_REPORT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "report.schedule",
-      "report.generate",
+      "reports.create",
+      "reports.execute",
     ],
 
     validators: [
@@ -56,7 +56,7 @@ export const SCHEDULED_REPORT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.schedule.manage",
+      "reports.create",
     ],
 
     featureFlags: [
@@ -108,7 +108,7 @@ export const SCHEDULED_REPORT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     workflows: [
-      "report.email.send",
+      "reports.execute",
     ],
 
     validators: [
@@ -116,7 +116,7 @@ export const SCHEDULED_REPORT_CAPABILITIES: CapabilityDefinition[] = [
     ],
 
     permissions: [
-      "reports.delivery.manage",
+      "reports.execute",
     ],
 
     featureFlags: [
@@ -174,7 +174,7 @@ export const SCHEDULED_REPORT_CAPABILITIES: CapabilityDefinition[] = [
     validators: [],
 
     permissions: [
-      "reports.management.view",
+      "reports.view",
     ],
 
     featureFlags: [

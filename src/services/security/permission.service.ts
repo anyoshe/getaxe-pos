@@ -1,55 +1,55 @@
-import { PERMISSION_REGISTRY } from "@/constants/permissions";
+import {
+  permissionRegistry,
+} from "@/features/permissions/services/permission-registry";
 
 import type {
   PermissionDefinition,
-  PermissionModuleDefinition,
-} from "./permission.types";
+  PermissionModule,
+} from "@/features/permissions/types";
 
 export class PermissionService {
-  static getModules(): PermissionModuleDefinition[] {
-    return PERMISSION_REGISTRY;
+  getModules(): readonly PermissionModule[] {
+    return permissionRegistry.getModules();
   }
 
-  static getModule(
-    code: string
-  ): PermissionModuleDefinition | undefined {
-    return PERMISSION_REGISTRY.find(
-      (module) => module.code === code
-    );
+  getModule(
+    code: string,
+  ): PermissionModule | undefined {
+    return permissionRegistry.getModule(code);
   }
 
-  static getAllPermissions(): PermissionDefinition[] {
-    return PERMISSION_REGISTRY.flatMap(
-      (module) => module.permissions
-    );
+  getAllPermissions(): PermissionDefinition[] {
+    return permissionRegistry.getAll();
   }
 
-  static getPermission(
-    code: string
+  getPermission(
+    code: string,
   ): PermissionDefinition | undefined {
-    return this.getAllPermissions().find(
-      (permission) => permission.code === code
-    );
+    return permissionRegistry.get(code);
   }
 
-  static getModulePermissions(
-    moduleCode: string
+  getModulePermissions(
+    moduleCode: string,
   ): PermissionDefinition[] {
     return (
       this.getModule(moduleCode)?.permissions ?? []
     );
   }
 
-  static permissionExists(
-    code: string
+  permissionExists(
+    code: string,
   ): boolean {
-    return this.getPermission(code) !== undefined;
+    return permissionRegistry.has(code);
   }
 
-  static searchPermissions(
-    query: string
+  searchPermissions(
+    query: string,
   ): PermissionDefinition[] {
-    const search = query.toLowerCase();
+    const search = query.trim().toLowerCase();
+
+    if (!search) {
+      return [];
+    }
 
     return this.getAllPermissions().filter(
       (permission) =>
@@ -59,11 +59,12 @@ export class PermissionService {
         permission.name
           .toLowerCase()
           .includes(search) ||
-        permission.description
+        (permission.description ?? "")
           .toLowerCase()
-          .includes(search)
+          .includes(search),
     );
   }
 }
+
 export const permissionService =
   new PermissionService();
