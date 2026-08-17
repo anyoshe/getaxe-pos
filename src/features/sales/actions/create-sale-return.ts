@@ -1,20 +1,11 @@
 "use server";
 
-import {
-    saleReturnService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { saleReturnService } from "../services";
+import type { CreateSaleReturnRequest } from "../types";
 
-import type {
-    CreateSaleReturnRequest,
-} from "../types";
+export async function createSaleReturn(request: CreateSaleReturnRequest) {
+  await requireAuthorizedUser("sales.returns.create");
 
-
-export async function createSaleReturn(
-    request: CreateSaleReturnRequest
-) {
-
-    return saleReturnService.createSaleReturn(
-        request
-    );
-
+  return saleReturnService.createSaleReturn(request);
 }

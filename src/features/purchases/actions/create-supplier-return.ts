@@ -1,20 +1,11 @@
 "use server";
 
-import {
-    supplierReturnService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { supplierReturnService } from "../services";
+import type { CreateSupplierReturnRequest } from "../types";
 
-import type {
-    CreateSupplierReturnRequest,
-} from "../types";
+export async function createSupplierReturn(request: CreateSupplierReturnRequest) {
+  await requireAuthorizedUser("supplier_returns.create");
 
-
-export async function createSupplierReturn(
-    request: CreateSupplierReturnRequest
-) {
-
-    return supplierReturnService.create(
-        request
-    );
-
+  return supplierReturnService.create(request);
 }

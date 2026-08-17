@@ -1,20 +1,11 @@
 "use server";
 
-import {
-    supplierReturnService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { supplierReturnService } from "../services";
+import type { PostSupplierReturnRequest } from "../types";
 
-import type {
-    PostSupplierReturnRequest,
-} from "../types";
+export async function postSupplierReturn(request: PostSupplierReturnRequest) {
+  await requireAuthorizedUser("supplier_returns.post");
 
-
-export async function postSupplierReturn(
-    request: PostSupplierReturnRequest
-) {
-
-    return supplierReturnService.post(
-        request
-    );
-
+  return supplierReturnService.post(request);
 }

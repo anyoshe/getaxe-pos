@@ -1,16 +1,10 @@
 "use server";
 
-import {
-    purchaseOrderService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { purchaseOrderService } from "../services";
 
+export async function cancelPurchaseOrder(purchaseOrderId: string) {
+  await requireAuthorizedUser("purchase_orders.cancel");
 
-export async function cancelPurchaseOrder(
-    purchaseOrderId: string
-) {
-
-    return purchaseOrderService.cancelPurchaseOrder(
-        purchaseOrderId
-    );
-
+  return purchaseOrderService.cancelPurchaseOrder(purchaseOrderId);
 }

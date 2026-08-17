@@ -1,20 +1,11 @@
 "use server";
 
-import {
-    saleVoidService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { saleVoidService } from "../services";
+import type { VoidSaleRequest } from "../types";
 
-import type {
-    VoidSaleRequest,
-} from "../types";
+export async function voidSale(request: VoidSaleRequest) {
+  await requireAuthorizedUser("sales.void");
 
-
-export async function voidSale(
-    request: VoidSaleRequest
-) {
-
-    return saleVoidService.voidSaleTransaction(
-        request
-    );
-
+  return saleVoidService.voidSaleTransaction(request);
 }

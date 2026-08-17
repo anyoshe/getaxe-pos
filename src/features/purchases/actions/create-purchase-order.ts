@@ -1,20 +1,11 @@
 "use server";
 
-import {
-    purchaseOrderService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { purchaseOrderService } from "../services";
+import type { CreatePurchaseOrderRequest } from "../types";
 
-import type {
-    CreatePurchaseOrderRequest,
-} from "../types";
+export async function createPurchaseOrder(request: CreatePurchaseOrderRequest) {
+  await requireAuthorizedUser("purchase_orders.create");
 
-
-export async function createPurchaseOrder(
-    request: CreatePurchaseOrderRequest
-) {
-
-    return purchaseOrderService.createPurchaseOrder(
-        request
-    );
-
+  return purchaseOrderService.createPurchaseOrder(request);
 }

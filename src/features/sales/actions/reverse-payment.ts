@@ -1,20 +1,11 @@
 "use server";
 
-import {
-    paymentService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { paymentService } from "../services";
+import type { ReversePaymentRequest } from "../types";
 
-import type {
-    ReversePaymentRequest,
-} from "../types";
+export async function reversePayment(request: ReversePaymentRequest) {
+  await requireAuthorizedUser("sales.payments.reverse");
 
-
-export async function reversePayment(
-    request: ReversePaymentRequest
-) {
-
-    return paymentService.reversePaymentTransaction(
-        request
-    );
-
+  return paymentService.reversePaymentTransaction(request);
 }

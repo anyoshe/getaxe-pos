@@ -1,20 +1,11 @@
 "use server";
 
-import {
-    goodsReceiptService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { goodsReceiptService } from "../services";
+import type { ReceiveGoodsRequest } from "../types";
 
-import type {
-    ReceiveGoodsRequest,
-} from "../types";
+export async function receiveGoods(request: ReceiveGoodsRequest) {
+  await requireAuthorizedUser("goods_receipts.create");
 
-
-export async function receiveGoods(
-    request: ReceiveGoodsRequest
-) {
-
-    return goodsReceiptService.receiveGoods(
-        request
-    );
-
+  return goodsReceiptService.receiveGoods(request);
 }

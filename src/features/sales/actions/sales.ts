@@ -1,26 +1,14 @@
 "use server";
 
-import {
-    salesQueryService,
-} from "../services";
+import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { salesQueryService } from "../services";
 
-export async function getSales(
-    businessId: string
-) {
-
-    return salesQueryService.getSales(
-        businessId
-    );
-
+export async function getSales(businessId: string) {
+  await requireAuthorizedUser("sales.view");
+  return salesQueryService.getSales(businessId);
 }
 
-
-export async function getSale(
-    saleId: string
-) {
-
-    return salesQueryService.getSale(
-        saleId
-    );
-
+export async function getSale(saleId: string) {
+  await requireAuthorizedUser("sales.view");
+  return salesQueryService.getSale(saleId);
 }
