@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
 import { products } from "@/db/schema/inventory/products";
@@ -63,17 +63,20 @@ export class ProductRepository extends BaseRepository {
         inventoryAccount: true,
 
         taxRate: true,
-
-        prices: true,
-        batches: true,
-        stockMovements: true,
-        inventoryBalances: true,
       },
 
       orderBy: (table, { asc }) => [asc(table.name)],
     });
 
-    return rows.map(toDomainProduct);
+    return rows.map((r) => ({
+      ...toDomainProduct(r),
+
+      // Provide empty arrays for heavy aggregate relations that are loaded on demand
+      prices: [],
+      batches: [],
+      stockMovements: [],
+      inventoryBalances: [],
+    }));
   }
 
   async findById(id: string, businessId: string) {
@@ -110,6 +113,23 @@ export class ProductRepository extends BaseRepository {
     return row ? toDomainProduct(row) : null;
   }
 
+    async findForSelection(businessId: string) {
+    return this.database
+      .select({
+        id: products.id,
+        name: products.name,
+        sku: products.sku,
+        barcode: products.barcode,
+      })
+      .from(products)
+      .where(
+        and(
+          eq(products.businessId, businessId),
+          eq(products.active, true),
+        ),
+      )
+      .orderBy(asc(products.name));
+  }
   async create(data: ProductInsert) {
     const [product] = await this.database
       .insert(products)
