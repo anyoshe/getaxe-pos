@@ -15,18 +15,12 @@ export class SupplierRepository extends BaseRepository {
         eq(suppliers.active, true),
       ),
       orderBy: (suppliers, { asc }) => [asc(suppliers.name)],
-      with: {
-        products: true,
-      },
     });
   }
 
   async findById(id: string, businessId: string) {
     return this.database.query.suppliers.findFirst({
       where: and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)),
-      with: {
-        products: true,
-      },
     });
   }
 
