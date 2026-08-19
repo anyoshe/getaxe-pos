@@ -4,6 +4,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -15,11 +16,9 @@ import {
   capabilities,
 } from "./capabilities";
 
-
 export const businessCapabilities = pgTable(
   "business_capabilities",
   {
-
     id: uuid("id")
       .defaultRandom()
       .primaryKey(),
@@ -30,9 +29,9 @@ export const businessCapabilities = pgTable(
         onDelete: "cascade",
       }),
 
-    capabilityId: uuid("capability_id")
+    capabilityId: text("capability_id")
       .notNull()
-      .references(() => capabilities.id, {
+      .references(() => capabilities.capabilityId, {
         onDelete: "cascade",
       }),
 
@@ -60,7 +59,6 @@ export const businessCapabilities = pgTable(
 
   },
   table => ({
-
     businessIdx: index(
       "business_capabilities_business_idx",
     ).on(table.businessId),
@@ -69,5 +67,8 @@ export const businessCapabilities = pgTable(
       "business_capabilities_capability_idx",
     ).on(table.capabilityId),
 
+    businessCapabilityUnique: uniqueIndex(
+      "business_capabilities_business_capability_unique",
+    ).on(table.businessId, table.capabilityId),
   }),
 );

@@ -1,34 +1,33 @@
 import {
-  db,
+db,
 } from "@/db";
 
 import {
-  capabilities,
+capabilities,
 } from "@/db/schema";
 
 import {
-  eq,
+eq,
 } from "drizzle-orm";
 
 import type {
-  CapabilityDefinition,
+CapabilityDefinition,
 } from "../types";
-
 
 export class CapabilityRepository {
 
-  async findByCapabilityId(
-    capabilityId: string,
-  ) {
-    return db.query.capabilities.findFirst({
-      where: eq(
-        capabilities.capabilityId,
-        capabilityId,
-      ),
-    });
-  }
+async findByCapabilityId(
+  capabilityId: string,
+) {
+  return db.query.capabilities.findFirst({
+    where: eq(
+      capabilities.capabilityId,
+      capabilityId,
+    ),
+  });
+}
 
-  async findByCode(
+async findByCode(
   code: string,
 ) {
   return db.query.capabilities.findFirst({
@@ -39,116 +38,60 @@ export class CapabilityRepository {
   });
 }
 
+async all() {
+  return db.query.capabilities.findMany();
+}
 
-  async all() {
-    return db.query.capabilities.findMany();
-  }
+async create(
+  capability: CapabilityDefinition,
+) {
+  return db.insert(
+    capabilities,
+  ).values({
+    code: capability.code,
+    capabilityId: capability.id,
+    name: capability.name,
+    description: capability.description,
+    module: capability.module,
+    group: capability.group,
+    category: capability.category,
+    status: capability.status,
+    defaultEnabled: capability.defaultEnabled,
+    industries: capability.industries,
+    dependencies: capability.dependencies,
+    conflicts: capability.conflicts,
+  });
+}
 
-
-  async create(
-    capability: CapabilityDefinition,
-  ) {
-
-    return db.insert(
-      capabilities,
-    ).values({
-
-      code:
-        capability.code,
-
-      capabilityId:
+async update(
+  capability: CapabilityDefinition,
+) {
+  return db.update(
+    capabilities,
+  )
+    .set({
+      code: capability.code,
+      capabilityId: capability.id,
+      name: capability.name,
+      description: capability.description,
+      module: capability.module,
+      group: capability.group,
+      category: capability.category,
+      status: capability.status,
+      defaultEnabled: capability.defaultEnabled,
+      industries: capability.industries,
+      dependencies: capability.dependencies,
+      conflicts: capability.conflicts,
+    })
+    .where(
+      eq(
+        capabilities.capabilityId,
         capability.id,
+      ),
+    );
+}
 
-      name:
-        capability.name,
-
-      description:
-        capability.description,
-
-      module:
-        capability.module,
-
-      group:
-        capability.group,
-
-      category:
-        capability.category,
-
-      status:
-        capability.status,
-
-      defaultEnabled:
-        capability.defaultEnabled,
-
-      industries:
-        capability.industries,
-
-      dependencies:
-        capability.dependencies,
-
-      conflicts:
-        capability.conflicts,
-
-    });
-
-  }
-
-  async update(
-    capability: CapabilityDefinition,
-  ) {
-
-    return db.update(
-      capabilities,
-    )
-      .set({
-
-        code:
-          capability.code,
-
-        capabilityId:
-          capability.id,
-
-        name:
-          capability.name,
-
-        description:
-          capability.description,
-
-        module:
-          capability.module,
-
-        group:
-          capability.group,
-
-        category:
-          capability.category,
-
-        status:
-          capability.status,
-
-        defaultEnabled:
-          capability.defaultEnabled,
-
-        industries:
-          capability.industries,
-
-        dependencies:
-          capability.dependencies,
-
-        conflicts:
-          capability.conflicts,
-
-      })
-      .where(
-        eq(
-          capabilities.capabilityId,
-          capability.id,
-        ),
-      );
-
-  }
-
-  async deleteByCapabilityId(
+async deleteByCapabilityId(
   capabilityId: string,
 ) {
   return db

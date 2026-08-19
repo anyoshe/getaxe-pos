@@ -15,14 +15,16 @@ import type {
 } from "../product-form.types";
 
 interface ProductInventoryProps {
-
     form: UseFormReturn<ProductFormInput>;
-
+    visibleFields?: string[];
 }
 
 export function ProductInventory({
     form,
+    visibleFields,
 }: ProductInventoryProps) {
+    const visibleSet = new Set(visibleFields ?? []);
+    const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
     return (
 
@@ -33,57 +35,73 @@ export function ProductInventory({
 
             <div className="grid gap-4 md:grid-cols-2">
 
-                <FormNumberField
-                    form={form}
-                    name="minimumStock"
-                    label="Minimum Stock"
-                />
+                {showField("minimumStock") && (
+                    <FormNumberField
+                        form={form}
+                        name="minimumStock"
+                        label="Minimum Stock"
+                    />
+                )}
 
-                <FormNumberField
-                    form={form}
-                    name="reorderLevel"
-                    label="Reorder Level"
-                />
+                {showField("reorderLevel") && (
+                    <FormNumberField
+                        form={form}
+                        name="reorderLevel"
+                        label="Reorder Level"
+                    />
+                )}
 
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
 
-                <FormCheckbox
-                    control={form.control}
-                    name="trackInventory"
-                    label="Track Inventory"
-                />
+                {showField("trackInventory") && (
+                    <FormCheckbox
+                        control={form.control}
+                        name="trackInventory"
+                        label="Track Inventory"
+                    />
+                )}
 
-                <FormCheckbox
-                    control={form.control}
-                    name="trackBatch"
-                    label="Track Batch"
-                />
+                {showField("trackBatch") && (
+                    <FormCheckbox
+                        control={form.control}
+                        name="trackBatch"
+                        label="Track Batch"
+                    />
+                )}
 
-                <FormCheckbox
-                    control={form.control}
-                    name="trackExpiry"
-                    label="Track Expiry"
-                />
+                {showField("trackExpiry") && (
+                    <FormCheckbox
+                        control={form.control}
+                        name="trackExpiry"
+                        label="Track Expiry"
+                    />
+                )}
 
-                <FormCheckbox
-                    control={form.control}
-                    name="serialized"
-                    label="Serialized"
-                />
+                {showField("serialized") && (
+                    <FormCheckbox
+                        control={form.control}
+                        name="serialized"
+                        label="Serialized"
+                    />
+                )}
 
-                <FormCheckbox
-                    control={form.control}
-                    name="allowNegativeStock"
-                    label="Allow Negative Stock"
-                />
+                {showField("allowNegativeStock") && (
+                    <FormCheckbox
+                        control={form.control}
+                        name="allowNegativeStock"
+                        label="Allow Negative Stock"
+                    />
+                )}
 
-                <FormCheckbox
-                    control={form.control}
-                    name="active"
-                    label="Active"
-                />
+                {showField("active") && (
+                    <FormCheckbox
+                        control={form.control}
+                        name="active"
+                        label="Active"
+                    />
+                )}
 
             </div>
 

@@ -16,14 +16,16 @@ import type {
 } from "../product-form.types";
 
 interface ProductBasicProps {
-
     form: UseFormReturn<ProductFormInput>;
-
+    visibleFields?: string[];
 }
 
 export function ProductBasic({
     form,
+    visibleFields,
 }: ProductBasicProps) {
+    const visibleSet = new Set(visibleFields ?? []);
+    const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
     return (
 
@@ -34,57 +36,73 @@ export function ProductBasic({
 
             <div className="grid gap-4 md:grid-cols-2">
 
-                <FormTextField
-                    form={form}
-                    name="name"
-                    label="Product Name"
-                />
+                {showField("name") && (
+                    <FormTextField
+                        form={form}
+                        name="name"
+                        label="Product Name"
+                    />
+                )}
 
-                <FormTextField
-                    form={form}
-                    name="genericName"
-                    label="Generic Name"
-                />
+                {showField("genericName") && (
+                    <FormTextField
+                        form={form}
+                        name="genericName"
+                        label="Generic Name"
+                    />
+                )}
 
-                <FormTextField
-                    form={form}
-                    name="productBrand"
-                    label="Brand"
-                />
+                {showField("productBrand") && (
+                    <FormTextField
+                        form={form}
+                        name="productBrand"
+                        label="Brand"
+                    />
+                )}
 
-                <FormTextField
-                    form={form}
-                    name="sku"
-                    label="SKU"
-                />
+                {showField("sku") && (
+                    <FormTextField
+                        form={form}
+                        name="sku"
+                        label="SKU"
+                    />
+                )}
 
-                <FormTextField
-                    form={form}
-                    name="barcode"
-                    label="Barcode"
-                />
+                {showField("barcode") && (
+                    <FormTextField
+                        form={form}
+                        name="barcode"
+                        label="Barcode"
+                    />
+                )}
 
-                <FormTextField
-                    form={form}
-                    name="packSize"
-                    label="Pack Size"
-                />
+                {showField("packSize") && (
+                    <FormTextField
+                        form={form}
+                        name="packSize"
+                        label="Pack Size"
+                    />
+                )}
 
-                <FormNumberField
-                    form={form}
-                    name="costPrice"
-                    label="Cost Price"
-                    step="0.01"
-                />
+                {showField("costPrice") && (
+                    <FormNumberField
+                        form={form}
+                        name="costPrice"
+                        label="Cost Price"
+                        step="0.01"
+                    />
+                )}
 
             </div>
 
-            <FormTextarea
-                form={form}
-                name="description"
-                label="Description"
-                rows={4}
-            />
+            {showField("description") && (
+                <FormTextarea
+                    form={form}
+                    name="description"
+                    label="Description"
+                    rows={4}
+                />
+            )}
 
         </FormSection>
 

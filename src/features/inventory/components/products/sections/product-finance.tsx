@@ -18,17 +18,18 @@ import type {
 } from "../product-form.types";
 
 interface ProductFinanceProps {
-
     form: UseFormReturn<ProductFormInput>;
-
     context: ProductContext;
-
+    visibleFields?: string[];
 }
 
 export function ProductFinance({
     form,
     context,
+    visibleFields,
 }: ProductFinanceProps) {
+    const visibleSet = new Set(visibleFields ?? []);
+    const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
     return (
 
@@ -39,49 +40,57 @@ export function ProductFinance({
 
             <div className="grid gap-4 md:grid-cols-2">
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="incomeAccountId"
-                    options={context.incomeAccounts}
-                    placeholder="Income Account"
-                    getLabel={(account) =>
-                        `${account.accountCode} - ${account.accountName}`
-                    }
-                />
+                {showField("incomeAccountId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="incomeAccountId"
+                        options={context.incomeAccounts}
+                        placeholder="Income Account"
+                        getLabel={(account) =>
+                            `${account.accountCode} - ${account.accountName}`
+                        }
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="expenseAccountId"
-                    options={context.expenseAccounts}
-                    placeholder="Expense Account"
-                    getLabel={(account) =>
-                        `${account.accountCode} - ${account.accountName}`
-                    }
-                />
+                {showField("expenseAccountId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="expenseAccountId"
+                        options={context.expenseAccounts}
+                        placeholder="Expense Account"
+                        getLabel={(account) =>
+                            `${account.accountCode} - ${account.accountName}`
+                        }
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="inventoryAccountId"
-                    options={context.inventoryAccounts}
-                    placeholder="Inventory Account"
-                    getLabel={(account) =>
-                        `${account.accountCode} - ${account.accountName}`
-                    }
-                />
+                {showField("inventoryAccountId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="inventoryAccountId"
+                        options={context.inventoryAccounts}
+                        placeholder="Inventory Account"
+                        getLabel={(account) =>
+                            `${account.accountCode} - ${account.accountName}`
+                        }
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="taxRateId"
-                    options={context.taxRates}
-                    placeholder="Tax Rate"
-                    getLabel={(tax) =>
-                        `${tax.name}${
-                            tax.rate !== null
-                                ? ` (${tax.rate}%)`
-                                : ""
-                        }`
-                    }
-                />
+                {showField("taxRateId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="taxRateId"
+                        options={context.taxRates}
+                        placeholder="Tax Rate"
+                        getLabel={(tax) =>
+                            `${tax.name}${
+                                tax.rate !== null
+                                    ? ` (${tax.rate}%)`
+                                    : ""
+                            }`
+                        }
+                    />
+                )}
 
             </div>
 

@@ -7,149 +7,110 @@ import {
   CapabilityRegistry,
 } from "./capability-registry";
 
-
 export class CapabilityResolver {
-
-
   constructor(
-    private readonly registry =
-      new CapabilityRegistry(),
+    private readonly registry = new CapabilityRegistry(),
   ) {}
 
+  resolve(profile: CapabilityProfile): CapabilityDefinition[] {
+    const resolved = new Map<string, CapabilityDefinition>();
+    const disabledSet = new Set(profile.disabled);
+    const requestedIds = new Set([
+      ...profile.enabled,
+      ...profile.disabled,
+    ]);
 
-
-  resolve(
-    profile: CapabilityProfile,
-  ): CapabilityDefinition[] {
-
-
-    const resolved =
-      new Map<string, CapabilityDefinition>();
-
-
-    //
-    // 1. Default capabilities
-    //
+    for (const requestedId of requestedIds) {
+      if (!this.registry.exists(requestedId)) {
+        throw new Error(`Unknown capability ID requested: ${requestedId}`);
+      }
+    }
 
     for (const capability of this.registry.all()) {
-
-
       const supportedIndustry =
         capability.industries.length === 0 ||
-        capability.industries.includes(
-          profile.businessType,
-        );
+        capability.industries.includes(profile.businessType);
 
-
-      if (
-        supportedIndustry &&
-        capability.defaultEnabled
-      ) {
-
-        resolved.set(
-          capability.id,
-          capability,
-        );
-
+      if (supportedIndustry && capability.defaultEnabled) {
+        this.addWithDependencies(capability.id, resolved, new Set());
       }
-
     }
-
-
-
-    //
-    // 2. User selected capabilities
-    //
 
     for (const capabilityId of profile.enabled) {
-
-
-      this.addWithDependencies(
-        capabilityId,
-        resolved,
-      );
-
-
+      this.addWithDependencies(capabilityId, resolved, new Set());
     }
 
-
-
-    //
-    // 3. Remove disabled
-    //
-
-    for (
-      const capabilityId of profile.disabled
-    ) {
-
-      resolved.delete(
-        capabilityId,
-      );
-
+    for (const capabilityId of Array.from(resolved.keys())) {
+      if (disabledSet.has(capabilityId)) {
+        resolved.delete(capabilityId);
+      }
     }
 
+    for (const capability of Array.from(resolved.values())) {
+      for (const dependency of capability.dependencies) {
+        if (disabledSet.has(dependency)) {
+          throw new Error(
+            `Capability ${capability.id} depends on disabled capability ${dependency}.`,
+          );
+        }
+      }
+    }
 
-    return Array.from(
-      resolved.values(),
-    );
+    for (const capability of Array.from(resolved.values())) {
+      for (const conflict of capability.conflicts) {
+        if (resolved.has(conflict)) {
+          throw new Error(
+            `Capability conflict detected: ${capability.id} cannot coexist with ${conflict}.`,
+          );
+        }
+      }
+    }
 
+    return Array.from(resolved.values()).sort((a, b) => a.id.localeCompare(b.id));
   }
-
-
-
 
   private addWithDependencies(
     capabilityId: string,
-    resolved:
-      Map<string, CapabilityDefinition>,
+    resolved: Map<string, CapabilityDefinition>,
+    trail: Set<string>,
   ) {
+    if (!this.registry.exists(capabilityId)) {
+      throw new Error(`Unknown capability ID requested: ${capabilityId}`);
+    }
 
+    const capability = this.registry.get(capabilityId)!;
 
-    const capability =
-      this.registry.get(
-        capabilityId,
+    if (trail.has(capabilityId)) {
+      throw new Error(
+        `Circular dependency detected: ${Array.from(trail).concat(capabilityId).join(" -> ")}` ,
       );
+    }
 
-
-    if (!capability) {
+    if (resolved.has(capabilityId)) {
       return;
     }
 
+    trail.add(capabilityId);
 
+    for (const dependency of capability.dependencies) {
+      if (!this.registry.exists(dependency)) {
+        throw new Error(
+          `Capability ${capability.id} depends on unknown capability ${dependency}.`,
+        );
+      }
 
-    if (
-      resolved.has(
-        capability.id,
-      )
-    ) {
-      return;
+      this.addWithDependencies(dependency, resolved, new Set(trail));
     }
 
-
-
-    //
-    // Resolve dependencies first
-    //
-
-    for (
-      const dependency of capability.dependencies
-    ) {
-
-      this.addWithDependencies(
-        dependency,
-        resolved,
-      );
-
+    for (const conflict of capability.conflicts) {
+      if (resolved.has(conflict)) {
+        throw new Error(
+          `Capability conflict detected: ${capability.id} cannot coexist with ${conflict}.`,
+        );
+      }
     }
 
-
-
-    resolved.set(
-      capability.id,
-      capability,
-    );
-
+    trail.delete(capabilityId);
+    resolved.set(capabilityId, capability);
   }
-
-
 }

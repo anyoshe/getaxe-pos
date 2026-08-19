@@ -30,32 +30,38 @@ export class BusinessCapabilityService {
   ) {}
 
  async provision(
-  businessId: string,
-  businessType: BusinessType,
+businessId: string,
+businessType: BusinessType,
 ) {
 
-  const profile =
-    this.profileLoader.load(
-      businessType,
-    );
+const profile =
+  this.profileLoader.load(
+    businessType,
+  );
 
-  const resolved =
-    this.resolver.resolve(
-      profile,
-    );
+const resolved =
+  this.resolver.resolve(
+    profile,
+  );
 
-  for (const capability of resolved) {
+for (const capability of resolved) {
 
-    await this.repository.enable(
+  await this.repository.enable(
+ 
+    businessId,
+ 
+    capability.id,
+ 
+  );
 
-      businessId,
+}
 
-      capability.id,
+}
 
-    );
-
-  }
-
+async listEnabled(
+  businessId: string,
+): Promise<string[]> {
+  return this.repository.listEnabled(businessId);
 }
 
 }

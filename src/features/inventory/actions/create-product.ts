@@ -14,6 +14,14 @@ import {
   productService,
 } from "../services";
 
+import {
+  BusinessCapabilityRepository,
+} from "@/features/capabilities/repositories";
+
+import {
+  productRuleResolver,
+} from "../services/product-rule-resolver";
+
 
 export async function createProductAction(
   formData: FormData
@@ -166,6 +174,19 @@ export async function createProductAction(
 
   }
 
+  const businessCapabilityRepository = new BusinessCapabilityRepository();
+  const businessCapabilities = await businessCapabilityRepository.listEnabled(user.businessId);
+  const validationResult = productRuleResolver.validateInput({
+    businessCapabilities,
+    input: parsed.data,
+  });
+
+  if (!validationResult.valid) {
+    return {
+      success: false,
+      errors: validationResult.errors,
+    };
+  }
 
   try {
 

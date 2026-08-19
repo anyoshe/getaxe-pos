@@ -2,262 +2,178 @@ import type {
   CapabilityDefinition,
 } from "../../../types";
 
-
 export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
-
   {
-    id: "products.update",
-
+    id: "pharmacy.audit-trail",
     code: "PHARMACY_AUDIT_TRAIL",
-
     name: "Pharmacy Audit Trail",
-
-    description:
-      "Track pharmacy activities including dispensing and medicine changes.",
-
+    description: "Track pharmacy activities including dispensing and medicine changes.",
     module: "PHARMACY",
-
     group: "PHARMACY",
-
     category: "PHARMACY",
-
     status: "ACTIVE",
-
     industries: [
       "PHARMACY",
       "HOSPITAL",
       "CLINIC",
     ],
-
     defaultEnabled: false,
-
     dependencies: [
-      "products.update",
+      "pharmacy.dispensing",
+      "core.audit-log",
     ],
-
     conflicts: [],
-
     schema: [
       "audit_logs",
       "dispensing_records",
     ],
-
     services: [
       "pharmacy",
       "security",
     ],
-
     ui: [
       "pharmacy-audit",
     ],
-
     workflows: [
       "products.update",
     ],
-
     validators: [],
-
     permissions: [
       "products.update",
     ],
-
     featureFlags: [
-      "products.update",
+      "pharmacy.audit-trail",
     ],
   },
-
-
   {
-    id: "products.update",
-
+    id: "pharmacy.medicine-recall",
     code: "MEDICINE_RECALL",
-
     name: "Medicine Recall Management",
-
-    description:
-      "Manage recalled medicines and affected stock.",
-
+    description: "Manage recalled medicines and affected stock.",
     module: "PHARMACY",
-
     group: "PHARMACY",
-
     category: "PHARMACY",
-
     status: "ACTIVE",
-
     industries: [
       "PHARMACY",
       "HOSPITAL",
     ],
-
     defaultEnabled: false,
-
     dependencies: [
       "inventory.batch-control",
       "inventory.expiry-control",
-      "products.update",
+      "pharmacy.medicine-catalogue",
     ],
-
     conflicts: [],
-
     schema: [
       "product_batches",
       "inventory_movements",
     ],
-
     services: [
       "pharmacy",
       "inventory",
     ],
-
     ui: [
       "medicine-recalls",
     ],
-
     workflows: [
       "medicine.recall",
     ],
-
     validators: [
       "batch-recall-check",
     ],
-
     permissions: [
       "products.update",
     ],
-
     featureFlags: [
-      "products.update",
+      "pharmacy.medicine-recall",
     ],
   },
-
-
   {
-    id: "products.update",
-
+    id: "pharmacy.cold-chain-monitoring",
     code: "COLD_CHAIN_MONITORING",
-
     name: "Cold Chain Monitoring",
-
-    description:
-      "Monitor storage conditions for temperature-sensitive medicines.",
-
+    description: "Monitor storage conditions for temperature-sensitive medicines.",
     module: "PHARMACY",
-
     group: "PHARMACY",
-
     category: "PHARMACY",
-
     status: "ACTIVE",
-
     industries: [
       "PHARMACY",
       "HOSPITAL",
       "LABORATORY",
     ],
-
     defaultEnabled: false,
-
     dependencies: [
-      "products.update",
+      "pharmacy.medicine-catalogue",
     ],
-
     conflicts: [],
-
     schema: [
       "storage_locations",
       "temperature_logs",
     ],
-
     services: [
       "pharmacy",
       "inventory",
     ],
-
     ui: [
       "cold-chain-monitoring",
     ],
-
     workflows: [
       "temperature.record",
       "temperature.alert",
     ],
-
     validators: [
       "temperature-range-check",
     ],
-
     permissions: [
       "products.update",
     ],
-
     featureFlags: [
-      "products.update",
+      "pharmacy.cold-chain-monitoring",
     ],
   },
-
-
   {
-    id: "products.update",
-
+    id: "pharmacy.reports",
     code: "PHARMACY_REPORTS",
-
     name: "Pharmacy Reports",
-
-    description:
-      "Generate pharmacy operational and compliance reports.",
-
+    description: "Generate pharmacy operational and compliance reports.",
     module: "PHARMACY",
-
     group: "REPORTS",
-
     category: "REPORTING",
-
     status: "ACTIVE",
-
     industries: [
       "PHARMACY",
       "HOSPITAL",
       "CLINIC",
     ],
-
     defaultEnabled: false,
-
     dependencies: [
-      "products.update",
+      "pharmacy.dispensing",
+      "reporting.report-builder",
       "finance.profit-loss",
     ],
-
     conflicts: [],
-
     schema: [
       "dispensing_records",
       "sales",
       "inventory_movements",
     ],
-
     services: [
       "pharmacy",
       "reporting",
       "finance",
     ],
-
     ui: [
       "pharmacy-reports",
     ],
-
     workflows: [],
-
     validators: [],
-
     permissions: [
       "products.update",
     ],
-
     featureFlags: [
-      "products.update",
+      "pharmacy.reports",
     ],
   },
-
-
 ];

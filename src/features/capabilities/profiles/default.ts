@@ -3,18 +3,13 @@ import type {
 } from "../types";
 
 export const DEFAULT_PROFILE: CapabilityProfile = {
-
   id: "default",
-
   name: "Default Business",
-
-  description:
-    "Generic ERP profile suitable for most businesses.",
-
+  description: "Generic ERP profile suitable for most businesses.",
   businessType: "DEFAULT",
-
-  enabled: [],
-
+  enabled: [
+    "inventory.product-types",
+    "sales.pos",
+  ],
   disabled: [],
-
 };

@@ -1,17 +1,27 @@
 "use client";
 
 import {
+    useEffect,
     useMemo,
     useState,
 } from "react";
 
+import type {
+    UseFormReturn,
+} from "react-hook-form";
+
 import {
-    PRODUCT_WIZARD_STEPS,
-} from "./product-wizard.config";
+    productRuleResolver,
+} from "../../../services/product-rule-resolver";
 
 import type {
+    ProductContext,
     ProductType,
-} from "../../../types/products";
+} from "../../../types";
+
+import type {
+    ProductFormInput,
+} from "../product-form.types";
 
 export interface ProductWizardStep {
     id: string;
@@ -19,110 +29,108 @@ export interface ProductWizardStep {
 }
 
 interface UseProductWizardOptions {
-
     productType: ProductType | null;
-
-    onProductTypeChange: (
-        type: ProductType
-    ) => void;
-
+    businessCapabilities?: string[];
+    form?: UseFormReturn<ProductFormInput>;
+    onProductTypeChange: (type: ProductType) => void;
 }
 
 export function useProductWizard({
     productType,
+    businessCapabilities = [],
+    form,
     onProductTypeChange,
 }: UseProductWizardOptions) {
-
-    const [
-        currentStep,
-        setCurrentStep,
-    ] = useState(0);
+    const [currentStep, setCurrentStep] = useState(0);
 
     const steps = useMemo(() => {
+        if (!productType) {
+            return [] as ProductWizardStep[];
+        }
 
+        const ruleSet = productRuleResolver.resolve({
+            businessCapabilities,
+            productType,
+        });
+
+        return ruleSet.steps.map((step) => ({
+            id: step.id,
+            title: step.title,
+        }));
+    }, [businessCapabilities, productType]);
+
+    useEffect(() => {
+        if (currentStep >= steps.length) {
+            setCurrentStep(0);
+        }
+    }, [currentStep, steps.length]);
+
+    function resolveStepFieldNames(stepId: string): string[] {
         if (!productType) {
             return [];
         }
 
-        return PRODUCT_WIZARD_STEPS.filter(
-            (step) =>
-                step.productTypes.includes(
-                    productType,
-                ),
-        );
+        const ruleSet = productRuleResolver.resolve({
+            businessCapabilities,
+            productType,
+        });
 
-    }, [productType]);
+        return ruleSet.fields
+            .filter((field) => field.step === stepId)
+            .map((field) => field.key);
+    }
 
-    function selectProductType(
-        type: ProductType,
-    ) {
-
+    function selectProductType(type: ProductType) {
         onProductTypeChange(type);
-
         setCurrentStep(0);
     }
 
     function next() {
+        if (!productType || !steps.length) {
+            return;
+        }
 
-        setCurrentStep((step) =>
-            Math.min(
-                step + 1,
-                steps.length - 1,
-            ),
-        );
+        const currentStepId = steps[currentStep]?.id;
+        if (!currentStepId || !form) {
+            setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
+            return;
+        }
 
+        const currentFields = resolveStepFieldNames(currentStepId);
+        if (currentFields.length > 0) {
+            form.trigger(currentFields as (keyof ProductFormInput)[]).then((valid) => {
+                if (!valid) {
+                    return;
+                }
+
+                setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
+            });
+            return;
+        }
+
+        setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
     }
 
     function previous() {
-
-        setCurrentStep((step) =>
-            Math.max(
-                step - 1,
-                0,
-            ),
-        );
-
+        setCurrentStep((step) => Math.max(step - 1, 0));
     }
 
-    function goToStep(
-        step: number,
-    ) {
-
-        if (
-            step >= 0 &&
-            step < steps.length
-        ) {
+    function goToStep(step: number) {
+        if (step >= 0 && step < steps.length) {
             setCurrentStep(step);
         }
-
     }
 
     return {
-
         productType,
-
         currentStep,
-
         steps,
-
         selectProductType,
-
         next,
-
         previous,
-
         goToStep,
-
-        hasProductType:
-    productType !== null &&
-    steps.length > 0,
-
-        isFirstStep:
-            currentStep === 0,
-
-        isLastStep:
-            steps.length > 0 &&
-            currentStep === steps.length - 1,
-
+        hasProductType: productType !== null && steps.length > 0,
+        isFirstStep: currentStep === 0,
+        isLastStep: steps.length > 0 && currentStep === steps.length - 1,
     };
 }

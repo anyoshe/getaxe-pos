@@ -176,22 +176,15 @@ export function ProductForm({
 
     const wizard =
         useProductWizard({
-
             productType,
-
-            onProductTypeChange:
-                (type: ProductType) => {
-
-                    form.setValue(
-                        "productType",
-                        type,
-                        {
-                            shouldDirty: true,
-                            shouldValidate: true,
-                        }
-                    );
-
-                },
+            businessCapabilities: context.businessCapabilities,
+            form,
+            onProductTypeChange: (type: ProductType) => {
+                form.setValue("productType", type, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                });
+            },
         });
 
     useEffect(() => {

@@ -69,6 +69,32 @@ export const PRODUCT_TYPES = [
 export type ProductType =
   (typeof PRODUCT_TYPES)[number];
 
+export interface ProductFieldDefinition {
+  key: string;
+  label: string;
+  step: string;
+  productTypes: ProductType[];
+  capability?: string;
+  required?: boolean;
+  dependsOn?: string[];
+}
+
+export interface ProductStepDefinition {
+  id: string;
+  title: string;
+  productTypes: ProductType[];
+  capability?: string;
+}
+
+export interface ProductRuleSet {
+  productType: ProductType;
+  enabledCapabilities: string[];
+  applicableCapabilities: string[];
+  fields: ProductFieldDefinition[];
+  requiredFields: string[];
+  steps: ProductStepDefinition[];
+}
+
 type DatabaseProduct =
   InferSelectModel<typeof products>;
 
@@ -131,8 +157,14 @@ export type Product =
       quantity: number;
     }[];
   };
-  
-  export interface ProductContext {
+
+export interface ProductContext {
+  capabilities: string[];
+  businessCapabilities: string[];
+  productTypes: ProductType[];
+  productRulesByType: Partial<Record<ProductType, ProductRuleSet>>;
+  applicableFields: ProductFieldDefinition[];
+  applicableSteps: ProductStepDefinition[];
 
   categories:
   InferSelectModel<typeof categories>[];

@@ -3,51 +3,25 @@ import type {
 } from "../types";
 
 export const PHARMACY_PROFILE: CapabilityProfile = {
-
   id: "pharmacy",
-
   name: "Retail Pharmacy",
-
-  description:
-    "Retail pharmacy with dispensing and prescription support.",
-
+  description: "Retail pharmacy with dispensing and prescription support.",
   businessType: "PHARMACY",
-
   enabled: [
-
-  "inventory.batch-control",
-
-  "inventory.expiry-control",
-
-  "inventory.reorder-level",
-
-  "products.update",
-
-  "products.update",
-
-  "products.update",
-
-  "products.update",
-
-  "products.update",
-
-  "sales.credit-sales",
-
-  "reporting.report-builder",
-
-  "reporting.standard-reports",
-
-  "reporting.dashboard-engine",
-
-  "reporting.inventory-analytics",
-
-  "reporting.sales-analytics",
-
-],
-
+    "inventory.product-types",
+    "inventory.batch-control",
+    "inventory.expiry-control",
+    "inventory.reorder-level",
+    "sales.pos",
+    "sales.customer-credit",
+    "pharmacy.core",
+    "pharmacy.medicine-catalogue",
+    "reporting.standard-reports",
+    "reporting.dashboard-engine",
+    "reporting.inventory-analytics",
+    "reporting.sales-analytics",
+  ],
   disabled: [
-
-  "inventory.serial-numbers",
-
-],
+    "inventory.serial-numbers",
+  ],
 };

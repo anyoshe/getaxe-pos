@@ -18,17 +18,18 @@ import type {
 } from "../product-form.types";
 
 interface ProductUnitsProps {
-
     form: UseFormReturn<ProductFormInput>;
-
     context: ProductContext;
-
+    visibleFields?: string[];
 }
 
 export function ProductUnits({
     form,
     context,
+    visibleFields,
 }: ProductUnitsProps) {
+    const visibleSet = new Set(visibleFields ?? []);
+    const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
     return (
 
@@ -39,26 +40,32 @@ export function ProductUnits({
 
             <div className="grid gap-4 md:grid-cols-3">
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="purchaseUnitId"
-                    options={context.units}
-                    placeholder="Purchase Unit"
-                />
+                {showField("purchaseUnitId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="purchaseUnitId"
+                        options={context.units}
+                        placeholder="Purchase Unit"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="salesUnitId"
-                    options={context.units}
-                    placeholder="Sales Unit"
-                />
+                {showField("salesUnitId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="salesUnitId"
+                        options={context.units}
+                        placeholder="Sales Unit"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="stockUnitId"
-                    options={context.units}
-                    placeholder="Stock Unit"
-                />
+                {showField("stockUnitId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="stockUnitId"
+                        options={context.units}
+                        placeholder="Stock Unit"
+                    />
+                )}
 
             </div>
 

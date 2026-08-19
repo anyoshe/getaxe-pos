@@ -8,6 +8,10 @@ import { createProductSchema } from "../schemas/products";
 
 import { productService } from "../services";
 
+import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
+
+import { productRuleResolver } from "../services/product-rule-resolver";
+
 export async function updateProductAction(id: string, formData: FormData) {
   const user = await requireAuthorizedUser("products.update");
 
@@ -103,6 +107,20 @@ export async function updateProductAction(id: string, formData: FormData) {
       success: false,
 
       errors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const businessCapabilityRepository = new BusinessCapabilityRepository();
+  const businessCapabilities = await businessCapabilityRepository.listEnabled(user.businessId);
+  const validationResult = productRuleResolver.validateInput({
+    businessCapabilities,
+    input: parsed.data,
+  });
+
+  if (!validationResult.valid) {
+    return {
+      success: false,
+      errors: validationResult.errors,
     };
   }
 

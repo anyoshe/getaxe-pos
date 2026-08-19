@@ -18,17 +18,18 @@ import type {
 } from "../product-form.types";
 
 interface ProductClassificationProps {
-
     form: UseFormReturn<ProductFormInput>;
-
     context: ProductContext;
-
+    visibleFields?: string[];
 }
 
 export function ProductClassification({
     form,
     context,
+    visibleFields,
 }: ProductClassificationProps) {
+    const visibleSet = new Set(visibleFields ?? []);
+    const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
     return (
 
@@ -39,54 +40,68 @@ export function ProductClassification({
 
             <div className="grid gap-4 md:grid-cols-2">
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="categoryId"
-                    options={context.categories}
-                    placeholder="Select Category"
-                />
+                {showField("categoryId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="categoryId"
+                        options={context.categories}
+                        placeholder="Select Category"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="supplierId"
-                    options={context.suppliers}
-                    placeholder="Select Supplier"
-                />
+                {showField("supplierId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="supplierId"
+                        options={context.suppliers}
+                        placeholder="Select Supplier"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="manufacturerId"
-                    options={context.manufacturers}
-                    placeholder="Select Manufacturer"
-                />
+                {showField("manufacturerId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="manufacturerId"
+                        options={context.manufacturers}
+                        placeholder="Select Manufacturer"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="drugCategoryId"
-                    options={context.drugCategories}
-                    placeholder="Select Drug Category"
-                />
+                {showField("drugCategoryId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="drugCategoryId"
+                        options={context.drugCategories}
+                        placeholder="Select Drug Category"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="dosageFormId"
-                    options={context.dosageForms}
-                    placeholder="Select Dosage Form"
-                />
+                {showField("dosageFormId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="dosageFormId"
+                        options={context.dosageForms}
+                        placeholder="Select Dosage Form"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="drugStrengthId"
-                    options={context.drugStrengths}
-                    placeholder="Select Drug Strength"
-                />
+                {showField("drugStrengthId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="drugStrengthId"
+                        options={context.drugStrengths}
+                        placeholder="Select Drug Strength"
+                    />
+                )}
 
-                <FormSearchableSelect
-                    control={form.control}
-                    name="prescriptionTypeId"
-                    options={context.prescriptionTypes}
-                    placeholder="Select Prescription Type"
-                />
+                {showField("prescriptionTypeId") && (
+                    <FormSearchableSelect
+                        control={form.control}
+                        name="prescriptionTypeId"
+                        options={context.prescriptionTypes}
+                        placeholder="Select Prescription Type"
+                    />
+                )}
 
             </div>
 

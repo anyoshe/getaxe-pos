@@ -1,6 +1,10 @@
 "use client";
 
 import type {
+    ComponentType,
+} from "react";
+
+import type {
     UseFormReturn,
 } from "react-hook-form";
 
@@ -13,15 +17,34 @@ import type {
 } from "../product-form.types";
 
 import {
-    PRODUCT_WIZARD_STEPS,
-} from "./product-wizard.config";
+    ProductBasic,
+    ProductClassification,
+    ProductFinance,
+    ProductInventory,
+    ProductUnits,
+} from "../sections";
+
+import { productRuleResolver } from "../../../services/product-rule-resolver";
 
 interface ProductWizardStepProps {
     stepId: string;
-
     form: UseFormReturn<ProductFormInput>;
-
     context: ProductContext;
+}
+
+function resolveStepComponent(stepId: string): ComponentType<any> | null {
+    const stepComponentMap: Record<string, ComponentType<any>> = {
+        "product-information": ProductBasic,
+        classification: ProductClassification,
+        units: ProductUnits,
+        inventory: ProductInventory,
+        pricing: ProductFinance,
+        accounting: ProductFinance,
+        "batch-expiry": ProductInventory,
+        pharmacy: ProductClassification,
+    };
+
+    return stepComponentMap[stepId] ?? null;
 }
 
 export function ProductWizardStep({
@@ -29,24 +52,28 @@ export function ProductWizardStep({
     form,
     context,
 }: ProductWizardStepProps) {
+    const Component = resolveStepComponent(stepId);
 
-    const step =
-        PRODUCT_WIZARD_STEPS.find(
-            (step) =>
-                step.id === stepId,
-        );
-
-    if (!step) {
+    if (!Component) {
         return null;
     }
 
-    const Component =
-        step.component;
+    const productType = form.getValues("productType");
+    const visibleFields = productType
+        ? productRuleResolver
+            .resolve({
+                businessCapabilities: context.businessCapabilities,
+                productType,
+            })
+            .fields.filter((field) => field.step === stepId)
+            .map((field) => field.key)
+        : [];
 
     return (
         <Component
             form={form}
             context={context}
+            visibleFields={visibleFields}
         />
     );
 }
