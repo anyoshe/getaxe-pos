@@ -1,0 +1,890 @@
+[33mac8568f[m Agent host session 053cc92a-8ca6-473b-91bb-8cbfc551dda6 - baseline checkpoint
+ .gitignore                                         |    41 [32m+[m
+ AGENTS.md                                          |     5 [32m+[m
+ CLAUDE.md                                          |     1 [32m+[m
+ README.md                                          |    36 [32m+[m
+ architecture.txt                                   |  1000 [32m++[m
+ components.json                                    |    25 [32m+[m
+ docs/design-system.md                              |   750 [32m+[m
+ docs/product-vision.md                             |   425 [32m+[m
+ docs/system-architecture.md                        |   388 [32m+[m
+ drizzle.config.ts                                  |    13 [32m+[m
+ eslint.config.mjs                                  |    18 [32m+[m
+ .../migrations/0000_initial_schema.sql             |    77 [32m+[m
+ .../migrations/0001_inventory_categories.sql       |    14 [32m+[m
+ .../migrations/0002_inventory_suppliers.sql        |    20 [32m+[m
+ .../migrations/0003_inventory_products.sql         |    36 [32m+[m
+ .../migrations/0004_inventory_product_batches.sql  |    26 [32m+[m
+ .../migrations/0005_inventory_stock_movements.sql  |    24 [32m+[m
+ .../migrations/0006_stock_movement_enum.sql        |     4 [32m+[m
+ .../migrations/0007_purchase_orders.sql            |    58 [32m+[m
+ migration_backup/migrations/0008_sales.sql         |   266 [32m+[m
+ migration_backup/migrations/0009_cashAccounts.sql  |    17 [32m+[m
+ migration_backup/migrations/0010_true_the_hand.sql |   946 [32m++[m
+ .../migrations/meta/0000_snapshot.json             |   628 [32m+[m
+ .../migrations/meta/0001_snapshot.json             |   753 [32m+[m
+ .../migrations/meta/0002_snapshot.json             |   914 [32m++[m
+ .../migrations/meta/0003_snapshot.json             |  1231 [32m++[m
+ .../migrations/meta/0004_snapshot.json             |  1466 [32m++[m
+ .../migrations/meta/0005_snapshot.json             |  1691 [32m+++[m
+ .../migrations/meta/0006_snapshot.json             |  1732 [32m+++[m
+ .../migrations/meta/0007_snapshot.json             |  2170 [32m+++[m
+ .../migrations/meta/0008_snapshot.json             |  4409 [32m++++++[m
+ .../migrations/meta/0009_snapshot.json             |  4550 [32m++++++[m
+ .../migrations/meta/0010_snapshot.json             | 12418 [32m+++++++++++++++++[m
+ migration_backup/migrations/meta/_journal.json     |    83 [32m+[m
+ next.config.ts                                     |     7 [32m+[m
+ package.json                                       |    72 [32m+[m
+ pnpm-lock.yaml                                     |  8200 [32m+++++++++++[m
+ pnpm-workspace.yaml                                |     3 [32m+[m
+ postcss.config.mjs                                 |     7 [32m+[m
+ project-folders.txt                                |   239 [32m+[m
+ project-tree.txt                                   |   582 [32m+[m
+ public/1.png                                       |   Bin [31m0[m -> [32m13073[m bytes
+ public/2.png                                       |   Bin [31m0[m -> [32m56376[m bytes
+ public/file.svg                                    |     1 [32m+[m
+ public/g.png                                       |   Bin [31m0[m -> [32m56376[m bytes
+ public/gat-icon.jpg                                |   Bin [31m0[m -> [32m17220[m bytes
+ public/gat-icon.png                                |   Bin [31m0[m -> [32m63056[m bytes
+ public/gat-icon.svg                                |     9 [32m+[m
+ public/gat-icon1.svg                               |     1 [32m+[m
+ public/globe.svg                                   |     1 [32m+[m
+ public/iconwitoutbg.png                            |   Bin [31m0[m -> [32m47718[m bytes
+ public/next.svg                                    |     1 [32m+[m
+ public/vercel.svg                                  |     1 [32m+[m
+ public/window.svg                                  |     1 [32m+[m
+ purchases.ts                                       |     0
+ relations.txt                                      |     2 [32m+[m
+ sales.ts                                           |     0
+ src-file-count.txt                                 |    52 [32m+[m
+ src/actions/index.ts                               |     0
+ src/api/index.ts                                   |     0
+ src/app/(auth)/forgot-password/page.tsx            |     8 [32m+[m
+ src/app/(auth)/login/page.tsx                      |     5 [32m+[m
+ src/app/(auth)/reset-password/page.tsx             |     8 [32m+[m
+ src/app/(dashboard)/dashboard/page.tsx             |   105 [32m+[m
+ src/app/(dashboard)/inventory/categories/page.tsx  |    31 [32m+[m
+ src/app/(dashboard)/inventory/page.tsx             |   502 [32m+[m
+ src/app/(dashboard)/inventory/price-lists/page.tsx |    31 [32m+[m
+ .../(dashboard)/inventory/product-prices/page.tsx  |    48 [32m+[m
+ src/app/(dashboard)/inventory/products/page.tsx    |    52 [32m+[m
+ src/app/(dashboard)/inventory/suppliers/page.tsx   |    31 [32m+[m
+ src/app/(dashboard)/layout.tsx                     |    32 [32m+[m
+ src/app/(dashboard)/sales/page.tsx                 |     5 [32m+[m
+ src/app/(dashboard)/settings/branches/page.tsx     |    36 [32m+[m
+ src/app/(dashboard)/settings/units/page.tsx        |    36 [32m+[m
+ src/app/(dashboard)/settings/users/page.tsx        |   105 [32m+[m
+ .../settings/warehouse-locations/page.tsx          |     7 [32m+[m
+ src/app/(dashboard)/settings/warehouses/page.tsx   |    44 [32m+[m
+ src/app/(dashboard)/users/page.tsx                 |    10 [32m+[m
+ src/app/create-password/page.tsx                   |    49 [32m+[m
+ src/app/favicon.ico                                |   Bin [31m0[m -> [32m25931[m bytes
+ src/app/globals.css                                |   194 [32m+[m
+ src/app/layout.tsx                                 |    42 [32m+[m
+ src/app/page.tsx                                   |     5 [32m+[m
+ .../platform/(protected)/business-owners/page.tsx  |     5 [32m+[m
+ src/app/platform/(protected)/businesses/page.tsx   |     5 [32m+[m
+ src/app/platform/(protected)/layout.tsx            |    19 [32m+[m
+ src/app/platform/(protected)/page.tsx              |     7 [32m+[m
+ src/app/platform/layout.tsx                        |     7 [32m+[m
+ src/app/platform/login/page.tsx                    |    10 [32m+[m
+ src/app/setup/page.tsx                             |    57 [32m+[m
+ src/components/crud/crud-dialog.tsx                |    70 [32m+[m
+ src/components/crud/crud-page.tsx                  |    70 [32m+[m
+ src/components/crud/crud-table.tsx                 |   314 [32m+[m
+ src/components/crud/crud-toolbar.tsx               |   114 [32m+[m
+ src/components/crud/delete-dialog.tsx              |    89 [32m+[m
+ src/components/crud/form-actions.tsx               |    67 [32m+[m
+ src/components/crud/index.ts                       |    15 [32m+[m
+ src/components/crud/status-badge.tsx               |    50 [32m+[m
+ src/components/crud/types.ts                       |   149 [32m+[m
+ src/components/forms/form-checkbox.tsx             |    63 [32m+[m
+ src/components/forms/form-field.tsx                |    49 [32m+[m
+ src/components/forms/form-number-field.tsx         |    70 [32m+[m
+ src/components/forms/form-searchable-select.tsx    |    68 [32m+[m
+ src/components/forms/form-section.tsx              |    52 [32m+[m
+ src/components/forms/form-text-field.tsx           |    59 [32m+[m
+ src/components/forms/form-textarea.tsx             |    61 [32m+[m
+ src/components/forms/index.ts                      |     8 [32m+[m
+ src/components/forms/searchable-select.tsx         |    85 [32m+[m
+ src/components/layout/app-shell.tsx                |    36 [32m+[m
+ src/components/layout/index.ts                     |     5 [32m+[m
+ src/components/layout/logo.tsx                     |    80 [32m+[m
+ src/components/layout/mobile-sidebar.tsx           |   688 [32m+[m
+ src/components/layout/sidebar.tsx                  |   149 [32m+[m
+ src/components/layout/sidebar/index.ts             |     3 [32m+[m
+ .../layout/sidebar/sidebar-expandable.tsx          |   267 [32m+[m
+ src/components/layout/sidebar/sidebar-item.tsx     |    73 [32m+[m
+ src/components/layout/sidebar/sidebar-logo.tsx     |    11 [32m+[m
+ src/components/layout/topbar.tsx                   |   253 [32m+[m
+ src/components/motion/animated-button.tsx          |    62 [32m+[m
+ src/components/motion/fade-in.tsx                  |   111 [32m+[m
+ src/components/motion/hover-card.tsx               |    43 [32m+[m
+ src/components/motion/index.ts                     |     5 [32m+[m
+ src/components/motion/page-transition.tsx          |    35 [32m+[m
+ src/components/motion/stagger.tsx                  |    42 [32m+[m
+ src/components/shared/index.ts                     |     4 [32m+[m
+ src/components/shared/page-header.tsx              |    35 [32m+[m
+ src/components/shared/quick-action-card.tsx        |    35 [32m+[m
+ src/components/shared/section-header.tsx           |    23 [32m+[m
+ src/components/shared/stat-card.tsx                |    51 [32m+[m
+ src/components/ui/alert-dialog.tsx                 |   187 [32m+[m
+ src/components/ui/avatar.tsx                       |   109 [32m+[m
+ src/components/ui/badge.tsx                        |    52 [32m+[m
+ src/components/ui/button.tsx                       |    58 [32m+[m
+ src/components/ui/calendar.tsx                     |   221 [32m+[m
+ src/components/ui/card.tsx                         |   103 [32m+[m
+ src/components/ui/checkbox.tsx                     |    36 [32m+[m
+ src/components/ui/dialog.tsx                       |   191 [32m+[m
+ src/components/ui/dropdown-menu.tsx                |   268 [32m+[m
+ src/components/ui/input.tsx                        |    20 [32m+[m
+ src/components/ui/label.tsx                        |    20 [32m+[m
+ src/components/ui/popover.tsx                      |    90 [32m+[m
+ src/components/ui/select.tsx                       |   201 [32m+[m
+ src/components/ui/separator.tsx                    |    25 [32m+[m
+ src/components/ui/sheet.tsx                        |   138 [32m+[m
+ src/components/ui/sonner.tsx                       |    49 [32m+[m
+ src/components/ui/table.tsx                        |   116 [32m+[m
+ src/components/ui/tabs.tsx                         |    82 [32m+[m
+ src/components/ui/textarea.tsx                     |    18 [32m+[m
+ src/components/ui/tooltip.tsx                      |    66 [32m+[m
+ src/config/navigation.ts                           |   291 [32m+[m
+ src/config/navigation.types.ts                     |    10 [32m+[m
+ src/constants/permissions/index.ts                 |    12 [32m+[m
+ src/constants/routes.ts                            |     0
+ src/db/index.ts                                    |    17 [32m+[m
+ src/db/inspect-permissions.ts                      |    18 [32m+[m
+ src/db/migrate.ts                                  |   207 [32m+[m
+ src/db/migration.ts                                |    12 [32m+[m
+ src/db/migrations/0000_true_big_bertha.sql         |  1380 [32m++[m
+ src/db/migrations/0001_plain_catseye.sql           |    20 [32m+[m
+ src/db/migrations/0003_hesitant_spot.sql           |    17 [32m+[m
+ src/db/migrations/0004_loving_lady_ursula.sql      |     5 [32m+[m
+ src/db/migrations/0005_kind_namorita.sql           |    27 [32m+[m
+ src/db/migrations/0006_peaceful_odin.sql           |    18 [32m+[m
+ src/db/migrations/0007_late_otto_octavius.sql      |     1 [32m+[m
+ src/db/migrations/0008_clean_zemo.sql              |    13 [32m+[m
+ src/db/migrations/0009_flashy_cable.sql            |     1 [32m+[m
+ src/db/migrations/0010_magenta_chat.sql            |    14 [32m+[m
+ src/db/migrations/0011_third_bloodscream.sql       |     3 [32m+[m
+ src/db/migrations/0012_special_harry_osborn.sql    |     2 [32m+[m
+ src/db/migrations/0013_kind_the_hood.sql           |     1 [32m+[m
+ src/db/migrations/0014_goofy_lifeguard.sql         |    52 [32m+[m
+ src/db/migrations/0015_sturdy_sprite.sql           |    11 [32m+[m
+ src/db/migrations/0016_abandoned_purple_man.sql    |     1 [32m+[m
+ src/db/migrations/0017_real_quasar.sql             |    11 [32m+[m
+ src/db/migrations/0018_normalize_permissions.sql   |   119 [32m+[m
+ src/db/migrations/meta/0000_snapshot.json          | 12418 [32m+++++++++++++++++[m
+ src/db/migrations/meta/0001_snapshot.json          | 12563 [32m+++++++++++++++++[m
+ src/db/migrations/meta/0002_snapshot.json          | 12551 [32m+++++++++++++++++[m
+ src/db/migrations/meta/0003_snapshot.json          | 12689 [32m+++++++++++++++++[m
+ src/db/migrations/meta/0004_snapshot.json          | 12732 [32m+++++++++++++++++[m
+ src/db/migrations/meta/0005_snapshot.json          | 12938 [32m+++++++++++++++++[m
+ src/db/migrations/meta/0006_snapshot.json          | 13069 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0007_snapshot.json          | 13069 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0008_snapshot.json          | 13165 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0009_snapshot.json          | 13171 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0010_snapshot.json          | 13272 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0011_snapshot.json          | 13278 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0012_snapshot.json          | 13298 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0013_snapshot.json          | 13297 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0014_snapshot.json          | 13681 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0015_snapshot.json          | 13779 [32m+++++++++++++++++++[m
+ src/db/migrations/meta/0016_snapshot.json          | 13681 [32m++++++++++++++++++[m
+ src/db/migrations/meta/0017_snapshot.json          | 13779 [32m+++++++++++++++++++[m
+ src/db/migrations/meta/_journal.json               |   139 [32m+[m
+ src/db/migrations/relations.ts                     |  1122 [32m++[m
+ src/db/migrations/schema.ts                        |  2314 [32m++++[m
+ .../schema/capabilities/business_capabilities.ts   |    73 [32m+[m
+ src/db/schema/capabilities/capabilities.ts         |    94 [32m+[m
+ src/db/schema/capabilities/capability_overrides.ts |    72 [32m+[m
+ src/db/schema/capabilities/index.ts                |     3 [32m+[m
+ src/db/schema/clinical/consultation_diagnoses.ts   |    72 [32m+[m
+ src/db/schema/clinical/consultations.ts            |   123 [32m+[m
+ src/db/schema/clinical/diagnoses.ts                |    80 [32m+[m
+ src/db/schema/clinical/index.ts                    |     3 [32m+[m
+ src/db/schema/core/businesses.ts                   |   118 [32m+[m
+ src/db/schema/core/index.ts                        |     1 [32m+[m
+ src/db/schema/finance/account_categories.ts        |    99 [32m+[m
+ src/db/schema/finance/account_types.ts             |    95 [32m+[m
+ src/db/schema/finance/cash_accounts.ts             |   133 [32m+[m
+ src/db/schema/finance/chart_of_accounts.ts         |   137 [32m+[m
+ src/db/schema/finance/expense_categories.ts        |    67 [32m+[m
+ src/db/schema/finance/expenses.ts                  |   103 [32m+[m
+ src/db/schema/finance/income_categories.ts         |    71 [32m+[m
+ src/db/schema/finance/incomes.ts                   |   106 [32m+[m
+ src/db/schema/finance/index.ts                     |    11 [32m+[m
+ src/db/schema/finance/journal_entries.ts           |    97 [32m+[m
+ src/db/schema/finance/journal_entry_lines.ts       |    90 [32m+[m
+ src/db/schema/finance/tax_rates.ts                 |    87 [32m+[m
+ src/db/schema/index.ts                             |    14 [32m+[m
+ src/db/schema/infrastructure/activity_logs.ts      |    78 [32m+[m
+ src/db/schema/infrastructure/api_keys.ts           |    67 [32m+[m
+ src/db/schema/infrastructure/index.ts              |     3 [32m+[m
+ src/db/schema/infrastructure/login_history.ts      |    65 [32m+[m
+ src/db/schema/insurance/index.ts                   |     5 [32m+[m
+ src/db/schema/insurance/insurance_claim_items.ts   |   112 [32m+[m
+ src/db/schema/insurance/insurance_claims.ts        |   152 [32m+[m
+ src/db/schema/insurance/insurance_memberships.ts   |    91 [32m+[m
+ src/db/schema/insurance/insurance_plans.ts         |   110 [32m+[m
+ src/db/schema/insurance/insurance_providers.ts     |    91 [32m+[m
+ src/db/schema/inventory/categories.ts              |    64 [32m+[m
+ src/db/schema/inventory/index.ts                   |     8 [32m+[m
+ src/db/schema/inventory/inventory_balances.ts      |   136 [32m+[m
+ src/db/schema/inventory/price_lists.ts             |    84 [32m+[m
+ src/db/schema/inventory/product_batches.ts         |   115 [32m+[m
+ src/db/schema/inventory/product_prices.ts          |   100 [32m+[m
+ src/db/schema/inventory/products.ts                |   281 [32m+[m
+ src/db/schema/inventory/stock_movements.ts         |   106 [32m+[m
+ src/db/schema/inventory/suppliers.ts               |    78 [32m+[m
+ src/db/schema/pharmacy/dispensation_items.ts       |   135 [32m+[m
+ src/db/schema/pharmacy/dispensations.ts            |   140 [32m+[m
+ src/db/schema/pharmacy/dosage_forms.ts             |    83 [32m+[m
+ src/db/schema/pharmacy/drug_categories.ts          |    81 [32m+[m
+ src/db/schema/pharmacy/drug_strengths.ts           |    80 [32m+[m
+ src/db/schema/pharmacy/index.ts                    |     9 [32m+[m
+ src/db/schema/pharmacy/manufacturers.ts            |    77 [32m+[m
+ src/db/schema/pharmacy/prescription_items.ts       |   101 [32m+[m
+ src/db/schema/pharmacy/prescription_types.ts       |    86 [32m+[m
+ src/db/schema/pharmacy/prescriptions.ts            |   105 [32m+[m
+ src/db/schema/platform/index.ts                    |     1 [32m+[m
+ src/db/schema/platform/platform-users.ts           |    41 [32m+[m
+ src/db/schema/purchasing/goods_receipt_items.ts    |    67 [32m+[m
+ src/db/schema/purchasing/goods_receipts.ts         |   115 [32m+[m
+ src/db/schema/purchasing/index.ts                  |     6 [32m+[m
+ src/db/schema/purchasing/purchase_order_items.ts   |    78 [32m+[m
+ src/db/schema/purchasing/purchase_orders.ts        |   122 [32m+[m
+ src/db/schema/purchasing/supplier_return_items.ts  |    75 [32m+[m
+ src/db/schema/purchasing/supplier_returns.ts       |    95 [32m+[m
+ src/db/schema/sales/customers.ts                   |   136 [32m+[m
+ src/db/schema/sales/index.ts                       |     8 [32m+[m
+ src/db/schema/sales/payment_reversals.ts           |   143 [32m+[m
+ src/db/schema/sales/payments.ts                    |   122 [32m+[m
+ src/db/schema/sales/sale_item_batches.ts           |    74 [32m+[m
+ src/db/schema/sales/sale_items.ts                  |   112 [32m+[m
+ src/db/schema/sales/sale_return_items.ts           |   101 [32m+[m
+ src/db/schema/sales/sale_returns.ts                |   140 [32m+[m
+ src/db/schema/sales/sales.ts                       |   182 [32m+[m
+ src/db/schema/settings/branches.ts                 |   100 [32m+[m
+ src/db/schema/settings/business_settings.ts        |   132 [32m+[m
+ src/db/schema/settings/countries.ts                |    62 [32m+[m
+ src/db/schema/settings/currencies.ts               |    61 [32m+[m
+ src/db/schema/settings/fiscal_years.ts             |    97 [32m+[m
+ src/db/schema/settings/index.ts                    |     9 [32m+[m
+ src/db/schema/settings/numbering_sequences.ts      |   108 [32m+[m
+ src/db/schema/settings/payment_methods.ts          |   104 [32m+[m
+ src/db/schema/settings/units.ts                    |    87 [32m+[m
+ src/db/schema/settings/warehouses.ts               |    95 [32m+[m
+ src/db/schema/shared/enums.ts                      |   341 [32m+[m
+ src/db/schema/shared/index.ts                      |     1 [32m+[m
+ src/db/schema/users/index.ts                       |     6 [32m+[m
+ src/db/schema/users/permissions.ts                 |    75 [32m+[m
+ src/db/schema/users/role_permissions.ts            |    53 [32m+[m
+ src/db/schema/users/roles.ts                       |    74 [32m+[m
+ src/db/schema/users/user-invitations.ts            |    60 [32m+[m
+ src/db/schema/users/user-permissions.ts            |    85 [32m+[m
+ src/db/schema/users/users.ts                       |    83 [32m+[m
+ src/db/seed/global/countries.ts                    |    87 [32m+[m
+ src/db/seed/global/currencies.ts                   |    80 [32m+[m
+ src/db/seed/global/index.ts                        |     5 [32m+[m
+ src/db/seed/global/payment-methods.ts              |    81 [32m+[m
+ src/db/seed/global/tax-rates.ts                    |    60 [32m+[m
+ src/db/seed/global/units.ts                        |   120 [32m+[m
+ src/db/seed/index.ts                               |    52 [32m+[m
+ src/db/seed/platform/super-admin.ts                |    73 [32m+[m
+ src/db/seed/sync-capabilities.ts                   |    34 [32m+[m
+ src/db/seed/system/admin.ts                        |   249 [32m+[m
+ src/db/seed/system/index.ts                        |     2 [32m+[m
+ src/db/seed/system/permissions.ts                  |    25 [32m+[m
+ src/db/seed/system/role-permissions.ts             |    54 [32m+[m
+ src/db/seed/system/roles.ts                        |    89 [32m+[m
+ src/db/status.ts                                   |   106 [32m+[m
+ src/db/test.ts                                     |    18 [32m+[m
+ src/db/validate-permissions.ts                     |    17 [32m+[m
+ src/features/auth/actions/create-password.ts       |    54 [32m+[m
+ src/features/auth/actions/login.ts                 |   159 [32m+[m
+ src/features/auth/actions/logout.ts                |    10 [32m+[m
+ .../auth/components/animated-background.tsx        |    62 [32m+[m
+ src/features/auth/components/auth-card.tsx         |    52 [32m+[m
+ .../auth/components/create-password-form.tsx       |   196 [32m+[m
+ .../auth/components/create-password-header.tsx     |    33 [32m+[m
+ src/features/auth/components/floating-input.tsx    |   284 [32m+[m
+ src/features/auth/components/login-card.tsx        |    62 [32m+[m
+ src/features/auth/components/login-form.tsx        |   132 [32m+[m
+ src/features/auth/components/login-header.tsx      |    29 [32m+[m
+ src/features/auth/components/login-layout.tsx      |   103 [32m+[m
+ src/features/auth/components/login-side-panel.tsx  |    75 [32m+[m
+ src/features/auth/components/password-input.tsx    |    80 [32m+[m
+ src/features/auth/components/remember-checkbox.tsx |    95 [32m+[m
+ src/features/auth/hooks/use-auth.ts                |     0
+ .../auth/schemas/create-password-schema.ts         |    32 [32m+[m
+ src/features/auth/schemas/login-schema.ts          |    15 [32m+[m
+ src/features/auth/services/auth-service.ts         |   133 [32m+[m
+ .../auth/services/create-password.service.ts       |    73 [32m+[m
+ .../auth/services/invitation-auth.service.ts       |    58 [32m+[m
+ src/features/auth/types/index.ts                   |    63 [32m+[m
+ src/features/auth/utils/index.ts                   |     0
+ src/features/business/actions/create-business.ts   |   107 [32m+[m
+ .../business/components/setup/OnboardingShell.tsx  |    44 [32m+[m
+ .../components/setup/business-setup-card.tsx       |    13 [32m+[m
+ .../components/setup/business-setup-form.tsx       |   296 [32m+[m
+ .../components/setup/business-type-select.tsx      |     5 [32m+[m
+ .../components/setup/hooks/use-business-setup.ts   |   122 [32m+[m
+ .../components/setup/onboarding-layout.tsx         |    89 [32m+[m
+ .../business/components/setup/setup-navigation.tsx |   103 [32m+[m
+ .../business/components/setup/setup-progress.tsx   |   131 [32m+[m
+ .../business/components/setup/setup-shell.tsx      |   125 [32m+[m
+ .../components/setup/steps/step-branch.tsx         |   113 [32m+[m
+ .../components/setup/steps/step-business.tsx       |   267 [32m+[m
+ .../business/components/setup/steps/step-owner.tsx |    78 [32m+[m
+ .../components/setup/steps/step-preferences.tsx    |   197 [32m+[m
+ .../components/setup/steps/step-review.tsx         |   142 [32m+[m
+ src/features/business/constants/business-types.ts  |   166 [32m+[m
+ .../business/schemas/business-setup-schema.ts      |    93 [32m+[m
+ .../services/business-provisioning.service.ts      |   267 [32m+[m
+ src/features/business/services/business.service.ts |    58 [32m+[m
+ src/features/business/services/index.ts            |     2 [32m+[m
+ .../capabilities/constants/capabilities.ts         |    20 [32m+[m
+ .../capabilities/constants/capability-groups.ts    |    32 [32m+[m
+ .../capabilities/constants/capability-status.ts    |    14 [32m+[m
+ .../capabilities/constants/catalogue/core.ts       |     8 [32m+[m
+ .../constants/catalogue/core/01-core-platform.ts   |    90 [32m+[m
+ .../capabilities/constants/catalogue/core/index.ts |     1 [32m+[m
+ .../capabilities/constants/catalogue/finance.ts    |    28 [32m+[m
+ .../catalogue/finance/01-accounting-core.ts        |   185 [32m+[m
+ .../catalogue/finance/02-income-expenses.ts        |   241 [32m+[m
+ .../catalogue/finance/03-cash-management.ts        |   248 [32m+[m
+ .../constants/catalogue/finance/04-tax.ts          |   257 [32m+[m
+ .../catalogue/finance/05-financial-reporting.ts    |   297 [32m+[m
+ .../constants/catalogue/finance/index.ts           |     5 [32m+[m
+ .../capabilities/constants/catalogue/index.ts      |     7 [32m+[m
+ .../capabilities/constants/catalogue/inventory.ts  |    49 [32m+[m
+ .../catalogue/inventory/01-product-master.ts       |   283 [32m+[m
+ .../catalogue/inventory/02-identification.ts       |   363 [32m+[m
+ .../catalogue/inventory/03-measurements.ts         |   301 [32m+[m
+ .../catalogue/inventory/04-stock-control.ts        |  1016 [32m++[m
+ .../catalogue/inventory/05-warehousing.ts          |   346 [32m+[m
+ .../constants/catalogue/inventory/06-pricing.ts    |   344 [32m+[m
+ .../constants/catalogue/inventory/08-quality.ts    |   244 [32m+[m
+ .../constants/catalogue/inventory/09-compliance.ts |   264 [32m+[m
+ .../constants/catalogue/inventory/10-analytics.ts  |   283 [32m+[m
+ .../constants/catalogue/inventory/index.ts         |     9 [32m+[m
+ .../capabilities/constants/catalogue/pharmacy.ts   |    40 [32m+[m
+ .../catalogue/pharmacy/01-pharmacy-core.ts         |   144 [32m+[m
+ .../catalogue/pharmacy/02-drug-classification.ts   |   258 [32m+[m
+ .../catalogue/pharmacy/03-dosage-management.ts     |   328 [32m+[m
+ .../catalogue/pharmacy/04-prescriptions.ts         |   266 [32m+[m
+ .../constants/catalogue/pharmacy/05-dispensing.ts  |   270 [32m+[m
+ .../catalogue/pharmacy/06-pharmacy-controls.ts     |   263 [32m+[m
+ .../constants/catalogue/pharmacy/index.ts          |     6 [32m+[m
+ .../capabilities/constants/catalogue/purchasing.ts |    28 [32m+[m
+ .../catalogue/purchasing/01-purchase-orders.ts     |   127 [32m+[m
+ .../catalogue/purchasing/02-supplier-management.ts |   234 [32m+[m
+ .../catalogue/purchasing/03-goods-receiving.ts     |   332 [32m+[m
+ .../catalogue/purchasing/04-purchase-returns.ts    |   245 [32m+[m
+ .../catalogue/purchasing/05-advanced-purchasing.ts |   302 [32m+[m
+ .../constants/catalogue/purchasing/index.ts        |     5 [32m+[m
+ .../capabilities/constants/catalogue/reporting.ts  |    40 [32m+[m
+ .../catalogue/reporting/01-report-core.ts          |   120 [32m+[m
+ .../catalogue/reporting/02-dashboard-engine.ts     |   245 [32m+[m
+ .../catalogue/reporting/03-scheduled-reports.ts    |   186 [32m+[m
+ .../catalogue/reporting/04-export-engine.ts        |   295 [32m+[m
+ .../reporting/05-business-intelligence.ts          |   302 [32m+[m
+ .../catalogue/reporting/06-audit-compliance.ts     |   310 [32m+[m
+ .../constants/catalogue/reporting/index.ts         |     6 [32m+[m
+ .../capabilities/constants/catalogue/sales.ts      |    33 [32m+[m
+ .../constants/catalogue/sales/01-sales-core.ts     |   239 [32m+[m
+ .../constants/catalogue/sales/02-customers.ts      |   299 [32m+[m
+ .../constants/catalogue/sales/03-payments.ts       |   361 [32m+[m
+ .../constants/catalogue/sales/04-returns.ts        |   308 [32m+[m
+ .../constants/catalogue/sales/05-discounts.ts      |   362 [32m+[m
+ .../constants/catalogue/sales/06-advanced-sales.ts |   366 [32m+[m
+ .../constants/catalogue/sales/index.ts             |     6 [32m+[m
+ src/features/capabilities/constants/index.ts       |     4 [32m+[m
+ src/features/capabilities/profiles/default.ts      |    20 [32m+[m
+ src/features/capabilities/profiles/hardware.ts     |    52 [32m+[m
+ src/features/capabilities/profiles/index.ts        |     4 [32m+[m
+ src/features/capabilities/profiles/pharmacy.ts     |    53 [32m+[m
+ src/features/capabilities/profiles/supermarket.ts  |    37 [32m+[m
+ .../repositories/business-capability.repository.ts |   115 [32m+[m
+ .../repositories/capability.repository.ts          |   176 [32m+[m
+ src/features/capabilities/repositories/index.ts    |     2 [32m+[m
+ .../services/business-capability.service.ts        |    64 [32m+[m
+ .../capabilities/services/capability-engine.ts     |    74 [32m+[m
+ .../services/capability-profile.service.ts         |    55 [32m+[m
+ .../capabilities/services/capability-registry.ts   |    51 [32m+[m
+ .../capabilities/services/capability-resolver.ts   |   155 [32m+[m
+ .../services/capability-sync.service.ts            |    49 [32m+[m
+ src/features/capabilities/services/index.ts        |     7 [32m+[m
+ .../capabilities/services/profile-loader.ts        |    43 [32m+[m
+ .../capabilities/types/capability-category.ts      |    19 [32m+[m
+ .../capabilities/types/capability-engine.ts        |    21 [32m+[m
+ .../capabilities/types/capability-module.ts        |    17 [32m+[m
+ .../capabilities/types/capability-profile.ts       |    15 [32m+[m
+ src/features/capabilities/types/capability.ts      |   138 [32m+[m
+ src/features/capabilities/types/index.ts           |     5 [32m+[m
+ src/features/clinical/actions/index.ts             |     0
+ src/features/clinical/components/index.ts          |     0
+ src/features/clinical/hooks/index.ts               |     0
+ src/features/clinical/schemas/index.ts             |     0
+ src/features/clinical/services/index.ts            |     0
+ src/features/clinical/types/index.ts               |     0
+ src/features/clinical/utils/index.ts               |     0
+ src/features/customers/actions/index.ts            |     0
+ src/features/customers/components/index.ts         |     0
+ src/features/customers/hooks/index.ts              |     0
+ src/features/customers/schemas/index.ts            |     0
+ src/features/customers/services/index.ts           |     0
+ src/features/customers/types/index.ts              |     0
+ src/features/customers/utils/index.ts              |     0
+ .../dashboard/actions/get-owner-dashboard.ts       |    22 [32m+[m
+ src/features/dashboard/actions/index.ts            |     1 [32m+[m
+ src/features/dashboard/components/index.ts         |     0
+ src/features/dashboard/hooks/index.ts              |     0
+ src/features/dashboard/schemas/index.ts            |     0
+ .../dashboard/services/dashboard.service.ts        |    49 [32m+[m
+ src/features/dashboard/services/index.ts           |     1 [32m+[m
+ src/features/dashboard/types/dashboard.ts          |    14 [32m+[m
+ src/features/dashboard/types/index.ts              |     1 [32m+[m
+ src/features/dashboard/utils/index.ts              |     0
+ src/features/finance/actions/index.ts              |     0
+ src/features/finance/components/index.ts           |     0
+ src/features/finance/hooks/index.ts                |     0
+ src/features/finance/schemas/index.ts              |     0
+ src/features/finance/services/index.ts             |     0
+ src/features/finance/types/index.ts                |     0
+ src/features/finance/utils/index.ts                |     0
+ src/features/insurance/actions/index.ts            |     0
+ src/features/insurance/components/index.ts         |     0
+ src/features/insurance/hooks/index.ts              |     0
+ src/features/insurance/schemas/index.ts            |     0
+ src/features/insurance/services/index.ts           |     0
+ src/features/insurance/types/index.ts              |     0
+ src/features/insurance/utils/index.ts              |     0
+ src/features/inventory/actions/categories.ts       |    26 [32m+[m
+ src/features/inventory/actions/create-category.ts  |    68 [32m+[m
+ .../inventory/actions/create-price-list.ts         |    61 [32m+[m
+ .../inventory/actions/create-product-batch.ts      |    99 [32m+[m
+ .../inventory/actions/create-product-price.ts      |    82 [32m+[m
+ src/features/inventory/actions/create-product.ts   |   212 [32m+[m
+ .../inventory/actions/create-stock-movement.ts     |    92 [32m+[m
+ src/features/inventory/actions/create-supplier.ts  |    92 [32m+[m
+ src/features/inventory/actions/delete-category.ts  |    50 [32m+[m
+ .../inventory/actions/delete-price-list.ts         |    43 [32m+[m
+ .../inventory/actions/delete-product-batch.ts      |    43 [32m+[m
+ .../inventory/actions/delete-product-price.ts      |    43 [32m+[m
+ src/features/inventory/actions/delete-product.ts   |    43 [32m+[m
+ src/features/inventory/actions/delete-supplier.ts  |    28 [32m+[m
+ .../inventory/actions/get-product-context.ts       |    16 [32m+[m
+ src/features/inventory/actions/index.ts            |    33 [32m+[m
+ src/features/inventory/actions/price-lists.ts      |    32 [32m+[m
+ src/features/inventory/actions/product-batches.ts  |    33 [32m+[m
+ src/features/inventory/actions/product-prices.ts   |    32 [32m+[m
+ src/features/inventory/actions/products.ts         |    30 [32m+[m
+ src/features/inventory/actions/stock-movements.ts  |    33 [32m+[m
+ src/features/inventory/actions/suppliers.ts        |    17 [32m+[m
+ src/features/inventory/actions/update-category.ts  |    87 [32m+[m
+ .../inventory/actions/update-price-list.ts         |    57 [32m+[m
+ .../inventory/actions/update-product-batch.ts      |   107 [32m+[m
+ .../inventory/actions/update-product-price.ts      |    87 [32m+[m
+ src/features/inventory/actions/update-product.ts   |   133 [32m+[m
+ src/features/inventory/actions/update-supplier.ts  |    60 [32m+[m
+ .../components/categories/categories-client.tsx    |   175 [32m+[m
+ .../components/categories/category-dialog.tsx      |    63 [32m+[m
+ .../components/categories/category-form.tsx        |   191 [32m+[m
+ .../components/categories/category-table.tsx       |    78 [32m+[m
+ .../components/categories/category-toolbar.tsx     |    24 [32m+[m
+ .../inventory/components/categories/index.ts       |     5 [32m+[m
+ src/features/inventory/components/index.ts         |     0
+ .../inventory/components/price-lists/index.ts      |     5 [32m+[m
+ .../components/price-lists/price-list-dialog.tsx   |    63 [32m+[m
+ .../components/price-lists/price-list-form.tsx     |   228 [32m+[m
+ .../components/price-lists/price-list-table.tsx    |    90 [32m+[m
+ .../components/price-lists/price-list-toolbar.tsx  |    24 [32m+[m
+ .../components/price-lists/price-lists-client.tsx  |   178 [32m+[m
+ .../inventory/components/product-batches/index.ts  |     0
+ .../product-batches/product-batch-dialog.tsx       |     0
+ .../product-batches/product-batch-form.tsx         |     0
+ .../product-batches/product-batch-table.tsx        |     0
+ .../product-batches/product-batch-toolbar.tsx      |     0
+ .../product-batches/product-batches-client.tsx     |     0
+ .../inventory/components/product-prices/index.ts   |     5 [32m+[m
+ .../product-prices/product-price-dialog.tsx        |    79 [32m+[m
+ .../product-prices/product-price-form.tsx          |   260 [32m+[m
+ .../product-prices/product-price-table.tsx         |   110 [32m+[m
+ .../product-prices/product-price-toolbar.tsx       |    25 [32m+[m
+ .../product-prices/product-prices-client.tsx       |   207 [32m+[m
+ .../inventory/components/products/index.ts         |     5 [32m+[m
+ .../components/products/product-dialog.tsx         |    64 [32m+[m
+ .../inventory/components/products/product-form.tsx |   285 [32m+[m
+ .../components/products/product-form.types.ts      |   208 [32m+[m
+ .../components/products/product-table.tsx          |   143 [32m+[m
+ .../components/products/product-toolbar.tsx        |    35 [32m+[m
+ .../components/products/product-wizard.tsx         |    96 [32m+[m
+ .../components/products/products-client.tsx        |   170 [32m+[m
+ .../components/products/sections/index.ts          |     5 [32m+[m
+ .../components/products/sections/product-basic.tsx |    93 [32m+[m
+ .../products/sections/product-classification.tsx   |    97 [32m+[m
+ .../products/sections/product-finance.tsx          |    92 [32m+[m
+ .../products/sections/product-inventory.tsx        |    94 [32m+[m
+ .../components/products/sections/product-units.tsx |    69 [32m+[m
+ .../products/wizard/product-type-selector.tsx      |   109 [32m+[m
+ .../products/wizard/product-wizard-header.tsx      |    85 [32m+[m
+ .../products/wizard/product-wizard-navigation.tsx  |    48 [32m+[m
+ .../products/wizard/product-wizard-step.tsx        |    52 [32m+[m
+ .../products/wizard/product-wizard.config.ts       |   128 [32m+[m
+ .../products/wizard/use-product-wizard.ts          |   127 [32m+[m
+ .../inventory/components/stock-movements/index.ts  |     0
+ .../stock-movements/stock-movement-table.tsx       |     0
+ .../stock-movements/stock-movement-toolbar.tsx     |     0
+ .../stock-movements/stock-movements-client.tsx     |     0
+ .../inventory/components/suppliers/index.ts        |     5 [32m+[m
+ .../components/suppliers/supplier-dialog.tsx       |    60 [32m+[m
+ .../components/suppliers/supplier-form.tsx         |   303 [32m+[m
+ .../components/suppliers/supplier-table.tsx        |   120 [32m+[m
+ .../components/suppliers/supplier-toolbar.tsx      |    46 [32m+[m
+ .../components/suppliers/suppliers-client.tsx      |   169 [32m+[m
+ src/features/inventory/hooks/index.ts              |     0
+ src/features/inventory/queries/expiry.query.ts     |   130 [32m+[m
+ src/features/inventory/queries/index.ts            |    39 [32m+[m
+ src/features/inventory/queries/low-stock.query.ts  |   128 [32m+[m
+ .../inventory/queries/stock-movement.query.ts      |   190 [32m+[m
+ .../inventory/queries/stock-on-hand.query.ts       |   113 [32m+[m
+ src/features/inventory/queries/valuation.query.ts  |   130 [32m+[m
+ src/features/inventory/schemas/categories.ts       |    41 [32m+[m
+ src/features/inventory/schemas/index.ts            |     7 [32m+[m
+ src/features/inventory/schemas/price-lists.ts      |    31 [32m+[m
+ src/features/inventory/schemas/product-batches.ts  |    57 [32m+[m
+ src/features/inventory/schemas/product-prices.ts   |    25 [32m+[m
+ src/features/inventory/schemas/products.ts         |   144 [32m+[m
+ src/features/inventory/schemas/stock-movements.ts  |    60 [32m+[m
+ src/features/inventory/schemas/suppliers.ts        |    59 [32m+[m
+ .../inventory/services/categories.service.ts       |   128 [32m+[m
+ src/features/inventory/services/index.ts           |    10 [32m+[m
+ .../inventory/services/inventory-validator.ts      |   141 [32m+[m
+ .../inventory/services/inventory.service.ts        |   340 [32m+[m
+ .../inventory/services/price-lists.service.ts      |   152 [32m+[m
+ .../inventory/services/product-batches.service.ts  |   252 [32m+[m
+ .../inventory/services/product-context.service.ts  |    85 [32m+[m
+ .../inventory/services/product-prices.service.ts   |   145 [32m+[m
+ .../inventory/services/products.service.ts         |   109 [32m+[m
+ .../inventory/services/stock-movements.service.ts  |   106 [32m+[m
+ .../inventory/services/suppliers.service.ts        |    84 [32m+[m
+ src/features/inventory/services/unit-of-work.ts    |    59 [32m+[m
+ src/features/inventory/types/categories.ts         |     6 [32m+[m
+ src/features/inventory/types/index.ts              |     7 [32m+[m
+ src/features/inventory/types/inventory-context.ts  |    15 [32m+[m
+ src/features/inventory/types/inventory.ts          |    80 [32m+[m
+ src/features/inventory/types/price-lists.ts        |     6 [32m+[m
+ src/features/inventory/types/product-prices.ts     |    12 [32m+[m
+ src/features/inventory/types/products.ts           |   172 [32m+[m
+ src/features/inventory/types/suppliers.ts          |     6 [32m+[m
+ src/features/inventory/utils/index.ts              |     0
+ src/features/permissions/catalogue.ts              |    11 [32m+[m
+ .../permissions/constants/catalogue/core.ts        |   245 [32m+[m
+ .../permissions/constants/catalogue/core/index.ts  |     3 [32m+[m
+ .../permissions/constants/catalogue/finance.ts     |   133 [32m+[m
+ .../constants/catalogue/finance/index.ts           |     3 [32m+[m
+ .../permissions/constants/catalogue/index.ts       |    27 [32m+[m
+ .../permissions/constants/catalogue/inventory.ts   |   353 [32m+[m
+ .../constants/catalogue/inventory/index.ts         |     3 [32m+[m
+ .../permissions/constants/catalogue/purchasing.ts  |   209 [32m+[m
+ .../constants/catalogue/purchasing/index.ts        |     3 [32m+[m
+ .../permissions/constants/catalogue/reporting.ts   |    85 [32m+[m
+ .../constants/catalogue/reporting/index.ts         |     3 [32m+[m
+ .../permissions/constants/catalogue/sales.ts       |   295 [32m+[m
+ .../permissions/constants/catalogue/sales/index.ts |     3 [32m+[m
+ .../permissions/constants/catalogue/users.ts       |   135 [32m+[m
+ .../permissions/constants/catalogue/users/index.ts |     3 [32m+[m
+ src/features/permissions/constants/index.ts        |     4 [32m+[m
+ .../permissions/constants/permission-actions.ts    |   130 [32m+[m
+ .../permissions/constants/permission-modules.ts    |   131 [32m+[m
+ src/features/permissions/constants/permissions.ts  |    50 [32m+[m
+ .../constants/system-role-permissions.ts           |   230 [32m+[m
+ src/features/permissions/index.ts                  |  2618 [32m++++[m
+ src/features/permissions/services/index.ts         |     3 [32m+[m
+ .../permissions/services/permission-registry.ts    |    71 [32m+[m
+ .../permissions/services/permission-resolver.ts    |    67 [32m+[m
+ .../permissions/services/permission-validator.ts   |    90 [32m+[m
+ src/features/permissions/types/index.ts            |     7 [32m+[m
+ .../permissions/types/permission-module.ts         |    14 [32m+[m
+ src/features/permissions/types/permission.ts       |     8 [32m+[m
+ src/features/pharmacy/actions/index.ts             |     0
+ src/features/pharmacy/components/index.ts          |     0
+ src/features/pharmacy/hooks/index.ts               |     0
+ src/features/pharmacy/schemas/index.ts             |     0
+ src/features/pharmacy/services/index.ts            |     0
+ src/features/pharmacy/types/index.ts               |     0
+ src/features/pharmacy/utils/index.ts               |     0
+ .../platform/actions/create-business-owner.ts      |    56 [32m+[m
+ .../platform/actions/get-business-owners.ts        |    18 [32m+[m
+ src/features/platform/actions/index.ts             |     2 [32m+[m
+ src/features/platform/actions/platform-login.ts    |    54 [32m+[m
+ .../business-owners/business-owner-dialog.tsx      |   111 [32m+[m
+ .../business-owners/business-owner-form.tsx        |   182 [32m+[m
+ .../business-owners/business-owner-table.tsx       |   229 [32m+[m
+ .../components/businesses/business-table.tsx       |    38 [32m+[m
+ .../platform/components/platform-dashboard.tsx     |    75 [32m+[m
+ .../platform/components/platform-login-form.tsx    |   102 [32m+[m
+ .../platform/schemas/create-business-owner.ts      |    21 [32m+[m
+ src/features/platform/schemas/index.ts             |     0
+ .../platform/services/business-owner.service.ts    |    28 [32m+[m
+ src/features/platform/services/index.ts            |     3 [32m+[m
+ .../platform/services/platform-auth.service.ts     |    45 [32m+[m
+ .../platform/services/platform-user.service.ts     |    64 [32m+[m
+ src/features/platform/types/index.ts               |     3 [32m+[m
+ src/features/platform/types/platform-user.ts       |    17 [32m+[m
+ .../purchases/actions/approve-purchase-order.ts    |    11 [32m+[m
+ .../purchases/actions/cancel-purchase-order.ts     |    10 [32m+[m
+ .../purchases/actions/create-purchase-order.ts     |    11 [32m+[m
+ .../purchases/actions/create-supplier-return.ts    |    11 [32m+[m
+ src/features/purchases/actions/index.ts            |     8 [32m+[m
+ .../purchases/actions/post-goods-receipt.ts        |    11 [32m+[m
+ .../purchases/actions/post-supplier-return.ts      |    11 [32m+[m
+ src/features/purchases/actions/purchases.ts        |    34 [32m+[m
+ src/features/purchases/actions/receive-goods.ts    |    11 [32m+[m
+ src/features/purchases/components/index.ts         |     0
+ src/features/purchases/hooks/index.ts              |     0
+ src/features/purchases/schemas/index.ts            |     0
+ .../purchases/services/goods-receipt.service.ts    |   211 [32m+[m
+ src/features/purchases/services/index.ts           |     6 [32m+[m
+ .../purchases/services/purchase-order.service.ts   |   151 [32m+[m
+ .../purchases/services/purchases-query.service.ts  |   137 [32m+[m
+ .../purchases/services/purchasing-validator.ts     |   184 [32m+[m
+ .../purchases/services/supplier-return.service.ts  |   145 [32m+[m
+ src/features/purchases/services/unit-of-work.ts    |   107 [32m+[m
+ src/features/purchases/types/goods-receipt.ts      |    43 [32m+[m
+ src/features/purchases/types/index.ts              |     5 [32m+[m
+ src/features/purchases/types/purchase-order.ts     |    43 [32m+[m
+ src/features/purchases/types/supplier-return.ts    |    53 [32m+[m
+ src/features/purchases/utils/index.ts              |     0
+ src/features/reports/actions/index.ts              |     0
+ src/features/reports/components/index.ts           |     0
+ src/features/reports/hooks/index.ts                |     0
+ src/features/reports/schemas/index.ts              |     0
+ src/features/reports/services/index.ts             |     0
+ src/features/reports/types/index.ts                |     0
+ src/features/reports/utils/index.ts                |     0
+ src/features/sales/actions/create-sale-return.ts   |    11 [32m+[m
+ src/features/sales/actions/create-sale.ts          |    11 [32m+[m
+ src/features/sales/actions/index.ts                |     6 [32m+[m
+ src/features/sales/actions/record-payment.ts       |    17 [32m+[m
+ src/features/sales/actions/reverse-payment.ts      |    11 [32m+[m
+ src/features/sales/actions/sales.ts                |    14 [32m+[m
+ src/features/sales/actions/void-sale.ts            |    11 [32m+[m
+ src/features/sales/components/index.ts             |     0
+ src/features/sales/hooks/index.ts                  |     0
+ src/features/sales/schemas/index.ts                |     0
+ src/features/sales/services/index.ts               |    11 [32m+[m
+ src/features/sales/services/payment.service.ts     |   248 [32m+[m
+ .../sales/services/sale-return-item.service.ts     |    84 [32m+[m
+ src/features/sales/services/sale-return.service.ts |    85 [32m+[m
+ src/features/sales/services/sale-void.service.ts   |   154 [32m+[m
+ src/features/sales/services/sale.service.ts        |   113 [32m+[m
+ src/features/sales/services/sales-query.service.ts |    50 [32m+[m
+ .../sales/services/sales-status.service.ts         |    23 [32m+[m
+ .../services/sales-stock-allocation.service.ts     |    82 [32m+[m
+ .../sales/services/sales-stock-return.service.ts   |    70 [32m+[m
+ src/features/sales/services/sales-validator.ts     |   212 [32m+[m
+ src/features/sales/services/unit-of-work.ts        |   115 [32m+[m
+ src/features/sales/types/index.ts                  |     7 [32m+[m
+ src/features/sales/types/payment-reversal.ts       |    19 [32m+[m
+ src/features/sales/types/payment.ts                |    26 [32m+[m
+ src/features/sales/types/sale-return.ts            |    44 [32m+[m
+ src/features/sales/types/sale.ts                   |    62 [32m+[m
+ src/features/sales/utils/index.ts                  |     0
+ src/features/settings/actions/branches.ts          |    51 [32m+[m
+ src/features/settings/actions/create-branch.ts     |    74 [32m+[m
+ src/features/settings/actions/create-unit.ts       |   100 [32m+[m
+ .../settings/actions/create-warehouse-location.ts  |     0
+ src/features/settings/actions/create-warehouse.ts  |    93 [32m+[m
+ src/features/settings/actions/delete-unit.ts       |    69 [32m+[m
+ .../settings/actions/delete-warehouse-location.ts  |     0
+ src/features/settings/actions/delete-warehouse.ts  |    50 [32m+[m
+ src/features/settings/actions/index.ts             |     8 [32m+[m
+ src/features/settings/actions/units.ts             |    46 [32m+[m
+ src/features/settings/actions/update-branch.ts     |    81 [32m+[m
+ src/features/settings/actions/update-unit.ts       |   104 [32m+[m
+ .../settings/actions/update-warehouse-location.ts  |     0
+ src/features/settings/actions/update-warehouse.ts  |    85 [32m+[m
+ .../settings/actions/warehouse-locations.ts        |     0
+ src/features/settings/actions/warehouses.ts        |    50 [32m+[m
+ src/features/settings/components/branch-dialog.tsx |    51 [32m+[m
+ src/features/settings/components/branch-form.tsx   |   214 [32m+[m
+ src/features/settings/components/branch-table.tsx  |    94 [32m+[m
+ .../settings/components/branch-toolbar.tsx         |    35 [32m+[m
+ .../settings/components/branches-client.tsx        |   127 [32m+[m
+ src/features/settings/components/index.ts          |    11 [32m+[m
+ src/features/settings/components/units-client.tsx  |   166 [32m+[m
+ src/features/settings/components/units/index.ts    |     7 [32m+[m
+ .../settings/components/units/unit-dialog.tsx      |    58 [32m+[m
+ .../settings/components/units/unit-form.tsx        |   239 [32m+[m
+ .../settings/components/units/unit-table.tsx       |    92 [32m+[m
+ .../settings/components/units/unit-toolbar.tsx     |    41 [32m+[m
+ .../components/warehouse-locations-client.tsx      |     0
+ .../components/warehouse-locations/index.ts        |     0
+ .../warehouse-location-dialog.tsx                  |     0
+ .../warehouse-location-form.tsx                    |     0
+ .../warehouse-location-table.tsx                   |     0
+ .../warehouse-location-toolbar.tsx                 |     0
+ .../settings/components/warehouses-client.tsx      |   130 [32m+[m
+ .../settings/components/warehouses/index.ts        |     4 [32m+[m
+ .../components/warehouses/warehouse-dialog.tsx     |    60 [32m+[m
+ .../components/warehouses/warehouse-form.tsx       |   242 [32m+[m
+ .../components/warehouses/warehouse-table.tsx      |    81 [32m+[m
+ .../components/warehouses/warehouse-toolbar.tsx    |    35 [32m+[m
+ src/features/settings/hooks/index.ts               |     0
+ src/features/settings/schemas/branch.ts            |    67 [32m+[m
+ src/features/settings/schemas/index.ts             |     0
+ src/features/settings/schemas/unit.ts              |    56 [32m+[m
+ .../settings/schemas/warehouse-location.ts         |     0
+ src/features/settings/schemas/warehouse.ts         |    41 [32m+[m
+ src/features/settings/services/branches.service.ts |    94 [32m+[m
+ .../settings/services/business-settings.service.ts |   224 [32m+[m
+ .../settings/services/countries.service.ts         |    18 [32m+[m
+ .../settings/services/currencies.service.ts        |    18 [32m+[m
+ .../settings/services/fiscal-years.service.ts      |   162 [32m+[m
+ src/features/settings/services/index.ts            |     8 [32m+[m
+ .../services/numbering-sequences.service.ts        |   192 [32m+[m
+ src/features/settings/services/units.service.ts    |   196 [32m+[m
+ .../services/warehouse-locations.service.ts        |     0
+ .../settings/services/warehouses.service.ts        |    91 [32m+[m
+ src/features/settings/types/branch.ts              |    41 [32m+[m
+ src/features/settings/types/index.ts               |     3 [32m+[m
+ src/features/settings/types/unit.ts                |    41 [32m+[m
+ src/features/settings/types/warehouse-location.ts  |     0
+ src/features/settings/types/warehouse.ts           |    40 [32m+[m
+ src/features/settings/utils/index.ts               |     0
+ src/features/suppliers/actions/index.ts            |     0
+ src/features/suppliers/components/index.ts         |     0
+ src/features/suppliers/hooks/index.ts              |     0
+ src/features/suppliers/schemas/index.ts            |     0
+ src/features/suppliers/services/index.ts           |     0
+ src/features/suppliers/types/index.ts              |     0
+ src/features/suppliers/utils/index.ts              |     0
+ src/features/users/actions/index.ts                |     4 [32m+[m
+ src/features/users/actions/permissions.ts          |    93 [32m+[m
+ src/features/users/actions/roles.ts                |   138 [32m+[m
+ src/features/users/actions/users.ts                |   168 [32m+[m
+ src/features/users/components/index.ts             |     2 [32m+[m
+ src/features/users/components/permissions/index.ts |     2 [32m+[m
+ .../components/permissions/permission-group.tsx    |   163 [32m+[m
+ .../components/permissions/permission-list.tsx     |   134 [32m+[m
+ src/features/users/components/roles-client.tsx     |   325 [32m+[m
+ src/features/users/components/roles/index.ts       |     7 [32m+[m
+ .../users/components/roles/role-dialog.tsx         |   144 [32m+[m
+ src/features/users/components/roles/role-form.tsx  |   668 [32m+[m
+ src/features/users/components/roles/role-table.tsx |   401 [32m+[m
+ .../users/components/roles/role-toolbar.tsx        |   181 [32m+[m
+ src/features/users/components/roles/role-users.tsx |   217 [32m+[m
+ .../users/components/roles/role-view-dialog.tsx    |   105 [32m+[m
+ src/features/users/components/roles/role-view.tsx  |   469 [32m+[m
+ src/features/users/components/users-client.tsx     |   549 [32m+[m
+ src/features/users/components/users/index.ts       |    15 [32m+[m
+ .../users/components/users/user-dialog.tsx         |   136 [32m+[m
+ src/features/users/components/users/user-form.tsx  |   434 [32m+[m
+ src/features/users/components/users/user-table.tsx |   378 [32m+[m
+ .../users/components/users/user-toolbar.tsx        |   214 [32m+[m
+ src/features/users/hooks/index.ts                  |     0
+ src/features/users/schemas/index.ts                |     0
+ src/features/users/services/index.ts               |     3 [32m+[m
+ src/features/users/services/permission.service.ts  |    65 [32m+[m
+ src/features/users/services/role.service.ts        |   173 [32m+[m
+ src/features/users/services/user.service.ts        |    79 [32m+[m
+ src/features/users/types/index.ts                  |     7 [32m+[m
+ src/features/users/types/role.ts                   |    19 [32m+[m
+ src/features/users/types/user.ts                   |    22 [32m+[m
+ src/features/users/utils/index.ts                  |     0
+ src/lib/auth/auth.ts                               |     0
+ src/lib/auth/authorize.ts                          |    18 [32m+[m
+ src/lib/auth/cookies.ts                            |    33 [32m+[m
+ src/lib/auth/current-user.ts                       |    60 [32m+[m
+ src/lib/auth/jwt.ts                                |    35 [32m+[m
+ src/lib/auth/password.ts                           |    20 [32m+[m
+ src/lib/auth/permissions.ts                        |    37 [32m+[m
+ src/lib/auth/session.ts                            |    47 [32m+[m
+ src/lib/business-context/business-context.ts       |    35 [32m+[m
+ src/lib/constants/index.ts                         |     4 [32m+[m
+ src/lib/constants/purchases.ts                     |     8 [32m+[m
+ src/lib/constants/sales.ts                         |     6 [32m+[m
+ src/lib/constants/stock.ts                         |    12 [32m+[m
+ src/lib/constants/users.ts                         |     8 [32m+[m
+ src/lib/db/index.ts                                |     0
+ src/lib/formatters/index.ts                        |     0
+ src/lib/helpers/index.ts                           |     0
+ src/lib/onboarding-auth/current-onboarding-user.ts |    48 [32m+[m
+ src/lib/onboarding-auth/session.ts                 |    64 [32m+[m
+ src/lib/platform-auth/cookies.ts                   |    43 [32m+[m
+ src/lib/platform-auth/current-platform-user.ts     |    48 [32m+[m
+ src/lib/platform-auth/jwt.ts                       |    43 [32m+[m
+ src/lib/platform-auth/session.ts                   |    58 [32m+[m
+ src/lib/utils.ts                                   |     6 [32m+[m
+ src/providers/permissions-provider.tsx             |    85 [32m+[m
+ src/proxy.ts                                       |   150 [32m+[m
+ src/repositories/base/base.repository.ts           |    51 [32m+[m
+ src/repositories/base/filters.ts                   |    21 [32m+[m
+ src/repositories/base/index.ts                     |     7 [32m+[m
+ src/repositories/base/pagination.ts                |    37 [32m+[m
+ src/repositories/base/repository.ts                |    16 [32m+[m
+ src/repositories/base/sorting.ts                   |    23 [32m+[m
+ src/repositories/base/transaction.ts               |    10 [32m+[m
+ src/repositories/base/types.ts                     |    42 [32m+[m
+ src/repositories/core/business.repository.ts       |   142 [32m+[m
+ src/repositories/core/index.ts                     |     1 [32m+[m
+ src/repositories/index.ts                          |    41 [32m+[m
+ .../inventory/categories.repository.ts             |   122 [32m+[m
+ src/repositories/inventory/index.ts                |     8 [32m+[m
+ .../inventory/inventory-balances.repository.ts     |   205 [32m+[m
+ .../inventory/price-lists.repository.ts            |   158 [32m+[m
+ .../inventory/product-batches.repository.ts        |   286 [32m+[m
+ .../inventory/product-prices.repository.ts         |   152 [32m+[m
+ src/repositories/inventory/products.repository.ts  |   209 [32m+[m
+ .../inventory/stock-movements.repository.ts        |   229 [32m+[m
+ src/repositories/inventory/suppliers.repository.ts |   100 [32m+[m
+ src/repositories/platform/index.ts                 |     1 [32m+[m
+ .../platform/platform-user.repository.ts           |    70 [32m+[m
+ .../purchasing/goods-receipt-items.repository.ts   |    78 [32m+[m
+ .../purchasing/goods-receipts.repository.ts        |   130 [32m+[m
+ src/repositories/purchasing/index.ts               |     7 [32m+[m
+ .../purchasing/purchase-order-items.repository.ts  |   179 [32m+[m
+ .../purchasing/purchase-orders.repository.ts       |   150 [32m+[m
+ .../purchasing/supplier-return-items.repository.ts |   122 [32m+[m
+ .../purchasing/supplier-returns.repository.ts      |   149 [32m+[m
+ src/repositories/sales/customer.repository.ts      |    75 [32m+[m
+ src/repositories/sales/index.ts                    |     8 [32m+[m
+ .../sales/payment-reversal.repository.ts           |    74 [32m+[m
+ src/repositories/sales/payment.repository.ts       |   284 [32m+[m
+ .../sales/sale-item-batch.repository.ts            |   145 [32m+[m
+ src/repositories/sales/sale-items.repository.ts    |   169 [32m+[m
+ .../sales/sale-return-item.repository.ts           |   149 [32m+[m
+ src/repositories/sales/sale-return.repository.ts   |   195 [32m+[m
+ src/repositories/sales/sales.repository.ts         |   205 [32m+[m
+ src/repositories/settings/branches.repository.ts   |   102 [32m+[m
+ .../settings/business-settings.repository.ts       |    98 [32m+[m
+ src/repositories/settings/countries.repository.ts  |    36 [32m+[m
+ src/repositories/settings/currencies.repository.ts |    50 [32m+[m
+ .../settings/fiscal-years.repository.ts            |   218 [32m+[m
+ .../settings/numbering-sequences.repository.ts     |   217 [32m+[m
+ src/repositories/settings/units.repository.ts      |   219 [32m+[m
+ src/repositories/settings/warehouses.repository.ts |    95 [32m+[m
+ src/repositories/users/index.ts                    |     6 [32m+[m
+ src/repositories/users/permission.repository.ts    |   183 [32m+[m
+ .../users/role-permission.repository.ts            |   164 [32m+[m
+ src/repositories/users/role.repository.ts          |   202 [32m+[m
+ .../users/user-invitations.repository.ts           |   105 [32m+[m
+ .../users/user-permission.repository.ts            |   431 [32m+[m
+ src/repositories/users/user.repository.ts          |   214 [32m+[m
+ src/services/security/index.ts                     |     4 [32m+[m
+ src/services/security/permission-resolver.ts       |    40 [32m+[m
+ src/services/security/permission.service.ts        |    70 [32m+[m
+ src/services/security/permission.types.ts          |    22 [32m+[m
+ src/services/security/role-permission.service.ts   |    94 [32m+[m
+ src/store/auth-store.ts                            |     0
+ src/store/index.ts                                 |     0
+ src/store/ui-store.ts                              |     0
+ src/validators/index.ts                            |     0
+ stock.ts                                           |     0
+ test-password.ts                                   |    21 [32m+[m
+ tsconfig.json                                      |    38 [32m+[m
+ users.ts                                           |     0
+ 888 files changed, 354882 insertions(+)

@@ -1,15 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
-
 import { priceLists } from "@/db/schema/inventory/price_lists";
-
-type PriceListInsert =
-  InferInsertModel<typeof priceLists>;
 
 import {
   BaseRepository,
 } from "../base";
+
+type PriceListInsert =
+  InferInsertModel<typeof priceLists>;
 
 export class PriceListRepository
   extends BaseRepository {
@@ -30,10 +29,14 @@ export class PriceListRepository
   }
 
   async findById(
-    id: string
+    id: string,
+    businessId: string
   ) {
     return this.database.query.priceLists.findFirst({
-      where: eq(priceLists.id, id),
+      where: and(
+        eq(priceLists.id, id),
+        eq(priceLists.businessId, businessId)
+      ),
 
       with: {
         productPrices: true,
@@ -55,32 +58,45 @@ export class PriceListRepository
 
   async update(
     id: string,
+    businessId: string,
     data: Partial<PriceListInsert>
   ) {
     const [priceList] =
       await this.database
         .update(priceLists)
         .set(data)
-        .where(eq(priceLists.id, id))
+        .where(
+          and(
+            eq(priceLists.id, id),
+            eq(priceLists.businessId, businessId)
+          )
+        )
         .returning();
 
     return priceList;
   }
 
   async delete(
-    id: string
+    id: string,
+    businessId: string
   ) {
     const [priceList] =
       await this.database
         .delete(priceLists)
-        .where(eq(priceLists.id, id))
+        .where(
+          and(
+            eq(priceLists.id, id),
+            eq(priceLists.businessId, businessId)
+          )
+        )
         .returning();
 
     return priceList;
   }
 
   async deactivate(
-    id: string
+    id: string,
+    businessId: string
   ) {
     const [priceList] =
       await this.database
@@ -89,7 +105,10 @@ export class PriceListRepository
           active: false,
         })
         .where(
-          eq(priceLists.id, id)
+          and(
+            eq(priceLists.id, id),
+            eq(priceLists.businessId, businessId)
+          )
         )
         .returning();
 

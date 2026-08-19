@@ -7,6 +7,7 @@ type PriceListInsert =
   InferInsertModel<typeof priceLists>;
 
 export class PriceListService {
+
   async getPriceLists(
     businessId: string
   ) {
@@ -16,10 +17,14 @@ export class PriceListService {
   }
 
   async getPriceList(
-    id: string
+    id: string,
+    businessId: string
   ) {
     const priceList =
-      await priceListRepository.findById(id);
+      await priceListRepository.findById(
+        id,
+        businessId
+      );
 
     if (!priceList) {
       throw new Error(
@@ -64,10 +69,14 @@ export class PriceListService {
 
   async updatePriceList(
     id: string,
-    data: Partial<PriceListInsert>
+    data: Partial<PriceListInsert>,
+    businessId: string
   ) {
     const existing =
-      await priceListRepository.findById(id);
+      await priceListRepository.findById(
+        id,
+        businessId
+      );
 
     if (!existing) {
       throw new Error(
@@ -81,7 +90,7 @@ export class PriceListService {
     ) {
       const exists =
         await priceListRepository.existsByName(
-          existing.businessId,
+          businessId,
           data.name
         );
 
@@ -98,7 +107,7 @@ export class PriceListService {
     ) {
       const exists =
         await priceListRepository.existsByCode(
-          existing.businessId,
+          businessId,
           data.code
         );
 
@@ -111,15 +120,20 @@ export class PriceListService {
 
     return priceListRepository.update(
       id,
+      businessId,
       data
     );
   }
 
   async deletePriceList(
-    id: string
+    id: string,
+    businessId: string
   ) {
     const existing =
-      await priceListRepository.findById(id);
+      await priceListRepository.findById(
+        id,
+        businessId
+      );
 
     if (!existing) {
       throw new Error(
@@ -128,7 +142,8 @@ export class PriceListService {
     }
 
     return priceListRepository.deactivate(
-      id
+      id,
+      businessId
     );
   }
 }

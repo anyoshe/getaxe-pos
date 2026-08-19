@@ -15,14 +15,15 @@ import {
 export async function createProductPriceAction(
   formData: FormData
 ) {
-  await requireAuthorizedUser(
-    "product-prices.create"
-  );
+  const user =
+    await requireAuthorizedUser(
+      "product-prices.create"
+    );
 
   const parsed =
     createProductPriceSchema.safeParse({
       businessId:
-        formData.get("businessId"),
+        user.businessId,
 
       productId:
         formData.get("productId"),
@@ -52,7 +53,10 @@ export async function createProductPriceAction(
   try {
     await productPriceService.createProductPrice({
       ...parsed.data,
-      price: parsed.data.price.toString(),
+
+      price:
+        parsed.data.price.toString(),
+
       minimumQuantity:
         parsed.data.minimumQuantity.toString(),
     });

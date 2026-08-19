@@ -1,5 +1,5 @@
 "use client";
-import { z } from "zod";
+
 import {
     useEffect,
     useTransition,
@@ -17,9 +17,9 @@ import {
     toast,
 } from "sonner";
 
-
 import type {
     ProductFormProps,
+    ProductFormInput,
 } from "./product-form.types";
 
 import {
@@ -31,19 +31,30 @@ import {
     updateProductAction,
 } from "../../actions";
 
-type ProductFormInput =
-    z.infer<typeof productFormSchema>;
-
 import type {
     Product,
+    ProductType,
 } from "../../types";
+
+import {
+    ProductWizard,
+} from "./product-wizard";
+
+import {
+    useProductWizard,
+} from "./wizard/use-product-wizard";
 
 
 function getProductDefaultValues(
     product?: Product | null
 ): ProductFormInput {
 
+    const productType =
+        product?.productType as ProductType | null;
+
     return {
+
+        productType,
 
         categoryId:
             product?.categoryId ?? "",
@@ -138,10 +149,6 @@ function getProductDefaultValues(
 }
 
 
-import { ProductWizard } from "./product-wizard";
-
-import { useProductWizard } from "./wizard/use-product-wizard";
-
 export function ProductForm({
     product,
     context,
@@ -153,14 +160,39 @@ export function ProductForm({
 
     const form =
         useForm<ProductFormInput>({
-            resolver: zodResolver(productFormSchema),
-
+            resolver:
+                zodResolver(
+                    productFormSchema
+                ),
 
             defaultValues:
-                getProductDefaultValues(product),
+                getProductDefaultValues(
+                    product
+                ),
         });
 
-    const wizard = useProductWizard();
+    const productType =
+        form.watch("productType");
+
+    const wizard =
+        useProductWizard({
+
+            productType,
+
+            onProductTypeChange:
+                (type: ProductType) => {
+
+                    form.setValue(
+                        "productType",
+                        type,
+                        {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                        }
+                    );
+
+                },
+        });
 
     useEffect(() => {
 
@@ -170,13 +202,15 @@ export function ProductForm({
 
     }, [product, form]);
 
+
     async function onSubmit(
         values: ProductFormInput
     ) {
 
         startTransition(async () => {
 
-            const formData = new FormData();
+            const formData =
+                new FormData();
 
             Object.entries(values).forEach(
                 ([key, value]) => {
@@ -214,7 +248,6 @@ export function ProductForm({
                 );
 
                 return;
-
             }
 
             toast.success(
@@ -226,6 +259,8 @@ export function ProductForm({
         });
 
     }
+
+
     return (
 
         <form
@@ -240,10 +275,11 @@ export function ProductForm({
                 form={form}
                 context={context}
                 pending={pending}
-                onSubmit={form.handleSubmit(onSubmit)}
+                onSubmit={
+                    form.handleSubmit(onSubmit)
+                }
             />
+
         </form>
-
     );
-
 }

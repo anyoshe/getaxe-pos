@@ -1,27 +1,32 @@
-import { ReactNode } from "react";
 import { redirect } from "next/navigation";
-
-import { AppShell } from "@/components/layout";
 import { getCurrentUser } from "@/lib/auth/current-user";
-
-
-interface DashboardLayoutProps {
-  children: ReactNode;
-}
+import { rolePermissionService } from "@/services/security/role-permission.service";
+import { AppShell } from "@/components/layout/app-shell";
+import { PermissionsProvider } from "@/providers/permissions-provider";
 
 export default async function DashboardLayout({
   children,
-}: DashboardLayoutProps) {
-
+}: {
+  children: React.ReactNode;
+}) {
   const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login");
   }
 
+  // Fetch effective permission objects & extract codes
+  const userPermissions = await rolePermissionService.getUserPermissions(user.id);
+  const permissionCodes = userPermissions.map((p) => p.code);
+
+   // Debug: Log what permissions the admin has
+  console.log("👤 User:", user.email);
+  console.log("🔑 Permission Codes:", permissionCodes);
+  console.log("📊 Count:", permissionCodes.length);
+
   return (
-    <AppShell user={user}>
-      {children}
-    </AppShell>
+    <PermissionsProvider permissions={permissionCodes}>
+      <AppShell user={user}>{children}</AppShell>
+    </PermissionsProvider>
   );
 }

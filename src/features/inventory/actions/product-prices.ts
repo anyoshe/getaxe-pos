@@ -6,26 +6,27 @@ import {
   productPriceService,
 } from "../services";
 
-export async function getProductPrices(
-  businessId: string
-) {
-  await requireAuthorizedUser(
-    "product-prices.view"
-  );
+export async function getProductPrices() {
+  const user =
+    await requireAuthorizedUser(
+      "product-prices.view"
+    );
 
   return productPriceService.getProductPrices(
-    businessId
+    user.businessId
   );
 }
 
 export async function getProductPrice(
   id: string
 ) {
-  await requireAuthorizedUser(
-    "product-prices.view"
-  );
+  const user =
+    await requireAuthorizedUser(
+      "product-prices.view"
+    );
 
   return productPriceService.getProductPrice(
-    id
+    id,
+    user.businessId
   );
 }

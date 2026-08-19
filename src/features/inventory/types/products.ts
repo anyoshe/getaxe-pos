@@ -58,6 +58,17 @@ import type {
   stockMovements,
 } from "@/db/schema/inventory/stock_movements";
 
+export const PRODUCT_TYPES = [
+  "physical",
+  "service",
+  "medicine",
+  "raw-material",
+  "finished-product",
+] as const;
+
+export type ProductType =
+  (typeof PRODUCT_TYPES)[number];
+
 type DatabaseProduct =
   InferSelectModel<typeof products>;
 

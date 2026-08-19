@@ -61,23 +61,16 @@ export async function getExpiryStock(
       )
     );
 
-  } else {
+ } else {
 
-    conditions.push(
-      gt(
-        productBatches.expiryDate,
-        expiryDate
-      )
-    );
+  conditions.push(
+    gt(
+      productBatches.expiryDate,
+      expiryDate
+    )
+  );
 
-    conditions.push(
-      lte(
-        productBatches.expiryDate,
-        expiryDate
-      )
-    );
-
-  }
+}
 
 
   return db

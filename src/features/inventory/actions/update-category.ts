@@ -6,13 +6,12 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { requirePermission } from "@/lib/auth/permissions";
 
 import {
-  createCategorySchema,
+  updateCategorySchema,
 } from "../schemas/categories";
 
 import {
   categoryService,
 } from "../services";
-
 
 export async function updateCategoryAction(
   id: string,
@@ -41,65 +40,15 @@ export async function updateCategoryAction(
   }
 
   const parsed =
-    createCategorySchema.safeParse({
-
-      categoryId:
-        formData.get("categoryId"),
-
-      supplierId:
-        formData.get("supplierId") || null,
-
-      manufacturerId:
-        formData.get("manufacturerId") || null,
-
+    updateCategorySchema.safeParse({
       name:
         formData.get("name"),
-
-      genericName:
-        formData.get("genericName") || null,
-
-      categoryBrand:
-        formData.get("categoryBrand") || null,
 
       description:
         formData.get("description") || null,
 
-      sku:
-        formData.get("sku") || null,
-
-      barcode:
-        formData.get("barcode") || null,
-
-      packSize:
-        formData.get("packSize") || null,
-
-      costPrice:
-        formData.get("costPrice") || null,
-
-      trackInventory:
-        formData.get("trackInventory") === "true",
-
-      trackBatch:
-        formData.get("trackBatch") === "true",
-
-      trackExpiry:
-        formData.get("trackExpiry") === "true",
-
-      serialized:
-        formData.get("serialized") === "true",
-
-      allowNegativeStock:
-        formData.get("allowNegativeStock") === "true",
-
-      minimumStock:
-        Number(
-          formData.get("minimumStock") ?? 0
-        ),
-
-      reorderLevel:
-        Number(
-          formData.get("reorderLevel") ?? 0
-        ),
+      active:
+        formData.get("active") === "true",
     });
 
   if (!parsed.success) {

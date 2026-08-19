@@ -16,14 +16,15 @@ export async function updateProductPriceAction(
   id: string,
   formData: FormData
 ) {
-  await requireAuthorizedUser(
-    "product-prices.update"
-  );
+  const user =
+    await requireAuthorizedUser(
+      "product-prices.update"
+    );
 
   const parsed =
     createProductPriceSchema.safeParse({
       businessId:
-        formData.get("businessId"),
+        user.businessId,
 
       productId:
         formData.get("productId"),
@@ -55,10 +56,14 @@ export async function updateProductPriceAction(
       id,
       {
         ...parsed.data,
-        price: parsed.data.price.toString(),
+
+        price:
+          parsed.data.price.toString(),
+
         minimumQuantity:
           parsed.data.minimumQuantity.toString(),
-      }
+      },
+      user.businessId
     );
 
     revalidatePath(

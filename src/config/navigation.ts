@@ -1,187 +1,3 @@
-// import type { NavigationItem } from "./navigation.types";
-
-// import {
-//   LayoutDashboard,
-//   Package,
-//   Boxes,
-//   BriefcaseBusiness,
-//   SlidersHorizontal,
-//   Truck,
-//   ShoppingCart,
-//   Receipt,
-//   Pill,
-//   Stethoscope,
-//   Shield,
-//   Wallet,
-//   BarChart3,
-//   Settings,
-//   GitBranch,
-//   Warehouse,
-//   Users,
-//   ShieldCheck,
-//   Building2,
-//   Hash,
-//   Ruler,
-//   ClipboardList,
-// } from "lucide-react";
-
-
-// export const navigation: NavigationItem[] = [
-
-//   {
-//     label: "Dashboard",
-//     href: "/dashboard",
-//     icon: LayoutDashboard,
-//   },
-
-
-//   {
-//     label: "Sales",
-//     href: "/sales",
-//     icon: ShoppingCart,
-//   },
-
-
-//   {
-//     label: "Inventory",
-//     href: "/inventory",
-//     icon: Package,
-
-//     children: [
-//       {
-//         label: "Products",
-//         href: "/inventory/products",
-//         icon: Package,
-//       },
-
-//       {
-//         label: "Stock",
-//         href: "/inventory/stock",
-//         icon: Boxes,
-//       },
-
-//       {
-//         label: "Suppliers",
-//         href: "/suppliers",
-//         icon: Truck,
-//       },
-//     ],
-//   },
-
-
-//   {
-//     label: "Purchasing",
-//     href: "/purchases",
-//     icon: ClipboardList,
-//   },
-
-
-//   {
-//     label: "Customers",
-//     href: "/customers",
-//     icon: Receipt,
-//   },
-
-
-//   {
-//     label: "Finance",
-//     href: "/finance",
-//     icon: Wallet,
-//   },
-
-
-//   {
-//     label: "Reports",
-//     href: "/reports",
-//     icon: BarChart3,
-//   },
-
-
-//  {
-//   label: "Industry Modules",
-//   icon: BriefcaseBusiness,
-
-//     children: [
-//       {
-//         label: "Pharmacy",
-//         href: "/pharmacy",
-//         icon: Pill,
-//       },
-
-//       {
-//         label: "Clinical",
-//         href: "/clinical",
-//         icon: Stethoscope,
-//       },
-
-//       {
-//         label: "Insurance",
-//         href: "/insurance",
-//         icon: Shield,
-//       },
-//     ],
-//   },
-
-
-//  {
-//   label: "Operations",
-//   icon: Boxes,
-
-//     children: [
-//       {
-//         label: "Branches",
-//         href: "/settings/branches",
-//         icon: GitBranch,
-//       },
-
-//       {
-//         label: "Warehouses",
-//         href: "/settings/warehouses",
-//         icon: Warehouse,
-//       },
-
-//       {
-//         label: "Users",
-//         href: "/settings/users",
-//         icon: Users,
-//       },
-//     ],
-//   },
-
-
-//  {
-//   label: "Settings",
-//   icon: SlidersHorizontal,
-
-//     children: [
-//       {
-//         label: "Business Profile",
-//         href: "/settings/business",
-//         icon: Building2,
-//       },
-
-//       {
-//         label: "Roles & Permissions",
-//         href: "/settings/roles",
-//         icon: ShieldCheck,
-//       },
-
-//       {
-//         label: "Units",
-//         href: "/settings/units",
-//         icon: Ruler,
-//       },
-
-//       {
-//         label: "Numbering",
-//         href: "/settings/numbering",
-//         icon: Hash,
-//       },
-//     ],
-//   },
-
-// ];
-
 import type { NavigationItem } from "./navigation.types";
 
 import {
@@ -216,217 +32,260 @@ import {
 } from "lucide-react";
 
 export const navigation: NavigationItem[] = [
-
   {
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+    // No permission needed - always visible
   },
-
   {
     label: "Sales",
     icon: ShoppingCart,
-
+    module: "sales", // Module name for grouping
     children: [
       {
         label: "POS",
         href: "/sales",
         icon: ShoppingCart,
+        permission: "sales.create",
       },
       {
         label: "Quotations",
         href: "/sales/quotations",
         icon: FileText,
+        permission: "sales.view",
       },
       {
         label: "Sales Orders",
         href: "/sales/orders",
         icon: ReceiptText,
+        permission: "sales.view",
       },
       {
         label: "Invoices",
         href: "/sales/invoices",
         icon: Receipt,
+        permission: "sales.view",
       },
       {
         label: "Returns",
         href: "/sales/returns",
         icon: RotateCcw,
+        permission: "sales.void",
       },
     ],
   },
-
   {
-    label: "Inventory",
-    icon: Package,
-
-    children: [
-      {
-        label: "Products",
-        href: "/inventory/products",
-        icon: Package,
-      },
-      {
-        label: "Categories",
-        href: "/inventory/categories",
-        icon: FolderTree,
-      },
-      {
-        label: "Stock",
-        href: "/inventory/stock",
-        icon: Boxes,
-      },
-      {
-        label: "Adjustments",
-        href: "/inventory/adjustments",
-        icon: PackageCheck,
-      },
-      {
-        label: "Transfers",
-        href: "/inventory/transfers",
-        icon: ArrowRightLeft,
-      },
-    ],
-  },
-
+   label: "Inventory",
+  icon: Package,
+  module: "inventory",
+  href: "/inventory",
+  children: [
+  
+    {
+      label: "Products",
+      href: "/inventory/products",
+      icon: Package,
+      permission: "products.view",
+    },
+    {
+      label: "Categories",
+      href: "/inventory/categories",
+      icon: FolderTree,
+      permission: "categories.view",
+    },
+    {
+      label: "Stock",
+      href: "/inventory/stock",
+      icon: Boxes,
+      permission: "stock_movements.view",
+    },
+    {
+      label: "Stock Movements",
+      href: "/inventory/stock-movements",
+      icon: ArrowRightLeft,
+      permission: "stock_movements.view",
+    },
+    {
+      label: "Adjustments",
+      href: "/inventory/adjustments",
+      icon: PackageCheck,
+      permission: "stock_adjustments.view",
+    },
+    {
+      label: "Transfers",
+      href: "/inventory/transfers",
+      icon: ArrowRightLeft,
+      permission: "stock_transfers.view",
+    },
+    {
+      label: "Product Batches",
+      href: "/inventory/batches",
+      icon: ClipboardList,
+      permission: "product_batches.view",
+    },
+    {
+      label: "Price Lists",
+      href: "/inventory/price-lists",
+      icon: FileText,
+      permission: "price_lists.view",
+    },
+    {
+      label: "Product Prices",
+      href: "/inventory/product-prices",
+      icon: CircleDollarSign,
+      permission: "product_prices.view",
+    },
+  ],
+},
   {
     label: "Purchasing",
     icon: ClipboardList,
-
+    module: "purchasing",
     children: [
       {
         label: "Suppliers",
         href: "/suppliers",
         icon: Truck,
+        permission: "suppliers.view",
       },
       {
         label: "Purchase Orders",
         href: "/purchases/orders",
         icon: ClipboardList,
+        permission: "purchase_orders.view",
       },
       {
         label: "Goods Received",
         href: "/purchases/receiving",
         icon: PackageCheck,
+        permission: "goods_receipts.view",
       },
     ],
   },
-
   {
     label: "CRM",
     icon: UsersRound,
-
+    module: "crm",
     children: [
       {
         label: "Customers",
         href: "/customers",
         icon: UsersRound,
+        permission: "customers.view",
       },
     ],
   },
-
   {
     label: "Finance",
     icon: Wallet,
-
+    module: "finance",
     children: [
       {
         label: "Payments",
         href: "/finance/payments",
         icon: CreditCard,
+        permission: "payments.view",
       },
       {
         label: "Expenses",
         href: "/finance/expenses",
         icon: Banknote,
+        permission: "expenses.view",
       },
       {
         label: "Accounts",
         href: "/finance/accounts",
         icon: CircleDollarSign,
+        permission: "accounts.view",
       },
     ],
   },
-
   {
     label: "Reports",
     icon: BarChart3,
-
+    module: "reports",
     children: [
       {
         label: "Sales Reports",
         href: "/reports/sales",
         icon: BarChart3,
+        permission: "reports.view",
       },
       {
         label: "Inventory Reports",
         href: "/reports/inventory",
         icon: Package,
+        permission: "reports.view",
       },
       {
         label: "Financial Reports",
         href: "/reports/finance",
         icon: Wallet,
+        permission: "reports.view",
       },
     ],
   },
-
   {
     label: "Industry",
     icon: Wrench,
-
+    module: "industry",
     children: [],
   },
-
   {
     label: "Operations",
     icon: Settings,
-
+    module: "operations",
     children: [
       {
         label: "Branches",
         href: "/settings/branches",
         icon: GitBranch,
+        permission: "branches.view",
       },
       {
         label: "Warehouses",
         href: "/settings/warehouses",
         icon: Warehouse,
+        permission: "warehouses.view",
       },
       {
         label: "Users",
         href: "/settings/users",
         icon: Users,
+        permission: "users.view",
       },
     ],
   },
-
   {
     label: "Settings",
     icon: Settings,
-
+    module: "settings",
     children: [
       {
         label: "Business Profile",
         href: "/settings/business",
         icon: Building2,
+        permission: "business.view",
       },
       {
         label: "Roles & Permissions",
         href: "/settings/roles",
         icon: ShieldCheck,
+        permission: "roles.view",
       },
       {
         label: "Units",
         href: "/settings/units",
         icon: Ruler,
+        permission: "units.view",
       },
       {
         label: "Numbering",
         href: "/settings/numbering",
         icon: Hash,
+        permission: "numbering_sequences.view",
       },
     ],
   },
-
 ];

@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import {
+  requireAuthorizedUser,
+} from "@/lib/auth/authorize";
 
 import {
   createProductSchema,
@@ -19,12 +21,18 @@ export async function createProductAction(
 
   const user =
     await requireAuthorizedUser(
-        "products.create"
+      "products.create"
     );
 
 
   const parsed =
     createProductSchema.safeParse({
+
+      // ----------------------------------------------------------------------
+      // Classification
+      // ----------------------------------------------------------------------
+      productType:
+  formData.get("productType"),
 
       categoryId:
         formData.get("categoryId"),
@@ -34,6 +42,54 @@ export async function createProductAction(
 
       manufacturerId:
         formData.get("manufacturerId") || null,
+
+      drugCategoryId:
+        formData.get("drugCategoryId") || null,
+
+      dosageFormId:
+        formData.get("dosageFormId") || null,
+
+      drugStrengthId:
+        formData.get("drugStrengthId") || null,
+
+      prescriptionTypeId:
+        formData.get("prescriptionTypeId") || null,
+
+
+      // ----------------------------------------------------------------------
+      // Units
+      // ----------------------------------------------------------------------
+
+      purchaseUnitId:
+        formData.get("purchaseUnitId") || null,
+
+      salesUnitId:
+        formData.get("salesUnitId") || null,
+
+      stockUnitId:
+        formData.get("stockUnitId") || null,
+
+
+      // ----------------------------------------------------------------------
+      // Finance
+      // ----------------------------------------------------------------------
+
+      incomeAccountId:
+        formData.get("incomeAccountId") || null,
+
+      expenseAccountId:
+        formData.get("expenseAccountId") || null,
+
+      inventoryAccountId:
+        formData.get("inventoryAccountId") || null,
+
+      taxRateId:
+        formData.get("taxRateId") || null,
+
+
+      // ----------------------------------------------------------------------
+      // Product Information
+      // ----------------------------------------------------------------------
 
       name:
         formData.get("name"),
@@ -57,7 +113,15 @@ export async function createProductAction(
         formData.get("packSize") || null,
 
       costPrice:
-        formData.get("costPrice") || null,
+        formData.get("costPrice") === null ||
+        formData.get("costPrice") === ""
+          ? null
+          : Number(formData.get("costPrice")),
+
+
+      // ----------------------------------------------------------------------
+      // Inventory Behaviour
+      // ----------------------------------------------------------------------
 
       trackInventory:
         formData.get("trackInventory") === "true",
@@ -84,28 +148,35 @@ export async function createProductAction(
           formData.get("reorderLevel") ?? 0
         ),
 
+      active:
+        formData.get("active") === "true",
+
     });
 
 
   if (!parsed.success) {
+
     return {
       success: false,
+
       errors:
         parsed.error.flatten()
           .fieldErrors,
     };
+
   }
 
 
   try {
 
-    await productService.createProduct(
-      {
-        ...parsed.data,
-        businessId:
-          user.businessId,
-      }
-    );
+    await productService.createProduct({
+
+      ...parsed.data,
+
+      businessId:
+        user.businessId,
+
+    });
 
 
     revalidatePath(
@@ -114,20 +185,26 @@ export async function createProductAction(
 
 
     return {
+
       success: true,
+
       message:
         "Product created successfully.",
+
     };
 
 
   } catch (error) {
 
     return {
+
       success: false,
+
       message:
         error instanceof Error
           ? error.message
           : "Failed to create product.",
+
     };
 
   }

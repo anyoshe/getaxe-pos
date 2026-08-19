@@ -11,7 +11,7 @@ export class SupplierService {
   }
 
   async getSupplier(id: string, businessId: string) {
-    const supplier = supplierRepository.findById(id, businessId);
+    const supplier = await supplierRepository.findById(id, businessId);
 
     if (!supplier) {
       throw new Error("Supplier not found.");
@@ -55,7 +55,7 @@ export class SupplierService {
       }
     }
 
-    supplierRepository.update(id, businessId, data);
+    return supplierRepository.update(id, businessId, data);
   }
 
   async deleteSupplier(id: string, businessId: string) {
@@ -75,7 +75,7 @@ export class SupplierService {
       throw new Error("Supplier not found.");
     }
 
-    supplierRepository.update(id, businessId, {
+    return supplierRepository.update(id, businessId, {
       active: true,
     });
   }

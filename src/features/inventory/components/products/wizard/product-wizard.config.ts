@@ -24,7 +24,7 @@ import {
 
 import type {
     ProductType,
-} from "./use-product-wizard";
+} from "../../../types/products";
 
 export interface ProductWizardStepDefinition {
 

@@ -1,72 +1,142 @@
 import { z } from "zod";
 
+const nullableUuid = z.string().uuid().nullable();
 
 export const createProductSchema = z.object({
 
-  categoryId: z.string().uuid(),
+  // --------------------------------------------------------------------------
+  // Classification
+  // --------------------------------------------------------------------------
 
-  supplierId: z.string().uuid()
-    .optional()
-    .nullable(),
+    productType:
+    z.enum([
+      "physical",
+      "service",
+      "medicine",
+      "raw-material",
+      "finished-product",
+    ]),
 
-  manufacturerId: z.string().uuid()
-    .optional()
-    .nullable(),
+  categoryId:
+    z.string().uuid(),
 
-  name: z.string()
-    .min(2, "Product name is required"),
+  supplierId:
+    nullableUuid,
 
-  genericName: z.string()
-    .optional()
-    .nullable(),
+  manufacturerId:
+    nullableUuid,
 
-  productBrand: z.string()
-    .optional()
-    .nullable(),
+  drugCategoryId:
+    nullableUuid,
 
-  description: z.string()
-    .optional()
-    .nullable(),
+  dosageFormId:
+    nullableUuid,
 
-  sku: z.string()
-    .optional()
-    .nullable(),
+  drugStrengthId:
+    nullableUuid,
 
-  barcode: z.string()
-    .optional()
-    .nullable(),
+  prescriptionTypeId:
+    nullableUuid,
 
-  packSize: z.string()
-    .optional()
-    .nullable(),
 
-  // costPrice: z.string()
-  //   .optional()
-  //   .nullable(),
-  costPrice: z.number().optional().nullable(),
+  // --------------------------------------------------------------------------
+  // Units
+  // --------------------------------------------------------------------------
 
-  trackInventory: z.boolean()
-    .default(true),
+  purchaseUnitId:
+    nullableUuid,
 
-  trackBatch: z.boolean()
-    .default(false),
+  salesUnitId:
+    nullableUuid,
 
-  trackExpiry: z.boolean()
-    .default(false),
+  stockUnitId:
+    nullableUuid,
 
-  serialized: z.boolean()
-    .default(false),
 
-  allowNegativeStock: z.boolean()
-    .default(false),
+  // --------------------------------------------------------------------------
+  // Finance
+  // --------------------------------------------------------------------------
 
-  minimumStock: z.number()
-    .int()
-    .default(0),
+  incomeAccountId:
+    nullableUuid,
 
-  reorderLevel: z.number()
-    .int()
-    .default(0),
+  expenseAccountId:
+    nullableUuid,
+
+  inventoryAccountId:
+    nullableUuid,
+
+  taxRateId:
+    nullableUuid,
+
+
+  // --------------------------------------------------------------------------
+  // Product Information
+  // --------------------------------------------------------------------------
+
+  name:
+    z.string()
+      .trim()
+      .min(2, "Product name is required"),
+
+  genericName:
+    z.string()
+      .nullable(),
+
+  productBrand:
+    z.string()
+      .nullable(),
+
+  description:
+    z.string()
+      .nullable(),
+
+  sku:
+    z.string()
+      .nullable(),
+
+  barcode:
+    z.string()
+      .nullable(),
+
+  packSize:
+    z.string()
+      .nullable(),
+
+  costPrice:
+    z.number()
+      .nullable(),
+
+
+  // --------------------------------------------------------------------------
+  // Inventory Behaviour
+  // --------------------------------------------------------------------------
+
+  trackInventory:
+    z.boolean(),
+
+  trackBatch:
+    z.boolean(),
+
+  trackExpiry:
+    z.boolean(),
+
+  serialized:
+    z.boolean(),
+
+  allowNegativeStock:
+    z.boolean(),
+
+  minimumStock:
+    z.number()
+      .int(),
+
+  reorderLevel:
+    z.number()
+      .int(),
+
+  active:
+    z.boolean(),
 
 });
 

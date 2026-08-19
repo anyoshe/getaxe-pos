@@ -1,18 +1,18 @@
 import { and, eq } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
-
 import { productPrices } from "@/db/schema/inventory/product_prices";
-
-type ProductPriceInsert =
-  InferInsertModel<typeof productPrices>;
 
 import {
   BaseRepository,
 } from "../base";
 
+type ProductPriceInsert =
+  InferInsertModel<typeof productPrices>;
+
 export class ProductPriceRepository
   extends BaseRepository {
+
   async findAll(
     businessId: string
   ) {
@@ -31,17 +31,21 @@ export class ProductPriceRepository
         productPrices,
         { asc }
       ) => [
-          asc(productPrices.productId),
-          asc(productPrices.minimumQuantity),
-        ],
+        asc(productPrices.productId),
+        asc(productPrices.minimumQuantity),
+      ],
     });
   }
 
   async findById(
-    id: string
+    id: string,
+    businessId: string
   ) {
     return this.database.query.productPrices.findFirst({
-      where: eq(productPrices.id, id),
+      where: and(
+        eq(productPrices.id, id),
+        eq(productPrices.businessId, businessId)
+      ),
 
       with: {
         product: true,
@@ -64,32 +68,45 @@ export class ProductPriceRepository
 
   async update(
     id: string,
+    businessId: string,
     data: Partial<ProductPriceInsert>
   ) {
     const [price] =
       await this.database
         .update(productPrices)
         .set(data)
-        .where(eq(productPrices.id, id))
+        .where(
+          and(
+            eq(productPrices.id, id),
+            eq(productPrices.businessId, businessId)
+          )
+        )
         .returning();
 
     return price;
   }
 
   async delete(
-    id: string
+    id: string,
+    businessId: string
   ) {
     const [price] =
       await this.database
         .delete(productPrices)
-        .where(eq(productPrices.id, id))
+        .where(
+          and(
+            eq(productPrices.id, id),
+            eq(productPrices.businessId, businessId)
+          )
+        )
         .returning();
 
     return price;
   }
 
   async deactivate(
-    id: string
+    id: string,
+    businessId: string
   ) {
     const [price] =
       await this.database
@@ -98,7 +115,10 @@ export class ProductPriceRepository
           active: false,
         })
         .where(
-          eq(productPrices.id, id)
+          and(
+            eq(productPrices.id, id),
+            eq(productPrices.businessId, businessId)
+          )
         )
         .returning();
 

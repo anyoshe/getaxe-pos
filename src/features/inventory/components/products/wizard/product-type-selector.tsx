@@ -2,7 +2,7 @@
 
 import type {
     ProductType,
-} from "./use-product-wizard";
+} from "../../../types/products";
 
 interface ProductTypeSelectorProps {
     value: ProductType | null;

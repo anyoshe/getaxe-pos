@@ -7,11 +7,9 @@ import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { supplierService } from "../services";
 
 export async function deleteSupplierAction(id: string) {
-  await requireAuthorizedUser("suppliers.delete");
+  const user = await requireAuthorizedUser("suppliers.delete");
 
   try {
-    const user = await requireAuthorizedUser("suppliers.delete");
-
     await supplierService.deleteSupplier(id, user.businessId);
 
     revalidatePath("/inventory/suppliers");

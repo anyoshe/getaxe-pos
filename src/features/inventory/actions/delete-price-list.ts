@@ -11,13 +11,15 @@ import {
 export async function deletePriceListAction(
   id: string
 ) {
-  await requireAuthorizedUser(
-    "price-lists.delete"
-  );
+  const user =
+    await requireAuthorizedUser(
+      "price-lists.delete"
+    );
 
   try {
     await priceListService.deletePriceList(
-      id
+      id,
+      user.businessId
     );
 
     revalidatePath(

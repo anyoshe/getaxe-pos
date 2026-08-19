@@ -4,118 +4,130 @@ import { revalidatePath } from "next/cache";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 
-import {
-  createProductSchema,
-} from "../schemas/products";
+import { createProductSchema } from "../schemas/products";
 
-import {
-  productService,
-} from "../services";
+import { productService } from "../services";
 
+export async function updateProductAction(id: string, formData: FormData) {
+  const user = await requireAuthorizedUser("products.update");
 
-export async function updateProductAction(
-  id: string,
-  formData: FormData
-) {
-  const user =
-    await requireAuthorizedUser(
-        "products.update"
-    );
+  const parsed = createProductSchema.safeParse({
+    // ----------------------------------------------------------------------
+    // Classification
+    // ----------------------------------------------------------------------
 
-  const parsed =
-    createProductSchema.safeParse({
+    productType: formData.get("productType"),
 
-      categoryId:
-        formData.get("categoryId"),
+    categoryId: formData.get("categoryId"),
 
-      supplierId:
-        formData.get("supplierId") || null,
+    supplierId: formData.get("supplierId") || null,
 
-      manufacturerId:
-        formData.get("manufacturerId") || null,
+    manufacturerId: formData.get("manufacturerId") || null,
 
-      name:
-        formData.get("name"),
+    drugCategoryId: formData.get("drugCategoryId") || null,
 
-      genericName:
-        formData.get("genericName") || null,
+    dosageFormId: formData.get("dosageFormId") || null,
 
-      productBrand:
-        formData.get("productBrand") || null,
+    drugStrengthId: formData.get("drugStrengthId") || null,
 
-      description:
-        formData.get("description") || null,
+    prescriptionTypeId: formData.get("prescriptionTypeId") || null,
 
-      sku:
-        formData.get("sku") || null,
+    // ----------------------------------------------------------------------
+    // Units
+    // ----------------------------------------------------------------------
 
-      barcode:
-        formData.get("barcode") || null,
+    purchaseUnitId: formData.get("purchaseUnitId") || null,
 
-      packSize:
-        formData.get("packSize") || null,
+    salesUnitId: formData.get("salesUnitId") || null,
 
-      costPrice:
-        formData.get("costPrice") || null,
+    stockUnitId: formData.get("stockUnitId") || null,
 
-      trackInventory:
-        formData.get("trackInventory") === "true",
+    // ----------------------------------------------------------------------
+    // Finance
+    // ----------------------------------------------------------------------
 
-      trackBatch:
-        formData.get("trackBatch") === "true",
+    incomeAccountId: formData.get("incomeAccountId") || null,
 
-      trackExpiry:
-        formData.get("trackExpiry") === "true",
+    expenseAccountId: formData.get("expenseAccountId") || null,
 
-      serialized:
-        formData.get("serialized") === "true",
+    inventoryAccountId: formData.get("inventoryAccountId") || null,
 
-      allowNegativeStock:
-        formData.get("allowNegativeStock") === "true",
+    taxRateId: formData.get("taxRateId") || null,
 
-      minimumStock:
-        Number(
-          formData.get("minimumStock") ?? 0
-        ),
+    // ----------------------------------------------------------------------
+    // Product Information
+    // ----------------------------------------------------------------------
 
-      reorderLevel:
-        Number(
-          formData.get("reorderLevel") ?? 0
-        ),
-    });
+    name: formData.get("name"),
+
+    genericName: formData.get("genericName") || null,
+
+    productBrand: formData.get("productBrand") || null,
+
+    description: formData.get("description") || null,
+
+    sku: formData.get("sku") || null,
+
+    barcode: formData.get("barcode") || null,
+
+    packSize: formData.get("packSize") || null,
+
+    costPrice:
+      formData.get("costPrice") === null || formData.get("costPrice") === ""
+        ? null
+        : Number(formData.get("costPrice")),
+
+    // ----------------------------------------------------------------------
+    // Inventory Behaviour
+    // ----------------------------------------------------------------------
+
+    trackInventory: formData.get("trackInventory") === "true",
+
+    trackBatch: formData.get("trackBatch") === "true",
+
+    trackExpiry: formData.get("trackExpiry") === "true",
+
+    serialized: formData.get("serialized") === "true",
+
+    allowNegativeStock: formData.get("allowNegativeStock") === "true",
+
+    minimumStock: Number(formData.get("minimumStock") ?? 0),
+
+    reorderLevel: Number(formData.get("reorderLevel") ?? 0),
+
+    active: formData.get("active") === "true",
+  });
 
   if (!parsed.success) {
     return {
       success: false,
-      errors:
-        parsed.error.flatten()
-          .fieldErrors,
+
+      errors: parsed.error.flatten().fieldErrors,
     };
   }
 
   try {
     await productService.updateProduct(
-  id,
-  parsed.data,
-  user.businessId
-);
+      id,
 
-    revalidatePath(
-      "/inventory/products"
+      parsed.data,
+
+      user.businessId,
     );
+
+    revalidatePath("/inventory/products");
 
     return {
       success: true,
-      message:
-        "Product updated successfully.",
+
+      message: "Product updated successfully.",
     };
   } catch (error) {
     return {
       success: false,
+
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to update product.",
+        error instanceof Error ? error.message : "Failed to update product.",
     };
   }
 }

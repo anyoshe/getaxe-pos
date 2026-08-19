@@ -47,6 +47,8 @@ export const products = pgTable(
       .notNull()
       .references(() => categories.id),
 
+    productType: text("product_type").notNull(),
+
     supplierId: uuid("supplier_id")
       .references(() => suppliers.id),
 
