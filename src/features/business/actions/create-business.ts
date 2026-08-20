@@ -26,82 +26,58 @@ import {
 export async function createBusinessAction(
   input: BusinessSetupInput,
 ) {
-
-  //
-  // Validate input
-  //
-
   const data =
     businessSetupSchema.parse(input);
 
-  //
-  // Current onboarding user
-  //
-
+  // Must read session BEFORE destroying it
   const onboardingUser =
     await requireOnboardingUser();
 
-  //
-  // Provision business
-  //
+  const roleId = onboardingUser.roleId;
 
   const business =
     await businessProvisioningService.provision({
-
       ...data,
-
       ownerUserId:
         onboardingUser.createdBy,
-
       ownerInvitationId:
         onboardingUser.id,
-
       ownerName:
         onboardingUser.name,
-
       ownerEmail:
         onboardingUser.email,
-
       ownerPhone:
         onboardingUser.phone ?? undefined,
-
       ownerPasswordHash:
         onboardingUser.passwordHash!,
-
     });
 
-  //
-  // Onboarding finished
-  //
+  // Prefer the provisioned owner user id when available
+  const sessionUserId =
+    business.createdBy ??
+    onboardingUser.createdBy;
 
+  if (!sessionUserId) {
+    throw new Error(
+      "Business provisioned but owner user id is missing.",
+    );
+  }
+
+  if (!roleId) {
+    throw new Error(
+      "Onboarding invitation is missing a role id.",
+    );
+  }
+
+  // End onboarding session only after we have everything we need
   await destroyOnboardingSession();
 
-  //
-  // Create ERP session
-  //
-
   await createSession({
-
-    userId:
-      business.createdBy!,
-
-    businessId:
-      business.id,
-
-    roleId:
-      (
-        await requireOnboardingUser()
-      ).roleId,
-
-    email:
-      onboardingUser.email,
-
+    userId: sessionUserId,
+    businessId: business.id,
+    roleId,
+    email: onboardingUser.email,
   });
 
-  //
-  // Go to Dashboard
-  //
-
   redirect("/dashboard");
-
 }

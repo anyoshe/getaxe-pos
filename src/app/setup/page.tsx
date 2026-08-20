@@ -1,4 +1,6 @@
-import { requireOnboardingUser } from "@/lib/onboarding-auth/current-onboarding-user";
+import { redirect } from "next/navigation";
+
+import { getCurrentOnboardingUser } from "@/lib/onboarding-auth/current-onboarding-user";
 
 import {
   OnboardingLayout,
@@ -17,41 +19,33 @@ type Props = {
   }>;
 };
 
+/**
+ * Business setup is only available during onboarding (invitation session).
+ * If the onboarding cookie is missing/expired, send the user back to login.
+ */
 export default async function BusinessSetupPage({
   searchParams,
 }: Props) {
+  await searchParams;
 
-  const {
-    email,
-  } = await searchParams;
+  const onboardingUser =
+    await getCurrentOnboardingUser();
 
-  const [
-    currencies,
-    countries,
-  ] = await Promise.all([
+  if (!onboardingUser) {
+    redirect("/login?next=/setup");
+  }
+
+  const [currencies, countries] = await Promise.all([
     currenciesService.getActiveCurrencies(),
     countriesService.getActiveCountries(),
   ]);
 
-  let user = null;
-
-  if (!email) {
-
-    const user = await requireOnboardingUser();
-
-    
-
-  }
   return (
-
     <OnboardingLayout>
-
       <BusinessSetupForm
         currencies={currencies}
         countries={countries}
       />
-
     </OnboardingLayout>
-
   );
 }
