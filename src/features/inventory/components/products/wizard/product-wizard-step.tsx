@@ -3,7 +3,7 @@
 import type { ComponentType } from "react";
 import type { UseFormReturn } from "react-hook-form";
 
-import type { ProductContext } from "../../../types";
+import type { ProductContext, ProductType } from "../../../types";
 import type { ProductFormInput } from "../product-form.types";
 
 import {
@@ -20,6 +20,8 @@ interface ProductWizardStepProps {
     stepId: string;
     form: UseFormReturn<ProductFormInput>;
     context: ProductContext;
+    /** Prefer wizard state so rules resolve even if form productType lags. */
+    productType?: ProductType | null;
 }
 
 type SectionProps = {
@@ -29,10 +31,6 @@ type SectionProps = {
     requiredFields?: string[];
 };
 
-/**
- * Map rule-definition step ids → section components.
- * Keep aliases so older ids (basic, accounting) still work.
- */
 const STEP_COMPONENTS: Record<string, ComponentType<SectionProps>> = {
     "product-information": ProductBasic,
     basic: ProductBasic,
@@ -48,6 +46,7 @@ export function ProductWizardStep({
     stepId,
     form,
     context,
+    productType: productTypeProp,
 }: ProductWizardStepProps) {
     const Component = STEP_COMPONENTS[stepId];
 
@@ -59,21 +58,25 @@ export function ProductWizardStep({
         );
     }
 
-    const productType = form.getValues("productType");
-    const ruleSet = productType
-        ? productRuleResolver.resolve({
-              businessCapabilities: context.businessCapabilities,
-              productType,
-          })
-        : null;
+    // Watch so visibleFields recompute when type is set; prefer explicit wizard prop
+    const watchedType = form.watch("productType") as ProductType | null | undefined;
+    const productType = (productTypeProp ?? watchedType ?? null) as ProductType | null;
 
+    const ruleSet =
+        productType != null
+            ? productRuleResolver.resolve({
+                  businessCapabilities: context.businessCapabilities ?? [],
+                  productType,
+              })
+            : null;
+
+    // Fields for THIS step only — includes `serialized` when rules say so
     const visibleFields = ruleSet
         ? ruleSet.fields
               .filter((field) => field.step === stepId)
               .map((field) => field.key)
         : [];
 
-    // Required from full rule set (not only this step), so * stays accurate
     const requiredFields = ruleSet?.requiredFields ?? [];
 
     return (

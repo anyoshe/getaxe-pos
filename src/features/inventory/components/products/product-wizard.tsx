@@ -63,6 +63,7 @@ export function ProductWizard({
                     stepId={wizard.steps[wizard.currentStep].id}
                     form={form}
                     context={context}
+                    productType={wizard.productType}
                 />
             </div>
 

@@ -41,7 +41,7 @@ export const PRODUCT_FIELD_DEFINITIONS: ProductFieldDefinition[] = [
   { key: "allowNegativeStock", label: "Allow Negative Stock", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"] },
   { key: "trackBatch", label: "Track Batch", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.batch-control", required: true },
   { key: "trackExpiry", label: "Track Expiry", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.expiry-control", required: true },
-  { key: "serialized", label: "Serialised", step: "inventory", productTypes: ["physical", "finished-product"], capability: "inventory.serial-numbers" },
+  { key: "serialized", label: "Serialized", step: "inventory", productTypes: ["physical", "finished-product"], capability: "inventory.serial-numbers" },
   { key: "genericName", label: "Generic Name", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "drugCategoryId", label: "Drug Category", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "dosageFormId", label: "Dosage Form", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
