@@ -1,20 +1,10 @@
 "use client";
 
-import type {
-    ComponentType,
-} from "react";
+import type { ComponentType } from "react";
+import type { UseFormReturn } from "react-hook-form";
 
-import type {
-    UseFormReturn,
-} from "react-hook-form";
-
-import type {
-    ProductContext,
-} from "../../../types";
-
-import type {
-    ProductFormInput,
-} from "../product-form.types";
+import type { ProductContext } from "../../../types";
+import type { ProductFormInput } from "../product-form.types";
 
 import {
     ProductBasic,
@@ -32,48 +22,57 @@ interface ProductWizardStepProps {
     context: ProductContext;
 }
 
-function resolveStepComponent(stepId: string): ComponentType<any> | null {
-    const stepComponentMap: Record<string, ComponentType<any>> = {
-        "product-information": ProductBasic,
-        classification: ProductClassification,
-        units: ProductUnits,
-        inventory: ProductInventory,
-        pricing: ProductFinance,
-        accounting: ProductFinance,
-        "batch-expiry": ProductInventory,
-        pharmacy: ProductClassification,
-    };
-
-    return stepComponentMap[stepId] ?? null;
-}
+const STEP_COMPONENTS: Record<
+    string,
+    ComponentType<{
+        form: UseFormReturn<ProductFormInput>;
+        context: ProductContext;
+        visibleFields?: string[];
+        requiredFields?: string[];
+    }>
+> = {
+    basic: ProductBasic,
+    classification: ProductClassification,
+    units: ProductUnits,
+    inventory: ProductInventory,
+    pricing: ProductFinance,
+    accounting: ProductFinance,
+    pharmacy: ProductClassification,
+};
 
 export function ProductWizardStep({
     stepId,
     form,
     context,
 }: ProductWizardStepProps) {
-    const Component = resolveStepComponent(stepId);
+    const Component = STEP_COMPONENTS[stepId];
 
     if (!Component) {
         return null;
     }
 
     const productType = form.getValues("productType");
-    const visibleFields = productType
-        ? productRuleResolver
-            .resolve({
-                businessCapabilities: context.businessCapabilities,
-                productType,
-            })
-            .fields.filter((field) => field.step === stepId)
-            .map((field) => field.key)
+    const ruleSet = productType
+        ? productRuleResolver.resolve({
+              businessCapabilities: context.businessCapabilities,
+              productType,
+          })
+        : null;
+
+    const visibleFields = ruleSet
+        ? ruleSet.fields
+              .filter((field) => field.step === stepId)
+              .map((field) => field.key)
         : [];
+
+    const requiredFields = ruleSet?.requiredFields ?? [];
 
     return (
         <Component
             form={form}
             context={context}
             visibleFields={visibleFields}
+            requiredFields={requiredFields}
         />
     );
 }

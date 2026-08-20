@@ -21,14 +21,18 @@ interface ProductClassificationProps {
     form: UseFormReturn<ProductFormInput>;
     context: ProductContext;
     visibleFields?: string[];
+    requiredFields?: string[];
 }
 
 export function ProductClassification({
     form,
     context,
     visibleFields,
+    requiredFields,
 }: ProductClassificationProps) {
     const visibleSet = new Set(visibleFields ?? []);
+    const requiredSet = new Set(requiredFields ?? []);
+    const isRequired = (field: string) => requiredSet.has(field);
     const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
     return (
@@ -45,7 +49,10 @@ export function ProductClassification({
                         control={form.control}
                         name="categoryId"
                         options={context.categories}
-                        placeholder="Select Category"
+                        label="Category"
+                        placeholder="Select category"
+                    
+                        required={isRequired("categoryId")}
                     />
                 )}
 
@@ -54,7 +61,10 @@ export function ProductClassification({
                         control={form.control}
                         name="supplierId"
                         options={context.suppliers}
-                        placeholder="Select Supplier"
+                        label="Supplier"
+                        placeholder="Select supplier"
+                    
+                        required={isRequired("supplierId")}
                     />
                 )}
 
@@ -63,7 +73,10 @@ export function ProductClassification({
                         control={form.control}
                         name="manufacturerId"
                         options={context.manufacturers}
-                        placeholder="Select Manufacturer"
+                        label="Manufacturer"
+                        placeholder="Select manufacturer"
+                    
+                        required={isRequired("manufacturerId")}
                     />
                 )}
 
@@ -72,7 +85,10 @@ export function ProductClassification({
                         control={form.control}
                         name="drugCategoryId"
                         options={context.drugCategories}
-                        placeholder="Select Drug Category"
+                        label="Drug category"
+                        placeholder="Select drug category"
+                    
+                        required={isRequired("drugCategoryId")}
                     />
                 )}
 
@@ -81,7 +97,10 @@ export function ProductClassification({
                         control={form.control}
                         name="dosageFormId"
                         options={context.dosageForms}
-                        placeholder="Select Dosage Form"
+                        label="Dosage form"
+                        placeholder="Select dosage form"
+                    
+                        required={isRequired("dosageFormId")}
                     />
                 )}
 
@@ -90,7 +109,10 @@ export function ProductClassification({
                         control={form.control}
                         name="drugStrengthId"
                         options={context.drugStrengths}
-                        placeholder="Select Drug Strength"
+                        label="Drug strength"
+                        placeholder="Select drug strength"
+                    
+                        required={isRequired("drugStrengthId")}
                     />
                 )}
 
@@ -99,7 +121,10 @@ export function ProductClassification({
                         control={form.control}
                         name="prescriptionTypeId"
                         options={context.prescriptionTypes}
-                        placeholder="Select Prescription Type"
+                        label="Prescription type"
+                        placeholder="Select prescription type"
+                    
+                        required={isRequired("prescriptionTypeId")}
                     />
                 )}
 

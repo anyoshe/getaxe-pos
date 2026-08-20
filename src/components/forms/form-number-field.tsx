@@ -6,37 +6,23 @@ import type {
     UseFormReturn,
 } from "react-hook-form";
 
-import {
-    FormField,
-} from "./form-field";
+import { FormField } from "./form-field";
+import { Input } from "@/components/ui/input";
 
-import {
-    Input,
-} from "@/components/ui/input";
-
-interface FormNumberFieldProps<
-    TFieldValues extends FieldValues,
-> {
+interface FormNumberFieldProps<TFieldValues extends FieldValues> {
     form: UseFormReturn<TFieldValues>;
-
     name: FieldPath<TFieldValues>;
-
     label: string;
-
     placeholder?: string;
-
     step?: number | string;
-
     min?: number;
-
     max?: number;
-
     disabled?: boolean;
+    required?: boolean;
+    description?: string;
 }
 
-export function FormNumberField<
-    TFieldValues extends FieldValues,
->({
+export function FormNumberField<TFieldValues extends FieldValues>({
     form,
     name,
     label,
@@ -45,12 +31,15 @@ export function FormNumberField<
     min,
     max,
     disabled,
+    required = false,
+    description,
 }: FormNumberFieldProps<TFieldValues>) {
-
     return (
-
-        <FormField label={label}>
-
+        <FormField
+            label={label}
+            required={required}
+            description={description}
+        >
             <Input
                 type="number"
                 placeholder={placeholder}
@@ -58,13 +47,9 @@ export function FormNumberField<
                 min={min}
                 max={max}
                 disabled={disabled}
-                {...form.register(name, {
-                    valueAsNumber: true,
-                })}
+                aria-required={required}
+                {...form.register(name, { valueAsNumber: true })}
             />
-
         </FormField>
-
     );
-
 }

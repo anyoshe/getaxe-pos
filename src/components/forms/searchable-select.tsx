@@ -12,6 +12,7 @@ const NONE_VALUE = "__none__";
 
 interface SearchableSelectProps<T> {
     options: T[];
+    /** Always controlled. null/undefined means no selection. */
     value?: string | null;
     onChange: (value: string | null) => void;
     getValue: (option: T) => string;
@@ -20,8 +21,7 @@ interface SearchableSelectProps<T> {
 }
 
 /**
- * Always-controlled select for nullable form fields.
- * Avoids Base UI uncontrolled→controlled warning when value starts as null.
+ * Controlled select that always shows a human label (never raw UUID or __none__).
  */
 export function SearchableSelect<T>({
     options,
@@ -31,6 +31,14 @@ export function SearchableSelect<T>({
     getLabel,
     placeholder = "Select option",
 }: SearchableSelectProps<T>) {
+    const selected = value
+        ? options.find((option) => getValue(option) === value)
+        : undefined;
+
+    const displayLabel = selected
+        ? getLabel(selected)
+        : placeholder;
+
     const controlledValue =
         value && value.length > 0 ? value : NONE_VALUE;
 
@@ -46,7 +54,10 @@ export function SearchableSelect<T>({
             }}
         >
             <SelectTrigger className="w-full">
-                <SelectValue placeholder={placeholder} />
+                {/* Explicit text so Base UI never renders the raw value/UUID */}
+                <SelectValue placeholder={placeholder}>
+                    {displayLabel}
+                </SelectValue>
             </SelectTrigger>
 
             <SelectContent>

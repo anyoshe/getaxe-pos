@@ -15,14 +15,18 @@ interface ProductFinanceProps {
     form: UseFormReturn<ProductFormInput>;
     context: ProductContext;
     visibleFields?: string[];
+    requiredFields?: string[];
 }
 
 export function ProductFinance({
     form,
     context,
     visibleFields,
+    requiredFields,
 }: ProductFinanceProps) {
     const visibleSet = new Set(visibleFields ?? []);
+    const requiredSet = new Set(requiredFields ?? []);
+    const isRequired = (field: string) => requiredSet.has(field);
     const showField = (field: string) =>
         visibleFields === undefined || visibleSet.has(field);
 
@@ -46,6 +50,7 @@ export function ProductFinance({
                         name="costPrice"
                         label="Cost Price"
                         step="0.01"
+                        required={isRequired("costPrice")}
                     />
                 )}
 
@@ -53,8 +58,10 @@ export function ProductFinance({
                     <FormNumberField
                         form={form}
                         name="sellingPrice"
-                        label="Default Selling Price (optional)"
+                        label="Default Selling Price"
                         step="0.01"
+                        required={false}
+                        description="Creates a price on the default price list when set"
                     />
                 )}
 
@@ -67,6 +74,8 @@ export function ProductFinance({
                         getLabel={(account) =>
                             `${account.accountCode} - ${account.accountName}`
                         }
+                    
+                        required={isRequired("incomeAccountId")}
                     />
                 )}
 
@@ -79,6 +88,8 @@ export function ProductFinance({
                         getLabel={(account) =>
                             `${account.accountCode} - ${account.accountName}`
                         }
+                    
+                        required={isRequired("expenseAccountId")}
                     />
                 )}
 
@@ -91,6 +102,8 @@ export function ProductFinance({
                         getLabel={(account) =>
                             `${account.accountCode} - ${account.accountName}`
                         }
+                    
+                        required={isRequired("inventoryAccountId")}
                     />
                 )}
 
@@ -105,6 +118,8 @@ export function ProductFinance({
                                 tax.rate !== null ? ` (${tax.rate}%)` : ""
                             }`
                         }
+                    
+                        required={isRequired("taxRateId")}
                     />
                 )}
             </div>

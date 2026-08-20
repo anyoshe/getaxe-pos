@@ -17,13 +17,17 @@ import type {
 interface ProductInventoryProps {
     form: UseFormReturn<ProductFormInput>;
     visibleFields?: string[];
+    requiredFields?: string[];
 }
 
 export function ProductInventory({
     form,
     visibleFields,
+    requiredFields,
 }: ProductInventoryProps) {
     const visibleSet = new Set(visibleFields ?? []);
+    const requiredSet = new Set(requiredFields ?? []);
+    const isRequired = (field: string) => requiredSet.has(field);
     const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
     return (
