@@ -16,6 +16,7 @@ import type {
 
 interface ProductInventoryProps {
     form: UseFormReturn<ProductFormInput>;
+    context?: unknown;
     visibleFields?: string[];
     requiredFields?: string[];
 }

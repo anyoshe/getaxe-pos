@@ -16,6 +16,7 @@ import { BarcodeScanner } from "../entry/barcode-scanner";
 
 interface ProductBasicProps {
   form: UseFormReturn<ProductFormInput>;
+  context?: unknown;
   visibleFields?: string[];
   requiredFields?: string[];
 }

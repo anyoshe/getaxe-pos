@@ -22,19 +22,24 @@ interface ProductWizardStepProps {
     context: ProductContext;
 }
 
-const STEP_COMPONENTS: Record<
-    string,
-    ComponentType<{
-        form: UseFormReturn<ProductFormInput>;
-        context: ProductContext;
-        visibleFields?: string[];
-        requiredFields?: string[];
-    }>
-> = {
+type SectionProps = {
+    form: UseFormReturn<ProductFormInput>;
+    context: ProductContext;
+    visibleFields?: string[];
+    requiredFields?: string[];
+};
+
+/**
+ * Map rule-definition step ids → section components.
+ * Keep aliases so older ids (basic, accounting) still work.
+ */
+const STEP_COMPONENTS: Record<string, ComponentType<SectionProps>> = {
+    "product-information": ProductBasic,
     basic: ProductBasic,
     classification: ProductClassification,
     units: ProductUnits,
     inventory: ProductInventory,
+    "batch-expiry": ProductInventory,
     pricing: ProductFinance,
     accounting: ProductFinance,
     pharmacy: ProductClassification,
@@ -48,7 +53,11 @@ export function ProductWizardStep({
     const Component = STEP_COMPONENTS[stepId];
 
     if (!Component) {
-        return null;
+        return (
+            <p className="text-sm text-muted-foreground">
+                No form section is configured for step “{stepId}”.
+            </p>
+        );
     }
 
     const productType = form.getValues("productType");
@@ -65,6 +74,7 @@ export function ProductWizardStep({
               .map((field) => field.key)
         : [];
 
+    // Required from full rule set (not only this step), so * stays accurate
     const requiredFields = ruleSet?.requiredFields ?? [];
 
     return (
