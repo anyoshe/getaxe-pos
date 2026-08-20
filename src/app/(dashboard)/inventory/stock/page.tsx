@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getStockOnHand } from "@/features/inventory/queries/stock-on-hand.query";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function StockOnHandPage() {
   const user = await getCurrentUser();
@@ -24,9 +25,12 @@ export default async function StockOnHandPage() {
             Quantities by product and warehouse after receive movements.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/inventory/stock/receive">Receive stock</Link>
-        </Button>
+        <Link
+          href="/inventory/stock/receive"
+          className={cn(buttonVariants({ variant: "default" }))}
+        >
+          Receive stock
+        </Link>
       </div>
 
       <div className="overflow-x-auto rounded-xl border">
