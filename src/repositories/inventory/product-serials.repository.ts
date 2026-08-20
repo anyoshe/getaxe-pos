@@ -93,7 +93,7 @@ export class ProductSerialRepository extends BaseRepository {
     const conditions = [
       eq(productSerials.businessId, businessId),
       eq(productSerials.productId, productId),
-      eq(productSerials.status, "IN_STOCK"),
+      inArray(productSerials.status, ["IN_STOCK", "RETURNED"]),
     ];
 
     if (warehouseId) {
@@ -102,6 +102,24 @@ export class ProductSerialRepository extends BaseRepository {
 
     return this.database.query.productSerials.findMany({
       where: and(...conditions),
+      orderBy: productSerials.createdAt,
+    });
+  }
+
+  async findInStockByBatch(
+    businessId: string,
+    productId: string,
+    batchId: string,
+    warehouseId: string,
+  ) {
+    return this.database.query.productSerials.findMany({
+      where: and(
+        eq(productSerials.businessId, businessId),
+        eq(productSerials.productId, productId),
+        eq(productSerials.batchId, batchId),
+        eq(productSerials.warehouseId, warehouseId),
+        inArray(productSerials.status, ["IN_STOCK", "RETURNED"]),
+      ),
       orderBy: productSerials.createdAt,
     });
   }
@@ -120,5 +138,57 @@ export class ProductSerialRepository extends BaseRepository {
         inArray(productSerials.serialNumber, serialNumbers),
       ),
     });
+  }
+
+  async findBySerialNumbersForUpdate(
+    businessId: string,
+    serialNumbers: string[],
+  ) {
+    if (serialNumbers.length === 0) {
+      return [];
+    }
+
+    return this.database
+      .select()
+      .from(productSerials)
+      .where(
+        and(
+          eq(productSerials.businessId, businessId),
+          inArray(productSerials.serialNumber, serialNumbers),
+        ),
+      )
+      .for("update");
+  }
+
+  async updateStatus(
+    id: string,
+    status: string,
+  ) {
+    const [serial] = await this.database
+      .update(productSerials)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(productSerials.id, id))
+      .returning();
+
+    return serial;
+  }
+
+  async moveWarehouse(
+    id: string,
+    warehouseId: string,
+  ) {
+    const [serial] = await this.database
+      .update(productSerials)
+      .set({
+        warehouseId,
+        updatedAt: new Date(),
+      })
+      .where(eq(productSerials.id, id))
+      .returning();
+
+    return serial;
   }
 }

@@ -6,6 +6,7 @@ export interface AllocatedBatch {
   warehouseId: string;
 
   quantity: number;
+  serialNumbers?: string[];
 }
 
 export interface AllocateStockRequest {
@@ -18,6 +19,7 @@ export interface AllocateStockRequest {
   quantity: number;
 
   saleItemId: string;
+  serialized?: boolean;
 }
 
 export class SalesStockAllocationService {
@@ -28,6 +30,42 @@ export class SalesStockAllocationService {
     let remaining = request.quantity;
 
     const allocations: AllocatedBatch[] = [];
+
+    if (request.serialized) {
+      const serials = await uow.serials.findInStock(
+        request.businessId,
+        request.productId,
+        request.warehouseId,
+      );
+
+      if (serials.length < request.quantity) {
+        throw new Error("Insufficient serialized stock available.");
+      }
+
+      const selected = serials.slice(0, request.quantity);
+      const byBatch = new Map<string, typeof selected>();
+      for (const serial of selected) {
+        const current = byBatch.get(serial.batchId) ?? [];
+        current.push(serial);
+        byBatch.set(serial.batchId, current);
+      }
+
+      for (const [batchId, batchSerials] of byBatch) {
+        await uow.saleItemBatches.create({
+          saleItemId: request.saleItemId,
+          productBatchId: batchId,
+          quantity: batchSerials.length,
+        });
+        allocations.push({
+          batchId,
+          warehouseId: request.warehouseId,
+          quantity: batchSerials.length,
+          serialNumbers: batchSerials.map((serial) => serial.serialNumber),
+        });
+      }
+
+      return allocations;
+    }
 
     const batches = await uow.batches.findAvailableBatchesByWarehouse(
       request.businessId,

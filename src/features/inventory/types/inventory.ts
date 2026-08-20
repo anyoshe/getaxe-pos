@@ -26,6 +26,7 @@ export interface IssueStockRequest {
   warehouseId: string;
   quantity: number;
   movement: StockMovementInsert;
+  serialNumbers?: string[];
 }
 
 export interface AllocatedStockIssue {
@@ -63,6 +64,7 @@ export interface AdjustStockRequest {
   warehouseId: string;
 
   quantity: number;
+  serialNumbers?: string[];
 
   movement: StockMovementInsert;
 }
@@ -77,7 +79,7 @@ export interface TransferStockRequest {
   toWarehouseId: string;
 
   quantity: number;
-
+  serialNumbers?: string[];
   movement: {
     reference?: string | null;
     notes?: string | null;

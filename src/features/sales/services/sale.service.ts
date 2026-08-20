@@ -40,6 +40,11 @@ export class SalesService {
         businessId: sale.businessId,
       });
 
+      const product = await uow.products.findById(
+        saleItem.productId,
+        sale.businessId,
+      );
+
       const allocations =
     await salesStockAllocationService.allocate(
         uow,
@@ -49,6 +54,7 @@ export class SalesService {
             warehouseId: sale.warehouseId,
             quantity: saleItem.quantity,
             saleItemId: saleItem.id,
+            serialized: product?.serialized === true,
         }
     );
 
@@ -69,6 +75,28 @@ export class SalesService {
           sale.businessId,
           allocation.quantity,
         );
+
+        if (allocation.serialNumbers) {
+          const serials = await uow.serials.findBySerialNumbersForUpdate(
+            sale.businessId,
+            allocation.serialNumbers,
+          );
+          if (serials.length !== allocation.serialNumbers.length) {
+            throw new Error("One or more serialized units could not be found.");
+          }
+          for (const serial of serials) {
+            if (
+              serial.productId !== saleItem.productId ||
+              serial.batchId !== allocation.batchId ||
+              serial.warehouseId !== allocation.warehouseId ||
+              serial.status !== "IN_STOCK" &&
+              serial.status !== "RETURNED"
+            ) {
+              throw new Error("A serialized unit is not available for this sale.");
+            }
+            await uow.serials.updateStatus(serial.id, "SOLD");
+          }
+        }
 
         await uow.movements.create({
           businessId: sale.businessId,

@@ -48,10 +48,11 @@ export class GoodsReceiptService {
                 const receiptItems = [];
 
                 for (const item of request.items) {
+                    const { serialNumbers, ...receiptItemData } = item;
 
                     const receiptItem =
                         await uow.goodsReceiptItems.create({
-                            ...item,
+                            ...receiptItemData,
                             goodsReceiptId: receipt.id,
                         });
 
@@ -62,6 +63,13 @@ export class GoodsReceiptService {
                     await inventoryService.receiveStockWithUnitOfWork(
                         inventoryUow,
                         {
+                            serialized: (
+                                await inventoryUow.products.findById(
+                                    item.productId,
+                                    receipt.businessId,
+                                )
+                            )?.serialized === true,
+                            serialNumbers,
                             warehouseId:
                                 request.warehouseId,
 

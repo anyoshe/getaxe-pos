@@ -18,6 +18,7 @@ import { relations } from "drizzle-orm";
 import { stockMovements } from "./stock_movements";
 import { saleReturnItems } from "../sales/sale_return_items";
 import { saleItemBatches } from "../sales/sale_item_batches";
+import { productSerials } from "./product_serials";
 
 export const productBatches = pgTable(
   "product_batches",
@@ -111,5 +112,6 @@ export const productBatchesRelations = relations(
     stockMovements: many(stockMovements),
     saleReturnItems: many(saleReturnItems),
     saleItemBatches: many(saleItemBatches),
+    serials: many(productSerials),
   })
 );

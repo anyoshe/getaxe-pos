@@ -77,9 +77,9 @@ export function ProductInventory({
                             <FormCheckbox
                                 control={form.control}
                                 name="serialized"
-                                label="Track serial numbers"
+                                label="Serialized"
                                 required={isRequired("serialized")}
-                                description="Capture individual serials on receive — not on this form."
+                                description="Optional product setting. Capture individual serials when stock is received."
                             />
                         )}
                         {showField("allowNegativeStock") && (

@@ -318,9 +318,10 @@ test("serialized products get serialisation rules only when applicable", () => {
   });
 
   assert.ok(resolved.fields.some((field) => field.key === "serialized"));
+  assert.ok(!resolved.fields.find((field) => field.key === "serialized")?.required);
   assert.ok(!productRuleResolver.resolve({
     businessCapabilities: ["inventory.product-types"],
-    productType: "service",
+    productType: "physical",
   }).fields.some((field) => field.key === "serialized"));
 });
 

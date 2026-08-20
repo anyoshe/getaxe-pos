@@ -61,8 +61,10 @@ export function ProductWizardStep({
 
     const productType = form.getValues("productType");
     const ruleSet = productType
-        ? productRuleResolver.resolve({
-              businessCapabilities: context.businessCapabilities,
+        ? context.productRulesByType[productType] ??
+          productRuleResolver.resolve({
+              businessCapabilities:
+                  context.businessCapabilities ?? context.capabilities ?? [],
               productType,
           })
         : null;

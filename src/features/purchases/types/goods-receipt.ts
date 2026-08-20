@@ -22,13 +22,17 @@ export type GoodsReceiptItemInsert =
     typeof goodsReceiptItems
   >;
 
+export type ReceiveGoodsItem = GoodsReceiptItemInsert & {
+  serialNumbers?: string[];
+};
+
 
 
 export interface ReceiveGoodsRequest {
 
   receipt: GoodsReceiptInsert;
 
-  items: GoodsReceiptItemInsert[];
+  items: ReceiveGoodsItem[];
 
   warehouseId: string;
 

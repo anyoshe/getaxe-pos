@@ -32,8 +32,11 @@ export class InventoryService {
   inventoryValidator.validateReceive(request);
 
   const serialNumbers = (request.serialNumbers ?? [])
-    .map((serial) => serial.trim())
-    .filter(Boolean);
+    .map((serial) => serial.trim());
+
+  if (serialNumbers.some((serial) => !serial)) {
+    throw new Error("Serial numbers cannot be empty.");
+  }
 
   if (request.serialized) {
     if (serialNumbers.length !== request.batch.quantityReceived) {
@@ -68,6 +71,8 @@ export class InventoryService {
         } already registered: ${existing}`,
       );
     }
+  } else if (serialNumbers.length > 0) {
+    throw new Error("Serial numbers are only valid for serialized products.");
   }
 
   const batch = await uow.batches.create(request.batch);
@@ -141,6 +146,47 @@ export class InventoryService {
 
     if (!batch) {
       throw new Error("Stock batch not found.");
+    }
+
+    const serialized = batch.product?.serialized === true;
+    const serialNumbers = (request.serialNumbers ?? []).map((serial) => serial.trim());
+
+    if (serialized) {
+      if (serialNumbers.length !== request.quantity) {
+        throw new Error(
+          `This serialized product requires exactly ${request.quantity} serial number${
+            request.quantity === 1 ? "" : "s"
+          }.`,
+        );
+      }
+
+      const serials = await uow.serials.findBySerialNumbersForUpdate(
+        batch.businessId,
+        serialNumbers,
+      );
+
+      if (serials.length !== serialNumbers.length) {
+        throw new Error("One or more serial numbers were not found.");
+      }
+
+      for (const serial of serials) {
+        if (
+          serial.productId !== batch.productId ||
+          serial.batchId !== batch.id ||
+          serial.warehouseId !== request.warehouseId
+        ) {
+          throw new Error("A serial number is not in the requested product, batch, or warehouse.");
+        }
+        if (serial.status !== "IN_STOCK" && serial.status !== "RETURNED") {
+          throw new Error(`Serial number ${serial.serialNumber} is not available.`);
+        }
+      }
+
+      for (const serial of serials) {
+        await uow.serials.updateStatus(serial.id, "SOLD");
+      }
+    } else if (serialNumbers.length > 0) {
+      throw new Error("Serial numbers are only valid for serialized products.");
     }
 
     const balance = await uow.balances.findByBatchWarehouseForUpdate(
@@ -265,6 +311,51 @@ export class InventoryService {
       throw new Error("Stock batch not found.");
     }
 
+    const serialized = batch.product?.serialized === true;
+    const serialNumbers = (request.serialNumbers ?? []).map((serial) => serial.trim());
+    if (serialized) {
+      if (serialNumbers.length !== Math.abs(request.quantity)) {
+        throw new Error(
+          "Serialized adjustments require one serial number per adjusted unit.",
+        );
+      }
+
+      if (request.quantity < 0) {
+        const serials = await uow.serials.findBySerialNumbersForUpdate(
+          batch.businessId,
+          serialNumbers,
+        );
+        if (serials.length !== serialNumbers.length) {
+          throw new Error("One or more serial numbers were not found.");
+        }
+        for (const serial of serials) {
+          if (
+            serial.productId !== batch.productId ||
+            serial.batchId !== batch.id ||
+            serial.warehouseId !== request.warehouseId
+          ) {
+            throw new Error("A serial number is not in the requested product, batch, or warehouse.");
+          }
+          if (serial.status !== "IN_STOCK" && serial.status !== "RETURNED") {
+            throw new Error(`Serial number ${serial.serialNumber} is not available.`);
+          }
+        }
+        for (const serial of serials) {
+          await uow.serials.updateStatus(serial.id, "DAMAGED");
+        }
+      } else {
+        const existingSerials = await uow.serials.findExistingSerials(
+          batch.businessId,
+          serialNumbers,
+        );
+        if (existingSerials.length > 0) {
+          throw new Error("One or more serial numbers already exist.");
+        }
+      }
+    } else if (serialNumbers.length > 0) {
+      throw new Error("Serial numbers are only valid for serialized products.");
+    }
+
     const newQuantity = batch.quantityRemaining + request.quantity;
 
     if (newQuantity < 0) {
@@ -274,6 +365,47 @@ export class InventoryService {
     const updatedBatch = await uow.batches.update(request.batchId, undefined, {
       quantityRemaining: newQuantity,
     });
+
+    const balance = await uow.balances.findByBatchWarehouse(
+      request.batchId,
+      request.warehouseId,
+    );
+
+    if (!balance) {
+      if (request.quantity < 0) {
+        throw new Error("No stock available in the requested warehouse.");
+      }
+      await uow.balances.create({
+        businessId: batch.businessId,
+        productId: batch.productId,
+        batchId: batch.id,
+        warehouseId: request.warehouseId,
+        quantity: request.quantity,
+      });
+    } else if (request.quantity > 0) {
+      await uow.balances.increaseQuantity(balance.id, request.quantity);
+    } else {
+      if (balance.quantity < Math.abs(request.quantity)) {
+        throw new Error("Insufficient stock for adjustment.");
+      }
+      await uow.balances.decreaseQuantity(
+        balance.id,
+        Math.abs(request.quantity),
+      );
+    }
+
+    if (serialized && request.quantity > 0) {
+      await uow.serials.createMany(
+        serialNumbers.map((serialNumber) => ({
+          businessId: batch.businessId,
+          productId: batch.productId,
+          batchId: batch.id,
+          warehouseId: request.warehouseId,
+          serialNumber,
+          status: "IN_STOCK",
+        })),
+      );
+    }
 
     const movement = await uow.movements.create({
       ...request.movement,
@@ -297,6 +429,35 @@ export class InventoryService {
 
     if (!batch) {
       throw new Error("Batch not found.");
+    }
+
+    const serialized = batch.product?.serialized === true;
+    const serialNumbers = (request.serialNumbers ?? []).map((serial) => serial.trim());
+    const serials = serialized
+      ? await uow.serials.findBySerialNumbersForUpdate(
+          batch.businessId,
+          serialNumbers,
+        )
+      : [];
+
+    if (serialized) {
+      if (serialNumbers.length !== request.quantity || serials.length !== serialNumbers.length) {
+        throw new Error("Serialized transfers require one available serial per unit.");
+      }
+      for (const serial of serials) {
+        if (
+          serial.productId !== batch.productId ||
+          serial.batchId !== batch.id ||
+          serial.warehouseId !== request.fromWarehouseId
+        ) {
+          throw new Error("A serial number is not in the requested source warehouse.");
+        }
+        if (serial.status !== "IN_STOCK" && serial.status !== "RETURNED") {
+          throw new Error(`Serial number ${serial.serialNumber} is not available.`);
+        }
+      }
+    } else if (serialNumbers.length > 0) {
+      throw new Error("Serial numbers are only valid for serialized products.");
     }
 
     const source = await uow.balances.findByBatchWarehouseForUpdate(
@@ -380,11 +541,31 @@ export class InventoryService {
       userId: request.movement.userId,
     });
 
+    if (serialized) {
+      for (const serial of serials) {
+        await uow.serials.moveWarehouse(serial.id, request.toWarehouseId);
+      }
+    }
+
     return {
       destinationBalance,
       outMovement,
       inMovement,
     };
+  }
+
+  async adjustStock(request: AdjustStockRequest) {
+    inventoryValidator.validateAdjustment(request);
+    return Repository.withTransaction(async (tx) =>
+      this.adjustStockWithUnitOfWork(new InventoryUnitOfWork(tx), request),
+    );
+  }
+
+  async transferStock(request: TransferStockRequest) {
+    inventoryValidator.validateTransfer(request);
+    return Repository.withTransaction(async (tx) =>
+      this.transferStockWithUnitOfWork(new InventoryUnitOfWork(tx), request),
+    );
   }
 }
 

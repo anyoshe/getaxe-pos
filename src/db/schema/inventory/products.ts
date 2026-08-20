@@ -31,6 +31,7 @@ import { productPrices } from "./product_prices";
 import { productBatches } from "./product_batches";
 import { stockMovements } from "./stock_movements";
 import { inventoryBalances } from "./inventory_balances";
+import { productSerials } from "./product_serials";
 
 export const products = pgTable(
   "products",
@@ -276,6 +277,6 @@ export const productsRelations = relations(
     stockMovements: many(stockMovements),
 
     inventoryBalances: many(inventoryBalances),
+    serials: many(productSerials),
   })
 );
-

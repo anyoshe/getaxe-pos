@@ -81,6 +81,9 @@ export class SupplierReturnService {
                             quantity:
                                 item.quantity,
 
+                            serialNumbers:
+                                item.serialNumbers,
+
                             movement: {
 
                                 businessId:

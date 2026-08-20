@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 import { receiveStockAction } from "../../actions/receive-stock";
 import type { Product } from "../../types";
+import { BarcodeScanner } from "../products/entry/barcode-scanner";
 
 type WarehouseOption = { id: string; name: string; code?: string | null };
 type SupplierOption = { id: string; name: string };
@@ -52,6 +54,8 @@ export function ReceiveStockForm({
   const [supplierId, setSupplierId] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
+  const [serialNumbersText, setSerialNumbersText] = useState("");
+  const [showSerialScanner, setShowSerialScanner] = useState(false);
 
   const product = stockable.find((p) => p.id === productId);
 
@@ -70,6 +74,9 @@ export function ReceiveStockForm({
         supplierId: supplierId || null,
         reference: reference || null,
         notes: notes || null,
+        serialNumbers: product?.serialized
+          ? serialNumbersText.split(/\r?\n|,/).map((serial) => serial.trim())
+          : undefined,
       });
 
       if (!result.success) {
@@ -243,6 +250,44 @@ export function ReceiveStockForm({
                 onChange={(e) => setManufactureDate(e.target.value)}
               />
             </div>
+          </div>
+        )}
+
+        {product?.serialized && (
+          <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <Label>
+              Serial numbers <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              value={serialNumbersText}
+              onChange={(e) => setSerialNumbersText(e.target.value)}
+              placeholder="Enter one serial number per line"
+              required
+              rows={Math.min(Math.max(Number(quantity) || 1, 3), 10)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSerialScanner((visible) => !visible)}
+            >
+              {showSerialScanner ? "Hide serial scanner" : "Scan serial numbers"}
+            </Button>
+            {showSerialScanner && (
+              <BarcodeScanner
+                continuous
+                onScan={(serial) =>
+                  setSerialNumbersText((current) =>
+                    current ? `${current}\n${serial}` : serial,
+                  )
+                }
+                onClose={() => setShowSerialScanner(false)}
+              />
+            )}
+            <p className="text-xs text-muted-foreground">
+              Enter exactly {quantity || "the received quantity"} unique serial
+              number{Number(quantity) === 1 ? "" : "s"}.
+            </p>
           </div>
         )}
 

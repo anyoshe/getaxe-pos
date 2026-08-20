@@ -79,6 +79,9 @@ export const productSerials = pgTable(
 
     serialIdx: uniqueIndex("product_serials_business_serial_unique")
       .on(table.businessId, table.serialNumber),
+
+    statusIdx: index("product_serials_status_idx")
+      .on(table.status),
   }),
 );
 

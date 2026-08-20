@@ -31,6 +31,7 @@ export interface CreateSupplierReturnItemRequest
    * Warehouse from which stock is removed.
    */
   warehouseId: string;
+  serialNumbers?: string[];
 
 }
 

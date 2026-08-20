@@ -30,6 +30,14 @@ export class InventoryValidator {
       );
     }
 
+    if (request.serialized && !request.serialNumbers?.length) {
+      throw new Error("Serialized products require serial numbers.");
+    }
+
+    if (!request.serialized && request.serialNumbers?.length) {
+      throw new Error("Serial numbers are only valid for serialized products.");
+    }
+
   }
 
 
@@ -64,6 +72,19 @@ export class InventoryValidator {
       );
     }
 
+    if (request.serialNumbers) {
+      const serialNumbers = request.serialNumbers.map((serial) => serial.trim());
+      if (serialNumbers.some((serial) => !serial)) {
+        throw new Error("Serial numbers cannot be empty.");
+      }
+      if (new Set(serialNumbers).size !== serialNumbers.length) {
+        throw new Error("Duplicate serial numbers cannot be issued.");
+      }
+      if (serialNumbers.length !== request.quantity) {
+        throw new Error("The number of serial numbers must equal the issue quantity.");
+      }
+    }
+
   }
 
 
@@ -78,6 +99,21 @@ export class InventoryValidator {
     throw new Error(
       "Adjustment quantity cannot be zero."
     );
+  }
+
+  if (request.serialNumbers) {
+    const serialNumbers = request.serialNumbers.map((serial) => serial.trim());
+    if (serialNumbers.some((serial) => !serial)) {
+      throw new Error("Serial numbers cannot be empty.");
+    }
+    if (new Set(serialNumbers).size !== serialNumbers.length) {
+      throw new Error("Duplicate serial numbers cannot be adjusted.");
+    }
+    if (serialNumbers.length !== Math.abs(request.quantity)) {
+      throw new Error(
+        "The number of serial numbers must equal the absolute adjustment quantity.",
+      );
+    }
   }
 
 
@@ -130,6 +166,19 @@ export class InventoryValidator {
       throw new Error(
         "Batch is required for transfer."
       );
+    }
+
+    if (request.serialNumbers) {
+      const serialNumbers = request.serialNumbers.map((serial) => serial.trim());
+      if (serialNumbers.some((serial) => !serial)) {
+        throw new Error("Serial numbers cannot be empty.");
+      }
+      if (new Set(serialNumbers).size !== serialNumbers.length) {
+        throw new Error("Duplicate serial numbers cannot be transferred.");
+      }
+      if (serialNumbers.length !== request.quantity) {
+        throw new Error("The number of serial numbers must equal the transfer quantity.");
+      }
     }
 
   }

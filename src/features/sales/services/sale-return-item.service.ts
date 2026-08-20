@@ -65,6 +65,9 @@ export class SaleReturnItemService {
                 quantity:
                     item.quantity,
 
+                serialNumbers:
+                    item.serialNumbers,
+
                 userId:
                     saleReturn.createdBy,
 

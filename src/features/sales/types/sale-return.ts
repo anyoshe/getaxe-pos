@@ -26,6 +26,7 @@ export interface CreateSaleReturnItemRequest
     productId: string;
 
     warehouseId: string;
+    serialNumbers?: string[];
 
 }
 
