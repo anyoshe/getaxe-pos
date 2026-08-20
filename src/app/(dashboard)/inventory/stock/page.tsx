@@ -2,8 +2,7 @@ import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getStockOnHand } from "@/features/inventory/queries/stock-on-hand.query";
-import { Button } from "@/components/ui/button";
-
+import { buttonVariants } from "@/components/ui/button";
 export default async function StockOnHandPage() {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -19,14 +18,16 @@ export default async function StockOnHandPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Inventory
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Stock on hand</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Stock on hand
+          </h1>
           <p className="text-sm text-muted-foreground">
             Quantities by product and warehouse after receive movements.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/inventory/stock/receive">Receive stock</Link>
-        </Button>
+        <Link href="/inventory/stock/receive" className={buttonVariants()}>
+          Receive stock
+        </Link>
       </div>
 
       <div className="overflow-x-auto rounded-xl border">
@@ -65,7 +66,9 @@ export default async function StockOnHandPage() {
                   <td className="p-3 text-muted-foreground">
                     {row.warehouseName}
                   </td>
-                  <td className="p-3 text-right tabular-nums">{row.quantity}</td>
+                  <td className="p-3 text-right tabular-nums">
+                    {row.quantity}
+                  </td>
                 </tr>
               ))
             )}

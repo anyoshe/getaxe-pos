@@ -6,3 +6,4 @@ export * from "./product-prices.repository";
 export * from "./product-batches.repository";
 export * from "./stock-movements.repository";
 export * from "./inventory-balances.repository";
+export * from "./product-serials.repository";

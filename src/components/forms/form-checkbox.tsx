@@ -15,6 +15,7 @@ interface FormCheckboxProps<TFieldValues extends FieldValues> {
     name: FieldPath<TFieldValues>;
     label: string;
     description?: string;
+    required?: boolean;
     disabled?: boolean;
     className?: string;
 }
@@ -24,6 +25,7 @@ export function FormCheckbox<TFieldValues extends FieldValues>({
     name,
     label,
     description,
+    required = false,
     disabled,
     className,
 }: FormCheckboxProps<TFieldValues>) {
@@ -52,6 +54,11 @@ export function FormCheckbox<TFieldValues extends FieldValues>({
                     <span className="min-w-0 space-y-0.5">
                         <span className="block text-sm font-medium leading-snug">
                             {label}
+                            {required ? (
+                                <span className="ml-1 text-destructive" aria-hidden>
+                                    *
+                                </span>
+                            ) : null}
                         </span>
                         {description ? (
                             <span className="block text-xs leading-relaxed text-muted-foreground">

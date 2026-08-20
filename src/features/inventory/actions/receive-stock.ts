@@ -95,6 +95,8 @@ export async function receiveStockAction(input: unknown) {
   try {
     const result = await inventoryService.receiveStock({
       warehouseId: data.warehouseId,
+      serialized: product.serialized,
+      serialNumbers: data.serialNumbers ?? [],
       batch: {
         businessId: user.businessId,
         productId: product.id,
@@ -141,9 +143,7 @@ export async function receiveStockAction(input: unknown) {
     return {
       success: false as const,
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to receive stock.",
+        error instanceof Error ? error.message : "Failed to receive stock.",
     };
   }
 }

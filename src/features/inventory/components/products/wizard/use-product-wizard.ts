@@ -76,7 +76,7 @@ export function useProductWizard({
         });
 
         return ruleSet.fields
-            .filter((field) => field.step === stepId)
+            .filter((field) => field.step === stepId && field.required)
             .map((field) => field.key);
     }
 

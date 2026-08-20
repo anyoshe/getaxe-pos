@@ -2,6 +2,7 @@ import type { InferInsertModel } from "drizzle-orm";
 
 import { productBatches } from "@/db/schema/inventory/product_batches";
 import { stockMovements } from "@/db/schema/inventory/stock_movements";
+import { productSerials } from "@/db/schema/inventory/product_serials";
 
 export type ProductBatchInsert =
   InferInsertModel<typeof productBatches>;
@@ -9,10 +10,15 @@ export type ProductBatchInsert =
 export type StockMovementInsert =
   InferInsertModel<typeof stockMovements>;
 
+export type ProductSerialInsert =
+  InferInsertModel<typeof productSerials>;
+
 export interface ReceiveStockRequest {
   batch: ProductBatchInsert;
   warehouseId: string;
   movement: StockMovementInsert;
+  serialized?: boolean;
+  serialNumbers?: string[];
 }
 
 export interface IssueStockRequest {

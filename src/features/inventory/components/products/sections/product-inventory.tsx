@@ -51,6 +51,7 @@ export function ProductInventory({
                                 control={form.control}
                                 name="trackInventory"
                                 label="Track inventory"
+                                required={isRequired("trackInventory")}
                                 description="Keep quantity on hand for this product."
                             />
                         )}
@@ -59,6 +60,7 @@ export function ProductInventory({
                                 control={form.control}
                                 name="trackBatch"
                                 label="Track batches"
+                                required={isRequired("trackBatch")}
                                 description="Require a batch / lot number when stock is received."
                             />
                         )}
@@ -67,6 +69,7 @@ export function ProductInventory({
                                 control={form.control}
                                 name="trackExpiry"
                                 label="Track expiry"
+                                required={isRequired("trackExpiry")}
                                 description="Require an expiry date when stock is received (e.g. medicine, food)."
                             />
                         )}
@@ -75,6 +78,7 @@ export function ProductInventory({
                                 control={form.control}
                                 name="serialized"
                                 label="Track serial numbers"
+                                required={isRequired("serialized")}
                                 description="Capture individual serials on receive — not on this form."
                             />
                         )}
@@ -83,6 +87,7 @@ export function ProductInventory({
                                 control={form.control}
                                 name="allowNegativeStock"
                                 label="Allow negative stock"
+                                required={isRequired("allowNegativeStock")}
                                 description="Permit sales even when quantity would go below zero."
                             />
                         )}

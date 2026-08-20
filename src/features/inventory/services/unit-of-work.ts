@@ -1,59 +1,49 @@
-import type {
-    Database,
-    Transaction,
-} from "@/repositories/base";
+import type { Database, Transaction } from "@/repositories/base";
 
 import {
-    ProductRepository,
-    ProductBatchRepository,
-    StockMovementRepository,
-    SupplierRepository,
-    PriceListRepository,
-    ProductPriceRepository,
+  ProductRepository,
+  ProductBatchRepository,
+  ProductSerialRepository,
+  StockMovementRepository,
+  SupplierRepository,
+  PriceListRepository,
+  ProductPriceRepository,
 } from "@/repositories/inventory";
 
-import {
-    InventoryBalanceRepository,
-} from "@/repositories/inventory";
+import { InventoryBalanceRepository } from "@/repositories/inventory";
 
 export class InventoryUnitOfWork {
-    readonly products: ProductRepository;
+  readonly products: ProductRepository;
 
-    readonly batches: ProductBatchRepository;
+  readonly batches: ProductBatchRepository;
 
-    readonly movements: StockMovementRepository;
+  readonly serials: ProductSerialRepository;
 
-    readonly suppliers: SupplierRepository;
+  readonly movements: StockMovementRepository;
 
-    readonly priceLists: PriceListRepository;
+  readonly suppliers: SupplierRepository;
 
-    readonly productPrices: ProductPriceRepository;
+  readonly priceLists: PriceListRepository;
 
-    readonly balances:
-        InventoryBalanceRepository;
+  readonly productPrices: ProductPriceRepository;
 
-    constructor(
-        database: Database | Transaction
-    ) {
-        this.products =
-            new ProductRepository(database);
+  readonly balances: InventoryBalanceRepository;
 
-        this.batches =
-            new ProductBatchRepository(database);
+  constructor(database: Database | Transaction) {
+    this.products = new ProductRepository(database);
 
-        this.movements =
-            new StockMovementRepository(database);
+    this.batches = new ProductBatchRepository(database);
 
-        this.suppliers =
-            new SupplierRepository(database);
+    this.serials = new ProductSerialRepository(database);
 
-        this.priceLists =
-            new PriceListRepository(database);
+    this.movements = new StockMovementRepository(database);
 
-        this.productPrices =
-            new ProductPriceRepository(database);
+    this.suppliers = new SupplierRepository(database);
 
-        this.balances =
-            new InventoryBalanceRepository(database);
-    }
+    this.priceLists = new PriceListRepository(database);
+
+    this.productPrices = new ProductPriceRepository(database);
+
+    this.balances = new InventoryBalanceRepository(database);
+  }
 }

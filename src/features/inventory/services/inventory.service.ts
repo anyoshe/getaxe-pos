@@ -26,51 +26,102 @@ export class InventoryService {
   }
 
   async receiveStockWithUnitOfWork(
-    uow: InventoryUnitOfWork,
-    request: ReceiveStockRequest,
-  ) {
-    const batch = await uow.batches.create(request.batch);
+  uow: InventoryUnitOfWork,
+  request: ReceiveStockRequest,
+) {
+  inventoryValidator.validateReceive(request);
 
-    const existingBalance = await uow.balances.findByBatchWarehouse(
-      batch.id,
-      request.warehouseId,
-    );
+  const serialNumbers = (request.serialNumbers ?? [])
+    .map((serial) => serial.trim())
+    .filter(Boolean);
 
-    let balance;
-
-    if (existingBalance) {
-      balance = await uow.balances.increaseQuantity(
-        existingBalance.id,
-        batch.quantityReceived,
+  if (request.serialized) {
+    if (serialNumbers.length !== request.batch.quantityReceived) {
+      throw new Error(
+        `This serialized product requires exactly ${request.batch.quantityReceived} serial number${
+          request.batch.quantityReceived === 1 ? "" : "s"
+        }.`,
       );
-    } else {
-      balance = await uow.balances.create({
-        businessId: batch.businessId,
-
-        productId: batch.productId,
-
-        batchId: batch.id,
-
-        warehouseId: request.warehouseId,
-
-        quantity: batch.quantityReceived,
-      });
     }
 
-    const movement = await uow.movements.create({
-      ...request.movement,
+    const uniqueSerialNumbers = new Set(serialNumbers);
 
-      batchId: batch.id,
+    if (uniqueSerialNumbers.size !== serialNumbers.length) {
+      throw new Error(
+        "Duplicate serial numbers cannot be received in the same transaction.",
+      );
+    }
 
-      warehouseId: request.warehouseId,
-    });
+    const existingSerials = await uow.serials.findExistingSerials(
+      request.batch.businessId,
+      serialNumbers,
+    );
 
-    return {
-      batch,
-      balance,
-      movement,
-    };
+    if (existingSerials.length > 0) {
+      const existing = existingSerials
+        .map((serial) => serial.serialNumber)
+        .join(", ");
+
+      throw new Error(
+        `The following serial number${
+          existingSerials.length === 1 ? " is" : "s are"
+        } already registered: ${existing}`,
+      );
+    }
   }
+
+  const batch = await uow.batches.create(request.batch);
+
+  const existingBalance = await uow.balances.findByBatchWarehouse(
+    batch.id,
+    request.warehouseId,
+  );
+
+  let balance;
+
+  if (existingBalance) {
+    balance = await uow.balances.increaseQuantity(
+      existingBalance.id,
+      batch.quantityReceived,
+    );
+  } else {
+    balance = await uow.balances.create({
+      businessId: batch.businessId,
+      productId: batch.productId,
+      batchId: batch.id,
+      warehouseId: request.warehouseId,
+      quantity: batch.quantityReceived,
+    });
+  }
+
+  const movement = await uow.movements.create({
+    ...request.movement,
+    batchId: batch.id,
+    warehouseId: request.warehouseId,
+  });
+
+  let serials: Awaited<ReturnType<typeof uow.serials.createMany>> = [];
+
+  if (request.serialized) {
+    serials = await uow.serials.createMany(
+      serialNumbers.map((serialNumber) => ({
+        businessId: batch.businessId,
+        productId: batch.productId,
+        batchId: batch.id,
+        warehouseId: request.warehouseId,
+        serialNumber,
+        status: "IN_STOCK",
+      })),
+    );
+  }
+
+  return {
+    batch,
+    balance,
+    movement,
+    serials,
+  };
+}
 
   async issueStock(request: IssueStockRequest) {
     inventoryValidator.validateIssue(request);

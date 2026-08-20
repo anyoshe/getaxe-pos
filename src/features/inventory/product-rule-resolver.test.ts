@@ -332,6 +332,8 @@ test("batch and expiry controlled products get the related rules", () => {
 
   assert.ok(resolved.fields.some((field) => field.key === "trackBatch"));
   assert.ok(resolved.fields.some((field) => field.key === "trackExpiry"));
+  assert.ok(!resolved.requiredFields.includes("trackBatch"));
+  assert.ok(!resolved.requiredFields.includes("trackExpiry"));
 });
 
 test("required fields are correctly determined", () => {

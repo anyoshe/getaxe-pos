@@ -57,7 +57,6 @@ export class BusinessCapabilityRepository {
           .insert(businessCapabilities)
           .values({
             businessId,
-            // @ts-expect-error legacy uuid FK path
             capabilityId: capabilityRow.id,
             enabled: true,
           })
@@ -118,7 +117,6 @@ export class BusinessCapabilityRepository {
         .insert(businessCapabilities)
         .values({
           businessId,
-          // @ts-expect-error legacy uuid FK path
           capabilityId: capabilityRow.id,
           enabled: false,
         })
