@@ -15,24 +15,34 @@ export class BusinessCapabilityRepository {
     businessId: string,
     capabilityId: string,
   ) {
-    return db
-      .insert(
-        businessCapabilities,
-      )
-      .values({
-        businessId,
-        capabilityId,
-        enabled: true,
-      })
-      .onConflictDoUpdate({
-        target: [
-          businessCapabilities.businessId,
-          businessCapabilities.capabilityId,
-        ],
-        set: {
+    try {
+      return await db
+        .insert(
+          businessCapabilities,
+        )
+        .values({
+          businessId,
+          capabilityId,
           enabled: true,
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: [
+            businessCapabilities.businessId,
+            businessCapabilities.capabilityId,
+          ],
+          set: {
+            enabled: true,
+          },
+        });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Failed to enable capability "${capabilityId}" for business ${businessId}. ` +
+          `Ensure the capabilities catalogue is synced (capability row must exist). ` +
+          `Underlying: ${message}`,
+      );
+    }
   }
 
   async disable(

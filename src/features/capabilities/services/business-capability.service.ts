@@ -10,6 +10,10 @@ import {
   CapabilityResolver,
 } from "./capability-resolver";
 
+import {
+  capabilitySyncService,
+} from "./capability-sync.service";
+
 import type {
   BusinessType,
 } from "@/features/business/constants/business-types";
@@ -17,7 +21,6 @@ import type {
 export class BusinessCapabilityService {
 
   constructor(
-
     private readonly profileLoader =
       new ProfileLoader(),
 
@@ -26,43 +29,43 @@ export class BusinessCapabilityService {
 
     private readonly repository =
       new BusinessCapabilityRepository(),
-
   ) {}
 
- async provision(
-businessId: string,
-businessType: BusinessType,
-) {
+  /**
+   * Provision capabilities for a new business from its type profile.
+   * Syncs the code catalogue into the DB first so FK targets exist
+   * (e.g. core.attachments must be in `capabilities` before enable).
+   */
+  async provision(
+    businessId: string,
+    businessType: BusinessType,
+  ) {
+    // Ensure every catalogue capability has a row in `capabilities`
+    await capabilitySyncService.sync();
 
-const profile =
-  this.profileLoader.load(
-    businessType,
-  );
+    const profile =
+      this.profileLoader.load(
+        businessType,
+      );
 
-const resolved =
-  this.resolver.resolve(
-    profile,
-  );
+    const resolved =
+      this.resolver.resolve(
+        profile,
+      );
 
-for (const capability of resolved) {
+    for (const capability of resolved) {
+      await this.repository.enable(
+        businessId,
+        capability.id,
+      );
+    }
+  }
 
-  await this.repository.enable(
- 
-    businessId,
- 
-    capability.id,
- 
-  );
-
-}
-
-}
-
-async listEnabled(
-  businessId: string,
-): Promise<string[]> {
-  return this.repository.listEnabled(businessId);
-}
+  async listEnabled(
+    businessId: string,
+  ): Promise<string[]> {
+    return this.repository.listEnabled(businessId);
+  }
 
 }
 
