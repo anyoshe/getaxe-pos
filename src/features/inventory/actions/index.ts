@@ -34,3 +34,4 @@ export * from "./get-product-context";
 
 export * from "./lookup-product-code";
 export * from "./create-products-batch";
+export * from "./receive-stock";
