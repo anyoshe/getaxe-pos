@@ -1,52 +1,35 @@
 "use client";
 
 import type { ReactNode } from "react";
-
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface FormSectionProps {
     title: string;
     description?: string;
     children: ReactNode;
+    className?: string;
 }
 
+/** Lightweight section — no nested heavy cards inside the wizard shell. */
 export function FormSection({
     title,
     description,
     children,
+    className,
 }: FormSectionProps) {
-
     return (
-
-        <Card>
-
-            <CardHeader>
-
-                <CardTitle>
+        <section className={cn("space-y-4", className)}>
+            <header className="space-y-1">
+                <h3 className="text-base font-semibold tracking-tight">
                     {title}
-                </CardTitle>
-
-                {description && (
-                    <p className="text-sm text-muted-foreground">
+                </h3>
+                {description ? (
+                    <p className="text-sm leading-relaxed text-muted-foreground">
                         {description}
                     </p>
-                )}
-
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-
-                {children}
-
-            </CardContent>
-
-        </Card>
-
+                ) : null}
+            </header>
+            <div className="space-y-4">{children}</div>
+        </section>
     );
-
 }

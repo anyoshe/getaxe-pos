@@ -27,7 +27,7 @@ export function ProductUnits({
   return (
     <FormSection
       title="Units of Measure"
-      description="How this product is bought, sold, and stocked. Leave blank if not needed."
+      description="Optional units for buying, selling, and warehouse quantity. Skip if you use a single unit everywhere."
     >
       <div className="grid gap-4 md:grid-cols-3">
         {showField("purchaseUnitId") && (

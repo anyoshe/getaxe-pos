@@ -41,7 +41,7 @@ export function ProductFinance({
     return (
         <FormSection
             title="Pricing & Finance"
-            description="Cost, optional default selling price, and accounting settings."
+            description="Cost and optional shelf price. Full price lists stay in Pricing. Accounts can use business defaults later."
         >
             <div className="grid gap-4 md:grid-cols-2">
                 {showField("costPrice") && (

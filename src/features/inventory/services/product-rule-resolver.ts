@@ -39,8 +39,8 @@ export const PRODUCT_FIELD_DEFINITIONS: ProductFieldDefinition[] = [
   { key: "minimumStock", label: "Minimum Stock", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.reorder-level" },
   { key: "reorderLevel", label: "Reorder Level", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.reorder-level" },
   { key: "allowNegativeStock", label: "Allow Negative Stock", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"] },
-  { key: "trackBatch", label: "Track Batch", step: "batch-expiry", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.batch-control", required: true },
-  { key: "trackExpiry", label: "Track Expiry", step: "batch-expiry", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.expiry-control", required: true },
+  { key: "trackBatch", label: "Track Batch", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.batch-control", required: true },
+  { key: "trackExpiry", label: "Track Expiry", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.expiry-control", required: true },
   { key: "serialized", label: "Serialised", step: "inventory", productTypes: ["physical", "finished-product"], capability: "inventory.serial-numbers" },
   { key: "genericName", label: "Generic Name", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "drugCategoryId", label: "Drug Category", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
@@ -56,14 +56,13 @@ export const PRODUCT_FIELD_DEFINITIONS: ProductFieldDefinition[] = [
 ];
 
 export const PRODUCT_STEP_DEFINITIONS: ProductStepDefinition[] = [
-  { id: "product-information", title: "Product Information", productTypes: [...PRODUCT_TYPES] },
-  { id: "classification", title: "Classification", productTypes: [...PRODUCT_TYPES] },
+  { id: "product-information", title: "Basics", productTypes: [...PRODUCT_TYPES] },
+  { id: "classification", title: "Category", productTypes: [...PRODUCT_TYPES] },
   { id: "units", title: "Units", productTypes: ["physical", "medicine", "raw-material", "finished-product"] },
   { id: "pricing", title: "Pricing", productTypes: [...PRODUCT_TYPES] },
-  { id: "inventory", title: "Inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"] },
-  { id: "batch-expiry", title: "Batch / Expiry", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.batch-control" },
+  { id: "inventory", title: "Tracking", productTypes: ["physical", "medicine", "raw-material", "finished-product"] },
   { id: "pharmacy", title: "Pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue" },
-  { id: "accounting", title: "Accounting", productTypes: [...PRODUCT_TYPES] },
+  { id: "accounting", title: "Accounts", productTypes: [...PRODUCT_TYPES] },
 ];
 
 export class ProductRuleResolver {

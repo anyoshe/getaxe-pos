@@ -39,7 +39,6 @@ const STEP_COMPONENTS: Record<string, ComponentType<SectionProps>> = {
     classification: ProductClassification,
     units: ProductUnits,
     inventory: ProductInventory,
-    "batch-expiry": ProductInventory,
     pricing: ProductFinance,
     accounting: ProductFinance,
     pharmacy: ProductClassification,

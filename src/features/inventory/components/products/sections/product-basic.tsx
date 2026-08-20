@@ -47,7 +47,7 @@ export function ProductBasic({
   return (
     <FormSection
       title="Basic Information"
-      description="Core identity for this product. Fields marked * are required for the selected product type and capabilities."
+      description="Name and identifiers for the catalogue. * required · optional fields can stay empty."
     >
       <div className="grid gap-4 md:grid-cols-2">
         {showField("name") && (

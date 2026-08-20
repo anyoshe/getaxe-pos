@@ -1,81 +1,86 @@
 "use client";
 
-import type {
-    ProductWizardStep,
-} from "./use-product-wizard";
+import type { ProductWizardStep } from "./use-product-wizard";
+import { cn } from "@/lib/utils";
 
 interface ProductWizardHeaderProps {
     steps: ProductWizardStep[];
     currentStep: number;
+    productTypeLabel?: string;
 }
 
 export function ProductWizardHeader({
     steps,
     currentStep,
+    productTypeLabel,
 }: ProductWizardHeaderProps) {
-    return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-semibold">
-                    Product Wizard
-                </h2>
+    const progress =
+        steps.length <= 1
+            ? 100
+            : Math.round((currentStep / (steps.length - 1)) * 100);
 
-                <p className="text-sm text-muted-foreground">
-                    Complete the steps below to create a product.
-                </p>
+    const active = steps[currentStep];
+
+    return (
+        <div className="space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        New product
+                        {productTypeLabel ? ` · ${productTypeLabel}` : ""}
+                    </p>
+                    <h2 className="text-xl font-semibold tracking-tight">
+                        {active?.title ?? "Product"}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Step {currentStep + 1} of {steps.length} — only product
+                        master data. Stock batches and serials come later on
+                        receive.
+                    </p>
+                </div>
+                <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                    {progress}%
+                </span>
             </div>
 
-            <div className="flex items-start">
+            {/* Progress bar */}
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                    className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
+                    style={{ width: `${Math.max(progress, 8)}%` }}
+                />
+            </div>
+
+            {/* Compact step chips — scroll on small screens */}
+            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
                 {steps.map((step, index) => {
-                    const completed =
-                        index < currentStep;
-
-                    const active =
-                        index === currentStep;
-
+                    const done = index < currentStep;
+                    const isActive = index === currentStep;
                     return (
                         <div
                             key={step.id}
-                            className="flex flex-1 items-center"
-                        >
-                            <div className="flex flex-col items-center">
-                                <div
-                                    className={[
-                                        "flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
-                                        completed
-                                            ? "border-primary bg-primary text-primary-foreground"
-                                            : active
-                                              ? "border-primary text-primary"
-                                              : "border-muted-foreground/30 text-muted-foreground",
-                                    ].join(" ")}
-                                >
-                                    {completed
-                                        ? "✓"
-                                        : index + 1}
-                                </div>
-
-                                <span
-                                    className={[
-                                        "mt-2 text-center text-xs",
-                                        active
-                                            ? "font-medium text-foreground"
-                                            : "text-muted-foreground",
-                                    ].join(" ")}
-                                >
-                                    {step.title}
-                                </span>
-                            </div>
-
-                            {index < steps.length - 1 && (
-                                <div
-                                    className={[
-                                        "mx-3 mb-8 h-0.5 flex-1",
-                                        completed
-                                            ? "bg-primary"
-                                            : "bg-border",
-                                    ].join(" ")}
-                                />
+                            className={cn(
+                                "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
+                                done &&
+                                    "border-primary/30 bg-primary/10 text-primary",
+                                isActive &&
+                                    "border-primary bg-primary text-primary-foreground",
+                                !done &&
+                                    !isActive &&
+                                    "border-border text-muted-foreground",
                             )}
+                        >
+                            <span
+                                className={cn(
+                                    "flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-semibold",
+                                    isActive && "bg-primary-foreground/20",
+                                    done && "bg-primary/20",
+                                    !done && !isActive && "bg-muted",
+                                )}
+                            >
+                                {done ? "✓" : index + 1}
+                            </span>
+                            {step.title}
                         </div>
                     );
                 })}
