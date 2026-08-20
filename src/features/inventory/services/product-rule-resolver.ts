@@ -167,6 +167,29 @@ export class ProductRuleResolver {
       errors,
     };
   }
+
+  /**
+   * Product types the business may create, based on enabled capabilities.
+   * Medicine only appears when pharmacy capabilities are on.
+   */
+  availableProductTypes(businessCapabilities: string[]): ProductType[] {
+    const enabled = new Set(businessCapabilities);
+    const types: ProductType[] = [
+      "physical",
+      "service",
+      "raw-material",
+      "finished-product",
+    ];
+
+    if (
+      enabled.has("pharmacy.core") ||
+      enabled.has("pharmacy.medicine-catalogue")
+    ) {
+      types.splice(2, 0, "medicine");
+    }
+
+    return types;
+  }
 }
 
 export const productRuleResolver = new ProductRuleResolver();

@@ -155,6 +155,7 @@ export function ProductForm({
     product,
     context,
     prefill,
+    lockedProductType,
     onSuccess,
 }: ProductFormProps) {
 
@@ -174,8 +175,11 @@ export function ProductForm({
                 ),
         });
 
-    const productType =
+    const watchedType =
         form.watch("productType");
+
+    const productType =
+        lockedProductType ?? watchedType;
 
     const wizard =
         useProductWizard({
@@ -183,6 +187,9 @@ export function ProductForm({
             businessCapabilities: context.businessCapabilities,
             form,
             onProductTypeChange: (type: ProductType) => {
+                if (lockedProductType) {
+                    return;
+                }
                 form.setValue("productType", type, {
                     shouldDirty: true,
                     shouldValidate: true,
@@ -192,12 +199,15 @@ export function ProductForm({
 
     useEffect(() => {
         const defaults = getProductDefaultValues(product);
-        form.reset(
-            prefill
-                ? { ...defaults, ...prefill }
-                : defaults
-        );
-    }, [product, prefill, form]);
+        const merged = {
+            ...defaults,
+            ...(prefill ?? {}),
+            ...(lockedProductType
+                ? { productType: lockedProductType }
+                : {}),
+        };
+        form.reset(merged);
+    }, [product, prefill, lockedProductType, form]);
 
 
     async function onSubmit(

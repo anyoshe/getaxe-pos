@@ -1,109 +1,96 @@
 "use client";
 
-import type {
-    ProductType,
-} from "../../../types/products";
+import type { ProductType } from "../../../types/products";
+import { productRuleResolver } from "../../../services/product-rule-resolver";
 
 interface ProductTypeSelectorProps {
-    value: ProductType | null;
-    onSelect: (
-        type: ProductType,
-    ) => void;
+  value: ProductType | null;
+  businessCapabilities?: string[];
+  onSelect: (type: ProductType) => void;
 }
 
-const PRODUCT_TYPES = [
-    {
-        id: "physical",
-        title: "Physical Product",
-        description:
-            "Standard stocked products with inventory tracking.",
-        icon: "📦",
-    },
-    {
-        id: "service",
-        title: "Service",
-        description:
-            "Non-stock services without inventory.",
-        icon: "🛠️",
-    },
-    {
-        id: "medicine",
-        title: "Medicine",
-        description:
-            "Medicines with batches, expiry and prescription support.",
-        icon: "💊",
-    },
-    {
-        id: "raw-material",
-        title: "Raw Material",
-        description:
-            "Materials purchased for production or manufacturing.",
-        icon: "🏭",
-    },
-    {
-        id: "finished-product",
-        title: "Finished Product",
-        description:
-            "Manufactured goods ready for sale.",
-        icon: "📦",
-    },
-] satisfies {
-    id: ProductType;
-    title: string;
-    description: string;
-    icon: string;
-}[];
+const PRODUCT_TYPE_META: Record<
+  ProductType,
+  { title: string; description: string; icon: string }
+> = {
+  physical: {
+    title: "Physical / hardware",
+    description:
+      "Stocked goods, spares, hardware. Steps depend on stock, batch, serial, and reorder capabilities.",
+    icon: "📦",
+  },
+  service: {
+    title: "Service",
+    description:
+      "Non-stock services. No inventory steps — focus on name, category, and pricing.",
+    icon: "🛠️",
+  },
+  medicine: {
+    title: "Medicine",
+    description:
+      "Pharmacy items. Batch, expiry, and drug classification when those capabilities are enabled.",
+    icon: "💊",
+  },
+  "raw-material": {
+    title: "Raw material",
+    description:
+      "Inputs for production. Inventory and unit steps when stock is tracked.",
+    icon: "🏭",
+  },
+  "finished-product": {
+    title: "Finished product",
+    description:
+      "Manufactured goods ready for sale, with optional serialisation.",
+    icon: "📦",
+  },
+};
 
 export function ProductTypeSelector({
-    value,
-    onSelect,
+  value,
+  businessCapabilities = [],
+  onSelect,
 }: ProductTypeSelectorProps) {
-    return (
-        <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-semibold">
-                    Select Product Type
-                </h2>
+  const types = productRuleResolver.availableProductTypes(
+    businessCapabilities,
+  );
 
-                <p className="text-muted-foreground mt-2">
-                    Choose the type of product you want to create.
-                </p>
-            </div>
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold">What kind of product?</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This chooses the wizard steps. Medicine is only listed when pharmacy
+          capabilities are enabled.
+        </p>
+      </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {PRODUCT_TYPES.map((type) => {
-                    const selected =
-                        value === type.id;
-
-                    return (
-                        <button
-                            key={type.id}
-                            type="button"
-                            onClick={() =>
-                                onSelect(type.id)
-                            }
-                            className={[
-                                "rounded-xl border p-6 text-left transition-all",
-                                selected
-                                    ? "border-primary ring-2 ring-primary"
-                                    : "hover:border-primary/60",
-                            ].join(" ")}
-                        >
-                            <div className="text-4xl">
-                                {type.icon}
-                            </div>
-
-                            <h3 className="mt-4 text-lg font-semibold">
-                                {type.title}
-                            </h3>
-
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                {type.description}
-                            </p>
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
-    );
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {types.map((typeId) => {
+          const meta = PRODUCT_TYPE_META[typeId];
+          const selected = value === typeId;
+          return (
+            <button
+              key={typeId}
+              type="button"
+              onClick={() => onSelect(typeId)}
+              className={[
+                "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors",
+                selected
+                  ? "border-primary bg-primary/5 ring-2 ring-primary"
+                  : "border-border hover:border-primary/50 hover:bg-muted/40",
+              ].join(" ")}
+            >
+              <span className="text-2xl" aria-hidden>
+                {meta.icon}
+              </span>
+              <span className="font-medium">{meta.title}</span>
+              <span className="text-sm text-muted-foreground">
+                {meta.description}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

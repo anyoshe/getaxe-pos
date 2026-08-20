@@ -210,6 +210,10 @@ export interface ProductFormProps {
   prefill?:
     Partial<ProductFormInput> | null;
 
+  /** When set, product type is fixed (create multi-add session). */
+  lockedProductType?:
+    ProductType | null;
+
   onSuccess?:
     () => void;
 

@@ -62,6 +62,7 @@ export function ProductWizard({
         return (
             <ProductTypeSelector
                 value={wizard.productType}
+                businessCapabilities={context.businessCapabilities ?? []}
                 onSelect={wizard.selectProductType}
             />
         );

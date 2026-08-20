@@ -1,7 +1,8 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
 import { products } from "@/db/schema/inventory/products";
+import { productPrices } from "@/db/schema/inventory/product_prices";
 
 import { BaseRepository } from "../base";
 
@@ -68,15 +69,57 @@ export class ProductRepository extends BaseRepository {
       orderBy: (table, { asc }) => [asc(table.name)],
     });
 
-    return rows.map((r) => ({
-      ...toDomainProduct(r),
+    const productIds = rows.map((r) => r.id);
 
-      // Provide empty arrays for heavy aggregate relations that are loaded on demand
-      prices: [],
-      batches: [],
-      stockMovements: [],
-      inventoryBalances: [],
-    }));
+    // Lightweight default selling prices for list view (min qty = 1)
+    const priceRows =
+      productIds.length === 0
+        ? []
+        : await this.database
+            .select({
+              productId: productPrices.productId,
+              price: productPrices.price,
+              minimumQuantity: productPrices.minimumQuantity,
+              active: productPrices.active,
+              id: productPrices.id,
+              businessId: productPrices.businessId,
+              priceListId: productPrices.priceListId,
+              createdAt: productPrices.createdAt,
+              updatedAt: productPrices.updatedAt,
+            })
+            .from(productPrices)
+            .where(
+              and(
+                eq(productPrices.businessId, businessId),
+                eq(productPrices.active, true),
+                inArray(productPrices.productId, productIds),
+              ),
+            );
+
+    const pricesByProduct = new Map<string, typeof priceRows>();
+    for (const row of priceRows) {
+      const list = pricesByProduct.get(row.productId) ?? [];
+      list.push(row);
+      pricesByProduct.set(row.productId, list);
+    }
+
+    return rows.map((r) => {
+      const productPriceRows = pricesByProduct.get(r.id) ?? [];
+      // Prefer minimumQuantity === 1 as "default" shelf price
+      const sorted = [...productPriceRows].sort((a, b) => {
+        const aMin = Number(a.minimumQuantity);
+        const bMin = Number(b.minimumQuantity);
+        return aMin - bMin;
+      });
+
+      return {
+        ...toDomainProduct(r),
+        prices: sorted,
+        batches: [],
+        stockMovements: [],
+        inventoryBalances: [],
+      };
+    });
   }
 
   async findById(id: string, businessId: string) {
