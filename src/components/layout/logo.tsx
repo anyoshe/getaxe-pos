@@ -30,7 +30,7 @@ export function Logo({
           p-1
           shadow-sm
           ring-1
-          ring-slate-200
+          ring-primary/15
           transition
           group-hover:shadow-md
         "
@@ -56,7 +56,7 @@ export function Logo({
               text-base
               font-bold
               tracking-tight
-              text-slate-900
+              text-primary
             "
           >
             GetAxe Technologies
@@ -66,7 +66,7 @@ export function Logo({
           <p
             className="
               text-xs
-              text-slate-500
+              text-muted-foreground
             "
           >
             Business Management Platform

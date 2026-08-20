@@ -1,7 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-
 export type ProductEntryMethod = "manual" | "scan";
 
 interface EntryMethodSelectorProps {
@@ -38,7 +36,12 @@ export function EntryMethodSelector({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">How do you want to add products?</h2>
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+          Add products
+        </p>
+        <h2 className="text-xl font-semibold tracking-tight">
+          How do you want to add products?
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Choose once. You can add multiple products of the same type without
           returning here.
@@ -54,17 +57,19 @@ export function EntryMethodSelector({
               type="button"
               onClick={() => onSelect(method.id)}
               className={[
-                "flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors",
+                "flex flex-col items-start gap-2 rounded-2xl border p-5 text-left transition-all",
                 selected
-                  ? "border-primary bg-primary/5 ring-2 ring-primary"
-                  : "border-border hover:border-primary/50 hover:bg-muted/40",
+                  ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/30"
+                  : "border-border bg-card hover:border-primary/40 hover:bg-secondary/40",
               ].join(" ")}
             >
-              <span className="text-2xl" aria-hidden>
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-xl">
                 {method.icon}
               </span>
-              <span className="font-medium">{method.title}</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {method.title}
+              </span>
+              <span className="text-sm leading-relaxed text-muted-foreground">
                 {method.description}
               </span>
             </button>
