@@ -1,21 +1,15 @@
 "use client";
 
-import type {
-    UseFormReturn,
-} from "react-hook-form";
+import type { UseFormReturn } from "react-hook-form";
 
 import {
     FormSection,
     FormSearchableSelect,
+    FormNumberField,
 } from "@/components/forms";
 
-import type {
-    ProductContext,
-} from "../../../types";
-
-import type {
-    ProductFormInput,
-} from "../product-form.types";
+import type { ProductContext } from "../../../types";
+import type { ProductFormInput } from "../product-form.types";
 
 interface ProductFinanceProps {
     form: UseFormReturn<ProductFormInput>;
@@ -29,16 +23,40 @@ export function ProductFinance({
     visibleFields,
 }: ProductFinanceProps) {
     const visibleSet = new Set(visibleFields ?? []);
-    const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
+    const showField = (field: string) =>
+        visibleFields === undefined || visibleSet.has(field);
+
+    // Selling price is form-only (optional); always offer it on the pricing step
+    // when the pricing step is shown, or when costPrice is visible.
+    const showSellingPrice =
+        visibleFields === undefined ||
+        visibleSet.has("costPrice") ||
+        visibleSet.has("sellingPrice") ||
+        visibleSet.has("incomeAccountId");
 
     return (
-
         <FormSection
-            title="Finance"
-            description="Financial and taxation settings."
+            title="Pricing & Finance"
+            description="Cost, optional default selling price, and accounting settings."
         >
-
             <div className="grid gap-4 md:grid-cols-2">
+                {showField("costPrice") && (
+                    <FormNumberField
+                        form={form}
+                        name="costPrice"
+                        label="Cost Price"
+                        step="0.01"
+                    />
+                )}
+
+                {showSellingPrice && (
+                    <FormNumberField
+                        form={form}
+                        name="sellingPrice"
+                        label="Default Selling Price (optional)"
+                        step="0.01"
+                    />
+                )}
 
                 {showField("incomeAccountId") && (
                     <FormSearchableSelect
@@ -84,18 +102,20 @@ export function ProductFinance({
                         placeholder="Tax Rate"
                         getLabel={(tax) =>
                             `${tax.name}${
-                                tax.rate !== null
-                                    ? ` (${tax.rate}%)`
-                                    : ""
+                                tax.rate !== null ? ` (${tax.rate}%)` : ""
                             }`
                         }
                     />
                 )}
-
             </div>
 
+            {showSellingPrice && (
+                <p className="text-xs text-muted-foreground">
+                    If set, a selling price is created on the business default
+                    price list when you save a new product. Advanced prices stay
+                    in the Product Prices module.
+                </p>
+            )}
         </FormSection>
-
     );
-
 }

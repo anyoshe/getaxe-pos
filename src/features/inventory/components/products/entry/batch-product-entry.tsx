@@ -10,12 +10,14 @@ import { BarcodeScanner } from "./barcode-scanner";
 
 type BatchRow = {
   id: string; name: string; barcode: string; sku: string; costPrice: string;
+  sellingPrice: string;
   categoryId: string; productType: ProductType; status: "new" | "duplicate" | "ok"; note?: string;
 };
 
 function newRow(partial?: Partial<BatchRow>): BatchRow {
   return {
     id: crypto.randomUUID(), name: "", barcode: "", sku: "", costPrice: "",
+    sellingPrice: "",
     categoryId: "", productType: "physical", status: "new", ...partial,
   };
 }
@@ -71,6 +73,7 @@ export function BatchProductEntry({ context, onSuccess }: { context: ProductCont
         productType: r.productType, categoryId: r.categoryId, name: r.name.trim(),
         barcode: r.barcode.trim() || null, sku: r.sku.trim() || null,
         costPrice: r.costPrice ? Number(r.costPrice) : null,
+        sellingPrice: r.sellingPrice ? Number(r.sellingPrice) : null,
         supplierId: null, manufacturerId: null, drugCategoryId: null, dosageFormId: null,
         drugStrengthId: null, prescriptionTypeId: null, purchaseUnitId: null, salesUnitId: null,
         stockUnitId: null, incomeAccountId: null, expenseAccountId: null, inventoryAccountId: null,
@@ -105,7 +108,7 @@ export function BatchProductEntry({ context, onSuccess }: { context: ProductCont
           <thead className="bg-muted/50 text-left">
             <tr>
               <th className="p-2 font-medium">Name</th><th className="p-2 font-medium">Barcode</th>
-              <th className="p-2 font-medium">SKU</th><th className="p-2 font-medium">Cost</th>
+              <th className="p-2 font-medium">SKU</th><th className="p-2 font-medium">Cost</th><th className="p-2 font-medium">Sell</th>
               <th className="p-2 font-medium">Category</th><th className="p-2 font-medium">Status</th><th className="p-2 font-medium" />
             </tr>
           </thead>
@@ -116,6 +119,7 @@ export function BatchProductEntry({ context, onSuccess }: { context: ProductCont
                 <td className="p-2"><Input value={row.barcode} onChange={(e) => updateRow(row.id, { barcode: e.target.value })} placeholder="Barcode" disabled={row.status === "duplicate"} /></td>
                 <td className="p-2"><Input value={row.sku} onChange={(e) => updateRow(row.id, { sku: e.target.value })} placeholder="SKU" disabled={row.status === "duplicate"} /></td>
                 <td className="p-2"><Input value={row.costPrice} onChange={(e) => updateRow(row.id, { costPrice: e.target.value })} placeholder="0.00" disabled={row.status === "duplicate"} /></td>
+                <td className="p-2"><Input value={row.sellingPrice} onChange={(e) => updateRow(row.id, { sellingPrice: e.target.value })} placeholder="0.00" disabled={row.status === "duplicate"} /></td>
                 <td className="p-2">
                   <select className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm" value={row.categoryId} disabled={row.status === "duplicate"} onChange={(e) => updateRow(row.id, { categoryId: e.target.value })}>
                     <option value="">Select…</option>

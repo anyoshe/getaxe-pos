@@ -23,7 +23,8 @@ const DEFAULTS: ProductFormInput = {
   purchaseUnitId: null, salesUnitId: null, stockUnitId: null, incomeAccountId: null,
   expenseAccountId: null, inventoryAccountId: null, taxRateId: null, name: "",
   genericName: null, productBrand: null, description: null, sku: null, barcode: null,
-  packSize: null, costPrice: null, minimumStock: 0, reorderLevel: 0, trackInventory: true,
+  packSize: null, costPrice: null,
+  sellingPrice: null, minimumStock: 0, reorderLevel: 0, trackInventory: true,
   trackBatch: false, trackExpiry: false, serialized: false, allowNegativeStock: false, active: true,
 };
 
@@ -102,6 +103,7 @@ export function QuickScanEntry({ context, onSuccess, onSwitchToWizard }: QuickSc
           <FormTextField form={form} name="sku" label="SKU" />
           <FormTextField form={form} name="productBrand" label="Brand" />
           <FormNumberField form={form} name="costPrice" label="Cost Price" step="0.01" />
+          <FormNumberField form={form} name="sellingPrice" label="Selling Price (optional)" step="0.01" />
           <FormSearchableSelect control={form.control} name="categoryId" options={context.categories} placeholder="Category" />
         </div>
       </FormSection>

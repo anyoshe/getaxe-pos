@@ -115,7 +115,31 @@ export class PriceListRepository
     return priceList;
   }
 
-  async existsByName(
+  async findDefault(businessId: string) {
+    const priceList =
+      await this.database.query.priceLists.findFirst({
+        where: and(
+          eq(priceLists.businessId, businessId),
+          eq(priceLists.isDefault, true),
+          eq(priceLists.active, true),
+        ),
+      });
+
+    if (priceList) {
+      return priceList;
+    }
+
+    // Fallback: first active price list for the business
+    return this.database.query.priceLists.findFirst({
+      where: and(
+        eq(priceLists.businessId, businessId),
+        eq(priceLists.active, true),
+      ),
+      orderBy: (table, { asc }) => [asc(table.name)],
+    });
+  }
+
+    async existsByName(
     businessId: string,
     name: string
   ) {

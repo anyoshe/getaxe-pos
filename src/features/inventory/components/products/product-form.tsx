@@ -122,6 +122,8 @@ function getProductDefaultValues(
         costPrice:
             product?.costPrice ?? null,
 
+        sellingPrice: null,
+
         minimumStock:
             product?.minimumStock ?? 0,
 

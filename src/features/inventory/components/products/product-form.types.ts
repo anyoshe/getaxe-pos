@@ -100,6 +100,11 @@ export const productFormSchema = z.object({
     z.number()
       .nullable(),
 
+  /** Optional default selling price — creates a product_prices row on create. */
+  sellingPrice:
+    z.number()
+      .nullable(),
+
   minimumStock:
     z.number(),
 

@@ -22,6 +22,14 @@ import {
   productRuleResolver,
 } from "../services/product-rule-resolver";
 
+import {
+  priceListRepository,
+} from "@/repositories/inventory/price-lists.repository";
+
+import {
+  productPriceService,
+} from "../services/product-prices.service";
+
 
 export async function createProductAction(
   formData: FormData
@@ -188,9 +196,17 @@ export async function createProductAction(
     };
   }
 
+  const sellingPriceRaw = formData.get("sellingPrice");
+  const sellingPrice =
+    sellingPriceRaw !== null &&
+    sellingPriceRaw !== undefined &&
+    String(sellingPriceRaw).trim() !== ""
+      ? Number(sellingPriceRaw)
+      : null;
+
   try {
 
-    await productService.createProduct({
+    const product = await productService.createProduct({
 
       ...parsed.data,
 
@@ -199,18 +215,58 @@ export async function createProductAction(
 
     });
 
+    // Optional default selling price → product_prices on default price list
+    if (
+      sellingPrice !== null &&
+      !Number.isNaN(sellingPrice) &&
+      sellingPrice > 0
+    ) {
+      const defaultList =
+        await priceListRepository.findDefault(user.businessId);
+
+      if (!defaultList) {
+        return {
+          success: true,
+          message:
+            "Product created, but no default price list exists. Add a price list to set selling prices.",
+        };
+      }
+
+      try {
+        await productPriceService.createProductPrice({
+          businessId: user.businessId,
+          productId: product.id,
+          priceListId: defaultList.id,
+          price: sellingPrice.toFixed(2),
+          minimumQuantity: "1",
+          active: true,
+        });
+      } catch (priceError) {
+        return {
+          success: true,
+          message:
+            priceError instanceof Error
+              ? `Product created, but selling price was not saved: ${priceError.message}`
+              : "Product created, but selling price was not saved.",
+        };
+      }
+    }
 
     revalidatePath(
       "/inventory/products"
     );
-
+    revalidatePath(
+      "/inventory/product-prices"
+    );
 
     return {
 
       success: true,
 
       message:
-        "Product created successfully.",
+        sellingPrice && sellingPrice > 0
+          ? "Product created with default selling price."
+          : "Product created successfully.",
 
     };
 
