@@ -152,6 +152,7 @@ function getProductDefaultValues(
 export function ProductForm({
     product,
     context,
+    prefill,
     onSuccess,
 }: ProductFormProps) {
 
@@ -188,12 +189,13 @@ export function ProductForm({
         });
 
     useEffect(() => {
-
+        const defaults = getProductDefaultValues(product);
         form.reset(
-            getProductDefaultValues(product)
+            prefill
+                ? { ...defaults, ...prefill }
+                : defaults
         );
-
-    }, [product, form]);
+    }, [product, prefill, form]);
 
 
     async function onSubmit(

@@ -202,6 +202,9 @@ export interface ProductFormProps {
   context:
     ProductContext;
 
+  prefill?:
+    Partial<ProductFormInput> | null;
+
   onSuccess?:
     () => void;
 

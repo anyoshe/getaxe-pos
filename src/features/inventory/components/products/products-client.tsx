@@ -49,6 +49,9 @@ export function ProductsClient({
     const [selectedProduct, setSelectedProduct] =
         useState<Product | null>(null);
 
+    const [entryMode, setEntryMode] =
+        useState<"wizard" | "quick" | "batch">("wizard");
+
     const [deleteOpen, setDeleteOpen] =
         useState(false);
 
@@ -95,6 +98,17 @@ export function ProductsClient({
                     onSearchChange={setSearch}
                     onCreate={() => {
                         setSelectedProduct(null);
+                        setEntryMode("wizard");
+                        setOpen(true);
+                    }}
+                    onQuickScan={() => {
+                        setSelectedProduct(null);
+                        setEntryMode("quick");
+                        setOpen(true);
+                    }}
+                    onBatchAdd={() => {
+                        setSelectedProduct(null);
+                        setEntryMode("batch");
                         setOpen(true);
                     }}
                 />
@@ -116,6 +130,7 @@ export function ProductsClient({
                     onOpenChange={setOpen}
                     product={selectedProduct}
                     context={context}
+                    initialMode={entryMode}
                     onSuccess={() => {
                         router.refresh();
                     }}

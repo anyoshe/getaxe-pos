@@ -31,3 +31,6 @@ export * from "./delete-product-batch";
 export * from "./stock-movements";
 export * from "./create-stock-movement";
 export * from "./get-product-context";
+
+export * from "./lookup-product-code";
+export * from "./create-products-batch";

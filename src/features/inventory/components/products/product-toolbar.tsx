@@ -1,34 +1,27 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-
-import {
-  CrudToolbar,
-} from "@/components/crud";
+import { CrudToolbar } from "@/components/crud";
 
 interface ProductToolbarProps {
   search: string;
-
-  onSearchChange: (
-    value: string
-  ) => void;
-
+  onSearchChange: (value: string) => void;
   onCreate: () => void;
+  onQuickScan?: () => void;
+  onBatchAdd?: () => void;
 }
 
-export function ProductToolbar({
-  search,
-  onSearchChange,
-  onCreate,
-}: ProductToolbarProps) {
+export function ProductToolbar({ search, onSearchChange, onCreate, onQuickScan, onBatchAdd }: ProductToolbarProps) {
   return (
     <CrudToolbar
       search={search}
       onSearchChange={onSearchChange}
       createButton={
-        <Button onClick={onCreate}>
-          New Product
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onCreate}>New Product</Button>
+          {onQuickScan && <Button variant="outline" onClick={onQuickScan}>Quick scan</Button>}
+          {onBatchAdd && <Button variant="outline" onClick={onBatchAdd}>Batch add</Button>}
+        </div>
       }
     />
   );

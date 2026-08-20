@@ -185,6 +185,88 @@ export class ProductRepository extends BaseRepository {
     return !!product;
   }
 
+  async findByBarcode(businessId: string, barcode: string) {
+    if (!barcode) {
+      return null;
+    }
+
+    const row = await this.database.query.products.findFirst({
+      where: and(
+        eq(products.businessId, businessId),
+        eq(products.barcode, barcode),
+      ),
+      with: {
+        category: true,
+        supplier: true,
+        purchaseUnit: true,
+        salesUnit: true,
+        stockUnit: true,
+        manufacturer: true,
+        drugCategory: true,
+        dosageForm: true,
+        drugStrength: true,
+        prescriptionType: true,
+        incomeAccount: true,
+        expenseAccount: true,
+        inventoryAccount: true,
+        taxRate: true,
+      },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      ...toDomainProduct(row),
+      prices: [],
+      batches: [],
+      stockMovements: [],
+      inventoryBalances: [],
+    };
+  }
+
+  async findBySku(businessId: string, sku: string) {
+    if (!sku) {
+      return null;
+    }
+
+    const row = await this.database.query.products.findFirst({
+      where: and(
+        eq(products.businessId, businessId),
+        eq(products.sku, sku),
+      ),
+      with: {
+        category: true,
+        supplier: true,
+        purchaseUnit: true,
+        salesUnit: true,
+        stockUnit: true,
+        manufacturer: true,
+        drugCategory: true,
+        dosageForm: true,
+        drugStrength: true,
+        prescriptionType: true,
+        incomeAccount: true,
+        expenseAccount: true,
+        inventoryAccount: true,
+        taxRate: true,
+      },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      ...toDomainProduct(row),
+      prices: [],
+      batches: [],
+      stockMovements: [],
+      inventoryBalances: [],
+    };
+  }
+
   async deactivate(id: string, businessId: string) {
     const [product] = await this.database
       .update(products)
