@@ -60,6 +60,22 @@ async create(
     industries: capability.industries,
     dependencies: capability.dependencies,
     conflicts: capability.conflicts,
+  }).onConflictDoUpdate({
+    target: capabilities.capabilityId,
+    set: {
+      code: capability.code,
+      name: capability.name,
+      description: capability.description,
+      module: capability.module,
+      group: capability.group,
+      category: capability.category,
+      status: capability.status,
+      defaultEnabled: capability.defaultEnabled,
+      industries: capability.industries,
+      dependencies: capability.dependencies,
+      conflicts: capability.conflicts,
+      active: true,
+    },
   });
 }
 
