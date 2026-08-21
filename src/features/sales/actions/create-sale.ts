@@ -127,12 +127,11 @@ export async function createSaleAction(input: unknown) {
       payments: [
         {
           businessId: user.businessId,
+          saleId: "00000000-0000-0000-0000-000000000000", // overwritten in recordPayments
           method: data.paymentMethod,
           status: "COMPLETED",
           amount: subtotal.toFixed(2),
           receivedBy: user.id,
-          transactionReference: null,
-          cashAccountId: null,
         },
       ],
     });
