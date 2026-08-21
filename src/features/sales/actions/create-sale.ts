@@ -124,16 +124,7 @@ export async function createSaleAction(input: unknown) {
         serialNumbers: l.serialNumbers,
         skipStock: l.skipStock,
       })),
-      payments: [
-        {
-          businessId: user.businessId,
-          saleId: "00000000-0000-0000-0000-000000000000", // overwritten in recordPayments
-          method: data.paymentMethod,
-          status: "COMPLETED",
-          amount: subtotal.toFixed(2),
-          receivedBy: user.id,
-        },
-      ],
+      payments: [], // ledger optional — sale.amountPaid / paymentStatus already set
     });
 
     revalidatePath("/sales");
