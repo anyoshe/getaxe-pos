@@ -57,6 +57,38 @@ export class ProductSerialRepository extends BaseRepository {
       where: and(...conditions),
     });
   }
+
+  async markSold(
+    businessId: string,
+    serialNumbers: string[],
+    saleReference?: string | null,
+  ) {
+    if (serialNumbers.length === 0) return [];
+
+    const rows = await this.database
+      .update(productSerials)
+      .set({
+        status: "SOLD",
+        updatedAt: new Date(),
+        notes: saleReference ?? null,
+      })
+      .where(
+        and(
+          eq(productSerials.businessId, businessId),
+          inArray(productSerials.serialNumber, serialNumbers),
+          eq(productSerials.status, "AVAILABLE"),
+        ),
+      )
+      .returning();
+
+    if (rows.length !== serialNumbers.length) {
+      const found = new Set(rows.map((r) => r.serialNumber));
+      const missing = serialNumbers.filter((s) => !found.has(s));
+      throw new Error(`Serial not available: ${missing.join(", ")}`);
+    }
+
+    return rows;
+  }
 }
 
 export const productSerialRepository = new ProductSerialRepository();

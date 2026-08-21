@@ -17,6 +17,7 @@ import {
     ProductBatchRepository,
     InventoryBalanceRepository,
     StockMovementRepository,
+    ProductSerialRepository,
 } from "@/repositories/inventory";
 
 export class SalesUnitOfWork {
@@ -45,6 +46,8 @@ export class SalesUnitOfWork {
 
     readonly movements:
         StockMovementRepository;
+
+    readonly serials: ProductSerialRepository;
 
     readonly paymentReversals:
         PaymentReversalRepository;
@@ -102,6 +105,11 @@ export class SalesUnitOfWork {
 
         this.movements =
             new StockMovementRepository(
+                transaction
+            );
+
+        this.serials =
+            new ProductSerialRepository(
                 transaction
             );
 
