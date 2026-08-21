@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 import { receiveStockAction } from "../../actions/receive-stock";
 import type { Product } from "../../types";
@@ -18,6 +19,13 @@ interface ReceiveStockFormProps {
   products: Product[];
   warehouses: WarehouseOption[];
   suppliers: SupplierOption[];
+}
+
+function parseSerials(text: string): string[] {
+  return text
+    .split(/[\n,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 export function ReceiveStockForm({
@@ -52,12 +60,19 @@ export function ReceiveStockForm({
   const [supplierId, setSupplierId] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
+  const [serialsText, setSerialsText] = useState("");
 
   const product = stockable.find((p) => p.id === productId);
+  const qty = Number(quantity) || 0;
+  const serialCount = parseSerials(serialsText).length;
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
+      const serialNumbers = product?.serialized
+        ? parseSerials(serialsText)
+        : [];
+
       const result = await receiveStockAction({
         productId,
         warehouseId,
@@ -70,6 +85,7 @@ export function ReceiveStockForm({
         supplierId: supplierId || null,
         reference: reference || null,
         notes: notes || null,
+        serialNumbers,
       });
 
       if (!result.success) {
@@ -92,8 +108,8 @@ export function ReceiveStockForm({
           </p>
           <h1 className="text-xl font-semibold tracking-tight">Receive stock</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Put quantity into a warehouse. Batch and expiry are required only when
-            the product is set up to track them.
+            Put quantity into a warehouse. Batch, expiry, and serials appear only
+            when the product is configured for them.
           </p>
         </div>
       </div>
@@ -111,6 +127,7 @@ export function ReceiveStockForm({
               const p = stockable.find((x) => x.id === e.target.value);
               if (p?.costPrice != null) setUnitCost(String(p.costPrice));
               if (p?.supplierId) setSupplierId(p.supplierId);
+              setSerialsText("");
             }}
             required
           >
@@ -189,7 +206,8 @@ export function ReceiveStockForm({
           </div>
           <div className="space-y-2">
             <Label>
-              Unit cost <span className="text-xs text-muted-foreground">optional</span>
+              Unit cost{" "}
+              <span className="text-xs text-muted-foreground">optional</span>
             </Label>
             <Input
               type="number"
@@ -246,10 +264,35 @@ export function ReceiveStockForm({
           </div>
         )}
 
+        {product?.serialized && (
+          <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <Label>
+              Serial numbers <span className="text-destructive">*</span>
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {serialCount}/{qty} entered
+              </span>
+            </Label>
+            <Textarea
+              rows={Math.min(8, Math.max(3, qty || 3))}
+              value={serialsText}
+              onChange={(e) => setSerialsText(e.target.value)}
+              placeholder={
+                "One serial per line (or comma-separated)\ne.g.\nSN-001\nSN-002\nSN-003"
+              }
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter exactly {qty || "N"} unique serial numbers — one per unit
+              received.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>
-              Supplier <span className="text-xs text-muted-foreground">optional</span>
+              Supplier{" "}
+              <span className="text-xs text-muted-foreground">optional</span>
             </Label>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -266,7 +309,8 @@ export function ReceiveStockForm({
           </div>
           <div className="space-y-2">
             <Label>
-              Reference <span className="text-xs text-muted-foreground">optional</span>
+              Reference{" "}
+              <span className="text-xs text-muted-foreground">optional</span>
             </Label>
             <Input
               value={reference}

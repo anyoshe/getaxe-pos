@@ -14,6 +14,7 @@ import {
 
 import {
     InventoryBalanceRepository,
+    ProductSerialRepository,
 } from "@/repositories/inventory";
 
 export class InventoryUnitOfWork {
@@ -31,6 +32,8 @@ export class InventoryUnitOfWork {
 
     readonly balances:
         InventoryBalanceRepository;
+
+    readonly serials: ProductSerialRepository;
 
     constructor(
         database: Database | Transaction
@@ -55,5 +58,8 @@ export class InventoryUnitOfWork {
 
         this.balances =
             new InventoryBalanceRepository(database);
+
+        this.serials =
+            new ProductSerialRepository(database);
     }
 }

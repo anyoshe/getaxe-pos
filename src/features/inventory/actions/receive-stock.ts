@@ -9,7 +9,7 @@ import { receiveStockSchema } from "../schemas/receive-stock";
 
 /**
  * Ad-hoc stock receive (opening stock / purchase without full GRN).
- * Respects product.trackBatch / trackExpiry / trackInventory flags.
+ * Respects product.trackBatch / trackExpiry / trackInventory / serialized flags.
  */
 export async function receiveStockAction(input: unknown) {
   const user = await requireAuthorizedUser("stock_adjustments.create");
@@ -53,7 +53,6 @@ export async function receiveStockAction(input: unknown) {
     };
   }
 
-  // Batch rules
   let batchNumber = data.batchNumber?.trim() || null;
 
   if (product.trackBatch) {
@@ -65,7 +64,6 @@ export async function receiveStockAction(input: unknown) {
       };
     }
   } else {
-    // System lot for non-batch products (keeps balance model consistent)
     batchNumber =
       batchNumber ||
       `AUTO-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
@@ -92,9 +90,41 @@ export async function receiveStockAction(input: unknown) {
     };
   }
 
+  const serialNumbers = (data.serialNumbers ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (product.serialized) {
+    if (serialNumbers.length !== data.quantity) {
+      return {
+        success: false as const,
+        message: `This product is serialized. Enter exactly ${data.quantity} serial number(s).`,
+        errors: {
+          serialNumbers: [
+            `Expected ${data.quantity} serial numbers, got ${serialNumbers.length}.`,
+          ],
+        },
+      };
+    }
+
+    if (new Set(serialNumbers).size !== serialNumbers.length) {
+      return {
+        success: false as const,
+        message: "Duplicate serial numbers in this receipt.",
+        errors: { serialNumbers: ["Serial numbers must be unique."] },
+      };
+    }
+  } else if (serialNumbers.length > 0) {
+    return {
+      success: false as const,
+      message: "This product is not serialized. Clear serial numbers or enable Serialized on the product.",
+    };
+  }
+
   try {
     const result = await inventoryService.receiveStock({
       warehouseId: data.warehouseId,
+      serialNumbers: product.serialized ? serialNumbers : [],
       batch: {
         businessId: user.businessId,
         productId: product.id,
@@ -133,9 +163,12 @@ export async function receiveStockAction(input: unknown) {
 
     return {
       success: true as const,
-      message: `Received ${data.quantity} of ${product.name}.`,
+      message: product.serialized
+        ? `Received ${data.quantity} of ${product.name} with ${serialNumbers.length} serial(s).`
+        : `Received ${data.quantity} of ${product.name}.`,
       batchId: result.batch.id,
       movementId: result.movement.id,
+      serialCount: result.serials?.length ?? 0,
     };
   } catch (error) {
     return {

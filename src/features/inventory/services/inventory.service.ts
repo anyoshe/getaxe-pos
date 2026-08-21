@@ -29,6 +29,33 @@ export class InventoryService {
     uow: InventoryUnitOfWork,
     request: ReceiveStockRequest,
   ) {
+    const serialNumbers = (request.serialNumbers ?? [])
+      .map((serial) => serial.trim())
+      .filter(Boolean);
+
+    if (serialNumbers.length > 0) {
+      if (serialNumbers.length !== request.batch.quantityReceived) {
+        throw new Error(
+          `Expected ${request.batch.quantityReceived} serial numbers, got ${serialNumbers.length}.`,
+        );
+      }
+
+      if (new Set(serialNumbers).size !== serialNumbers.length) {
+        throw new Error("Duplicate serial numbers in this receipt.");
+      }
+
+      const existing = await uow.serials.findExistingSerials(
+        request.batch.businessId,
+        serialNumbers,
+      );
+
+      if (existing.length > 0) {
+        throw new Error(
+          `Serial number(s) already exist: ${existing.map((s) => s.serialNumber).join(", ")}`,
+        );
+      }
+    }
+
     const batch = await uow.batches.create(request.batch);
 
     const existingBalance = await uow.balances.findByBatchWarehouse(
@@ -46,29 +73,40 @@ export class InventoryService {
     } else {
       balance = await uow.balances.create({
         businessId: batch.businessId,
-
         productId: batch.productId,
-
         batchId: batch.id,
-
         warehouseId: request.warehouseId,
-
         quantity: batch.quantityReceived,
       });
     }
 
     const movement = await uow.movements.create({
       ...request.movement,
-
       batchId: batch.id,
-
       warehouseId: request.warehouseId,
     });
+
+    let serials: Awaited<ReturnType<typeof uow.serials.createMany>> = [];
+
+    if (serialNumbers.length > 0) {
+      serials = await uow.serials.createMany(
+        serialNumbers.map((serialNumber) => ({
+          businessId: batch.businessId,
+          productId: batch.productId,
+          batchId: batch.id,
+          warehouseId: request.warehouseId,
+          serialNumber,
+          status: "AVAILABLE",
+          stockMovementId: movement.id,
+        })),
+      );
+    }
 
     return {
       batch,
       balance,
       movement,
+      serials,
     };
   }
 

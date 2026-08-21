@@ -30,6 +30,15 @@ export class InventoryValidator {
       );
     }
 
+    const serialNumbers = request.serialNumbers ?? [];
+    if (serialNumbers.length > 0) {
+      if (serialNumbers.length !== request.batch.quantityReceived) {
+        throw new Error(
+          `Serial count (${serialNumbers.length}) must match quantity (${request.batch.quantityReceived}).`,
+        );
+      }
+    }
+
   }
 
 

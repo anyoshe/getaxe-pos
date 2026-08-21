@@ -8,12 +8,12 @@ export const receiveStockSchema = z.object({
   movementType: z.enum(["OPENING_STOCK", "PURCHASE", "ADJUSTMENT"]).default("PURCHASE"),
   reference: z.string().trim().nullable().optional(),
   notes: z.string().trim().nullable().optional(),
-  // Required when product.trackBatch
   batchNumber: z.string().trim().nullable().optional(),
-  // Required when product.trackExpiry
   expiryDate: z.string().nullable().optional(),
   manufactureDate: z.string().nullable().optional(),
   supplierId: z.uuid().nullable().optional(),
+  /** One serial per unit when product.serialized is true */
+  serialNumbers: z.array(z.string().trim().min(1)).optional().default([]),
 });
 
 export type ReceiveStockInput = z.infer<typeof receiveStockSchema>;

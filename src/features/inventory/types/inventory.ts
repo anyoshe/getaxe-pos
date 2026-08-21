@@ -13,6 +13,8 @@ export interface ReceiveStockRequest {
   batch: ProductBatchInsert;
   warehouseId: string;
   movement: StockMovementInsert;
+  /** Required when the product is serialized — one serial per unit received. */
+  serialNumbers?: string[];
 }
 
 export interface IssueStockRequest {
@@ -20,58 +22,38 @@ export interface IssueStockRequest {
   warehouseId: string;
   quantity: number;
   movement: StockMovementInsert;
+  serialNumbers?: string[];
 }
 
 export interface AllocatedStockIssue {
-
-    batchId: string;
-
-    warehouseId: string;
-
-    quantity: number;
-
+  batchId: string;
+  warehouseId: string;
+  quantity: number;
 }
 
 export interface IssueAllocatedStockRequest {
-
-    businessId: string;
-
-    productId: string;
-
-    allocations: AllocatedStockIssue[];
-
-    movement: Omit<
-        StockMovementInsert,
-        | "batchId"
-        | "productId"
-        | "warehouseId"
-        | "quantity"
-    >;
-
+  businessId: string;
+  productId: string;
+  allocations: AllocatedStockIssue[];
+  movement: Omit<
+    StockMovementInsert,
+    "batchId" | "productId" | "warehouseId" | "quantity"
+  >;
 }
-
 
 export interface AdjustStockRequest {
   batchId: string;
-
   warehouseId: string;
-
   quantity: number;
-
   movement: StockMovementInsert;
 }
 
 export interface TransferStockRequest {
   productId: string;
-
   batchId: string;
-
   fromWarehouseId: string;
-
   toWarehouseId: string;
-
   quantity: number;
-
   movement: {
     reference?: string | null;
     notes?: string | null;
