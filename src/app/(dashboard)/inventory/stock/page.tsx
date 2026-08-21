@@ -25,12 +25,38 @@ export default async function StockOnHandPage() {
             Quantities by product and warehouse after receive movements.
           </p>
         </div>
-        <Link
-          href="/inventory/stock/receive"
-          className={cn(buttonVariants({ variant: "default" }))}
-        >
-          Receive stock
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/inventory/stock/receive"
+            className={cn(buttonVariants({ variant: "default" }))}
+          >
+            Receive stock
+          </Link>
+          <Link
+            href="/inventory/adjustments"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Adjust
+          </Link>
+          <Link
+            href="/inventory/transfers"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Transfer
+          </Link>
+          <Link
+            href="/inventory/batches"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Batches
+          </Link>
+          <Link
+            href="/inventory/stock-movements"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Movements
+          </Link>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border">

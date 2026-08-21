@@ -35,3 +35,5 @@ export * from "./get-product-context";
 export * from "./lookup-product-code";
 export * from "./create-products-batch";
 export * from "./receive-stock";
+export * from "./adjust-stock";
+export * from "./transfer-stock";

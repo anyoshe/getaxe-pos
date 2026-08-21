@@ -242,6 +242,24 @@ export class InventoryService {
     return movements;
   }
 
+  async adjustStock(request: AdjustStockRequest) {
+    inventoryValidator.validateAdjustment(request);
+
+    return Repository.withTransaction(async (tx) => {
+      const uow = new InventoryUnitOfWork(tx);
+      return this.adjustStockWithUnitOfWork(uow, request);
+    });
+  }
+
+  async transferStock(request: TransferStockRequest) {
+    inventoryValidator.validateTransfer(request);
+
+    return Repository.withTransaction(async (tx) => {
+      const uow = new InventoryUnitOfWork(tx);
+      return this.transferStockWithUnitOfWork(uow, request);
+    });
+  }
+
   async adjustStockWithUnitOfWork(
     uow: InventoryUnitOfWork,
     request: AdjustStockRequest,
@@ -258,20 +276,60 @@ export class InventoryService {
       throw new Error("Adjustment would create negative stock.");
     }
 
+    const balance = await uow.balances.findByBatchWarehouseForUpdate(
+      request.batchId,
+      request.warehouseId,
+    );
+
+    if (!balance && request.quantity < 0) {
+      throw new Error("No warehouse balance to adjust down.");
+    }
+
+    if (balance && balance.quantity + request.quantity < 0) {
+      throw new Error("Adjustment would create negative warehouse stock.");
+    }
+
     const updatedBatch = await uow.batches.update(request.batchId, undefined, {
       quantityRemaining: newQuantity,
     });
 
+    let updatedBalance = balance;
+
+    if (balance) {
+      if (request.quantity > 0) {
+        updatedBalance = await uow.balances.increaseQuantity(
+          balance.id,
+          request.quantity,
+        );
+      } else {
+        updatedBalance = await uow.balances.decreaseQuantity(
+          balance.id,
+          Math.abs(request.quantity),
+        );
+      }
+    } else if (request.quantity > 0) {
+      updatedBalance = await uow.balances.create({
+        businessId: batch.businessId,
+        productId: batch.productId,
+        batchId: batch.id,
+        warehouseId: request.warehouseId,
+        quantity: request.quantity,
+      });
+    }
+
     const movement = await uow.movements.create({
       ...request.movement,
-
       batchId: request.batchId,
-
+      warehouseId: request.warehouseId,
+      productId: batch.productId,
+      businessId: batch.businessId,
+      movementType: "ADJUSTMENT",
       quantity: request.quantity,
     });
 
     return {
       batch: updatedBatch,
+      balance: updatedBalance,
       movement,
     };
   }
