@@ -9,7 +9,7 @@ import {
 export async function getPriceLists() {
   const user =
     await requireAuthorizedUser(
-      "price-lists.view"
+      "price_lists.view"
     );
 
   return priceListService.getPriceLists(
@@ -22,7 +22,7 @@ export async function getPriceList(
 ) {
   const user =
     await requireAuthorizedUser(
-      "price-lists.view"
+      "price_lists.view"
     );
 
   return priceListService.getPriceList(

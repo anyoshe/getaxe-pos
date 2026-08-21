@@ -16,7 +16,7 @@ export async function createStockMovementAction(
   formData: FormData
 ) {
   await requireAuthorizedUser(
-    "stock-movements.create"
+    "stock_adjustments.create"
   );
 
   const parsed =

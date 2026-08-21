@@ -13,7 +13,7 @@ export async function deleteProductPriceAction(
 ) {
   const user =
     await requireAuthorizedUser(
-      "product-prices.delete"
+      "product_prices.delete"
     );
 
   try {

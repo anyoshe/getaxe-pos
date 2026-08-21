@@ -10,7 +10,7 @@ export async function getProductBatches(
   businessId: string
 ) {
   await requireAuthorizedUser(
-    "product-batches.view"
+    "product_batches.view"
   );
 
   return productBatchService.getProductBatches(
@@ -23,7 +23,7 @@ export async function getProductBatch(
 ) {
   const user =
     await requireAuthorizedUser(
-      "product-batches.view"
+      "product_batches.view"
     );
 
   return productBatchService.getProductBatch(

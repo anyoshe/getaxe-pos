@@ -17,7 +17,7 @@ export async function createProductPriceAction(
 ) {
   const user =
     await requireAuthorizedUser(
-      "product-prices.create"
+      "product_prices.create"
     );
 
   const parsed =

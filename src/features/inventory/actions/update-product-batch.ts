@@ -19,7 +19,7 @@ export async function updateProductBatchAction(
   try {
     const user =
       await requireAuthorizedUser(
-        "product-batches.update"
+        "product_batches.update"
       );
 
     const parsed =

@@ -18,7 +18,7 @@ export async function updateProductPriceAction(
 ) {
   const user =
     await requireAuthorizedUser(
-      "product-prices.update"
+      "product_prices.update"
     );
 
   const parsed =

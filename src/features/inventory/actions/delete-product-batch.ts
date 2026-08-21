@@ -14,7 +14,7 @@ export async function deleteProductBatchAction(
   try {
     const user =
       await requireAuthorizedUser(
-        "product-batches.delete"
+        "product_batches.delete"
       );
 
     await productBatchService.deleteProductBatch(

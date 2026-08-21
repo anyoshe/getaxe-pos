@@ -16,7 +16,7 @@ export async function createProductBatchAction(
   formData: FormData
 ) {
   await requireAuthorizedUser(
-    "product-batches.create"
+    "product_batches.create"
   );
 
   const parsed =

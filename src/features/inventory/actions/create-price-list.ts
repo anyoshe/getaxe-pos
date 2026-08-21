@@ -11,7 +11,7 @@ import { priceListService } from "../services";
 export async function createPriceListAction(formData: FormData) {
   const user =
   await requireAuthorizedUser(
-    "price-lists.create"
+    "price_lists.create"
   );
 
 const parsed =

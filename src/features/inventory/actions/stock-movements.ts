@@ -10,7 +10,7 @@ export async function getStockMovements(
   businessId: string
 ) {
   await requireAuthorizedUser(
-    "stock-movements.view"
+    "stock_movements.view"
   );
 
   return stockMovementService.getStockMovements(
@@ -23,7 +23,7 @@ export async function getStockMovement(
 ) {
   const user =
   await requireAuthorizedUser(
-    "stock-movements.view"
+    "stock_movements.view"
   );
 
   return stockMovementService.getStockMovement(

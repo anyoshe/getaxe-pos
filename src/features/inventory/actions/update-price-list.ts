@@ -9,7 +9,7 @@ import { createPriceListSchema } from "../schemas";
 import { priceListService } from "../services";
 
 export async function updatePriceListAction(id: string, formData: FormData) {
-  const user = await requireAuthorizedUser("price-lists.update");
+  const user = await requireAuthorizedUser("price_lists.update");
 
   const parsed =
   createPriceListSchema.safeParse({
