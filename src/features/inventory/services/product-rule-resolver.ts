@@ -41,7 +41,7 @@ export const PRODUCT_FIELD_DEFINITIONS: ProductFieldDefinition[] = [
   { key: "allowNegativeStock", label: "Allow Negative Stock", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"] },
   { key: "trackBatch", label: "Track Batch", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.batch-control", required: true },
   { key: "trackExpiry", label: "Track Expiry", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.expiry-control", required: true },
-  { key: "serialized", label: "Serialized", step: "inventory", productTypes: ["physical", "finished-product"], capability: "inventory.serial-numbers" },
+  { key: "serialized", label: "Serialized", step: "inventory", productTypes: ["physical", "finished-product"] },
   { key: "genericName", label: "Generic Name", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "drugCategoryId", label: "Drug Category", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "dosageFormId", label: "Dosage Form", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
@@ -157,9 +157,8 @@ export class ProductRuleResolver {
       setError("trackExpiry", "Expiry tracking requires inventory.expiry-control.");
     }
 
-    if (input.serialized && !businessCapabilities.includes("inventory.serial-numbers")) {
-      setError("serialized", "Serialized products require inventory.serial-numbers.");
-    }
+    // Serialized is a per-product choice for physical/finished-product.
+    // Business capability inventory.serial-numbers is optional context, not a hard gate on the product flag.
 
     return {
       valid: Object.keys(errors).length === 0,
