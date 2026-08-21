@@ -37,13 +37,13 @@ export class SaleRepository extends BaseRepository {
   }
 
   async findById(id: string) {
-    return this.database.query.sales.findFirst({
-      where: eq(sales.id, id),
-      with: {
-        items: true,
-        payments: true,
-      },
-    });
+    // Plain select — relational `with` joins fail if relation metadata/DB lag
+    const rows = await this.database
+      .select()
+      .from(sales)
+      .where(eq(sales.id, id))
+      .limit(1);
+    return rows[0] ?? null;
   }
 
   async create(data: SaleInsert) {
