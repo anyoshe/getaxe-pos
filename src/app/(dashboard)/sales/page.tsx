@@ -34,10 +34,10 @@ export default async function SalesPage() {
     productService.getProducts(user.businessId),
     warehousesService.getWarehouses(user.businessId),
     branchesService.getBranches(user.businessId),
-    saleRepository.findAll(user.businessId),
+    saleRepository.findRecent(user.businessId, 20),
   ]);
 
-  const recent = sales.slice().reverse().slice(0, 15);
+  const recent = sales;
 
   return (
     <div className="space-y-10 p-4 sm:p-6">
