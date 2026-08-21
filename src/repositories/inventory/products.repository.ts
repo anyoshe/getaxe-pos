@@ -3,6 +3,7 @@ import type { InferInsertModel } from "drizzle-orm";
 
 import { products } from "@/db/schema/inventory/products";
 import { productPrices } from "@/db/schema/inventory/product_prices";
+import { priceLists } from "@/db/schema/inventory/price_lists";
 
 import { BaseRepository } from "../base";
 
@@ -71,7 +72,15 @@ export class ProductRepository extends BaseRepository {
 
     const productIds = rows.map((r) => r.id);
 
-    // Lightweight default selling prices for list view (min qty = 1)
+    // Prefer the business default (retail) price list
+    const defaultList = await this.database.query.priceLists.findFirst({
+      where: and(
+        eq(priceLists.businessId, businessId),
+        eq(priceLists.isDefault, true),
+        eq(priceLists.active, true),
+      ),
+    });
+
     const priceRows =
       productIds.length === 0
         ? []
@@ -105,16 +114,32 @@ export class ProductRepository extends BaseRepository {
 
     return rows.map((r) => {
       const productPriceRows = pricesByProduct.get(r.id) ?? [];
-      // Prefer minimumQuantity === 1 as "default" shelf price
+
+      // Retail / default list first, then lowest min-qty (shelf unit), never pick "cheapest" arbitrarily
       const sorted = [...productPriceRows].sort((a, b) => {
-        const aMin = Number(a.minimumQuantity);
-        const bMin = Number(b.minimumQuantity);
-        return aMin - bMin;
+        if (defaultList) {
+          const aDef = a.priceListId === defaultList.id ? 0 : 1;
+          const bDef = b.priceListId === defaultList.id ? 0 : 1;
+          if (aDef !== bDef) return aDef - bDef;
+        }
+        return Number(a.minimumQuantity) - Number(b.minimumQuantity);
       });
+
+      const shelf =
+        sorted.find(
+          (p) =>
+            (!defaultList || p.priceListId === defaultList.id) &&
+            Number(p.minimumQuantity) <= 1,
+        ) ??
+        sorted.find((p) => !defaultList || p.priceListId === defaultList.id) ??
+        sorted[0];
+
+      const sellingPrice = shelf ? Number(shelf.price) : null;
 
       return {
         ...toDomainProduct(r),
         prices: sorted,
+        sellingPrice,
         batches: [],
         stockMovements: [],
         inventoryBalances: [],

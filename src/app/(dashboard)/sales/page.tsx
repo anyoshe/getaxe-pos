@@ -1,13 +1,13 @@
-import Link from "next/link";
-
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { branchesService } from "@/features/settings/services/branches.service";
 import { saleRepository } from "@/repositories/sales/sales.repository";
+import { productSerialRepository } from "@/repositories/inventory/product-serials.repository";
 import { PosClient } from "@/features/sales/components/pos/pos-client";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { db } from "@/db";
+import { productSerials } from "@/db/schema/inventory/product_serials";
+import { and, eq } from "drizzle-orm";
 
 function formatMoney(value: string | number) {
   return new Intl.NumberFormat("en-KE", {
@@ -30,49 +30,74 @@ export default async function SalesPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [products, warehouses, branches, sales] = await Promise.all([
-    productService.getProducts(user.businessId),
-    warehousesService.getWarehouses(user.businessId),
-    branchesService.getBranches(user.businessId),
-    saleRepository.findRecent(user.businessId, 20),
-  ]);
+  const [products, warehouses, branches, sales, availableSerialRows] =
+    await Promise.all([
+      productService.getProducts(user.businessId),
+      warehousesService.getWarehouses(user.businessId),
+      branchesService.getBranches(user.businessId),
+      saleRepository.findRecent(user.businessId, 20),
+      db
+        .select({
+          productId: productSerials.productId,
+          serialNumber: productSerials.serialNumber,
+          warehouseId: productSerials.warehouseId,
+        })
+        .from(productSerials)
+        .where(
+          and(
+            eq(productSerials.businessId, user.businessId),
+            eq(productSerials.status, "AVAILABLE"),
+          ),
+        ),
+    ]);
 
-  const recent = sales;
+  // Group serials by product (all warehouses; POS can refine later by warehouse)
+  const availableSerials: Record<string, string[]> = {};
+  for (const row of availableSerialRows) {
+    const list = availableSerials[row.productId] ?? [];
+    list.push(row.serialNumber);
+    availableSerials[row.productId] = list;
+  }
 
   return (
     <div className="space-y-10 p-4 sm:p-6">
       <PosClient
-        products={products.map((p) => ({
-          id: p.id,
-          name: p.name,
-          sku: p.sku ?? null,
-          barcode: p.barcode ?? null,
-          productType: p.productType,
-          trackInventory: p.trackInventory,
-          serialized: Boolean(p.serialized),
-          unitPrice: Number(
-            (p as { sellingPrice?: string | number | null }).sellingPrice ??
-              p.costPrice ??
-              0,
-          ),
-          active: p.active !== false,
-        }))}
+        products={products.map((p) => {
+          const selling = Number(
+            (p as { sellingPrice?: number | null }).sellingPrice ?? NaN,
+          );
+          const unitPrice =
+            Number.isFinite(selling) && selling > 0
+              ? selling
+              : Number(p.costPrice ?? 0);
+
+          return {
+            id: p.id,
+            name: p.name,
+            sku: p.sku ?? null,
+            barcode: p.barcode ?? null,
+            productType: p.productType,
+            trackInventory: p.trackInventory,
+            serialized: Boolean(p.serialized),
+            unitPrice,
+            active: p.active !== false,
+          };
+        })}
         warehouses={warehouses.map((w) => ({
           id: w.id,
           name: w.name,
           branchId: w.branchId,
         }))}
         branches={branches.map((b) => ({ id: b.id, name: b.name }))}
+        availableSerials={availableSerials}
       />
 
       <section className="space-y-3">
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-semibold">Recent sales</h2>
-            <p className="text-sm text-muted-foreground">
-              Latest completed invoices for this business.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold">Recent sales</h2>
+          <p className="text-sm text-muted-foreground">
+            Latest completed invoices for this business.
+          </p>
         </div>
 
         <div className="overflow-x-auto rounded-xl border">
@@ -87,7 +112,7 @@ export default async function SalesPage() {
               </tr>
             </thead>
             <tbody>
-              {recent.length === 0 ? (
+              {sales.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
@@ -97,7 +122,7 @@ export default async function SalesPage() {
                   </td>
                 </tr>
               ) : (
-                recent.map((s) => (
+                sales.map((s) => (
                   <tr key={s.id} className="border-t">
                     <td className="p-3 font-medium">{s.invoiceNumber}</td>
                     <td className="p-3 text-muted-foreground">

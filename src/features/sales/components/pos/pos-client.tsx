@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 import { createSaleAction } from "../../actions/create-sale";
 
@@ -26,34 +25,38 @@ export type PosProduct = {
 type WarehouseOption = { id: string; name: string; branchId: string };
 type BranchOption = { id: string; name: string };
 
+/** Available serials by productId for the current warehouse context */
+type SerialsByProduct = Record<string, string[]>;
+
 type CartLine = {
   productId: string;
   name: string;
   quantity: number;
   unitPrice: number;
   serialized: boolean;
-  serialsText: string;
+  /** Selected serial numbers (must match quantity when serialized) */
+  selectedSerials: string[];
 };
 
 interface PosClientProps {
   products: PosProduct[];
   warehouses: WarehouseOption[];
   branches: BranchOption[];
+  /** Initial available serials keyed by productId */
+  availableSerials: SerialsByProduct;
 }
 
-function parseSerials(text: string): string[] {
-  return text
-    .split(/[\n,;]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-export function PosClient({ products, warehouses, branches }: PosClientProps) {
+export function PosClient({
+  products,
+  warehouses,
+  branches,
+  availableSerials: initialSerials,
+}: PosClientProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const sellable = useMemo(
-    () => products.filter((p) => p.active !== false && p.productType !== "service" || p.productType === "service"),
+    () => products.filter((p) => p.active !== false),
     [products],
   );
 
@@ -66,6 +69,7 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
     "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY"
   >("CASH");
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [serialPool, setSerialPool] = useState<SerialsByProduct>(initialSerials);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -80,17 +84,22 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
       .slice(0, 40);
   }, [query, sellable]);
 
+  /** Serials still free for this product (not already chosen in cart) */
+  function freeSerials(productId: string, lineSelected: string[]): string[] {
+    const pool = serialPool[productId] ?? [];
+    const takenElsewhere = new Set(
+      cart
+        .filter((l) => l.productId !== productId)
+        .flatMap((l) => l.selectedSerials),
+    );
+    // Own selection is still "available" in the checkbox list
+    return pool.filter((s) => !takenElsewhere.has(s));
+  }
+
   function addProduct(p: PosProduct) {
     setCart((prev) => {
       const existing = prev.find((l) => l.productId === p.id);
-      if (existing && !p.serialized) {
-        return prev.map((l) =>
-          l.productId === p.id
-            ? { ...l, quantity: l.quantity + 1 }
-            : l,
-        );
-      }
-      if (existing && p.serialized) {
+      if (existing) {
         return prev.map((l) =>
           l.productId === p.id
             ? { ...l, quantity: l.quantity + 1 }
@@ -105,10 +114,30 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
           quantity: 1,
           unitPrice: p.unitPrice,
           serialized: p.serialized,
-          serialsText: "",
+          selectedSerials: [],
         },
       ];
     });
+  }
+
+  function toggleSerial(productId: string, serial: string) {
+    setCart((prev) =>
+      prev.map((line) => {
+        if (line.productId !== productId) return line;
+        const has = line.selectedSerials.includes(serial);
+        let selectedSerials: string[];
+        if (has) {
+          selectedSerials = line.selectedSerials.filter((s) => s !== serial);
+        } else {
+          if (line.selectedSerials.length >= line.quantity) {
+            toast.message(`Only ${line.quantity} serial(s) needed for this qty.`);
+            return line;
+          }
+          selectedSerials = [...line.selectedSerials, serial];
+        }
+        return { ...line, selectedSerials };
+      }),
+    );
   }
 
   const total = cart.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
@@ -124,6 +153,15 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
         return;
       }
 
+      for (const line of cart) {
+        if (line.serialized && line.selectedSerials.length !== line.quantity) {
+          toast.error(
+            `${line.name}: select exactly ${line.quantity} serial number(s).`,
+          );
+          return;
+        }
+      }
+
       const result = await createSaleAction({
         warehouseId,
         branchId,
@@ -132,7 +170,7 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
           productId: l.productId,
           quantity: l.quantity,
           unitPrice: l.unitPrice,
-          serialNumbers: l.serialized ? parseSerials(l.serialsText) : [],
+          serialNumbers: l.serialized ? l.selectedSerials : [],
         })),
       });
 
@@ -143,6 +181,18 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
 
       toast.success(result.message);
       setCart([]);
+      // Remove sold serials from pool
+      setSerialPool((prev) => {
+        const next = { ...prev };
+        for (const line of cart) {
+          if (!line.serialized) continue;
+          const sold = new Set(line.selectedSerials);
+          next[line.productId] = (next[line.productId] ?? []).filter(
+            (s) => !sold.has(s),
+          );
+        }
+        return next;
+      });
       router.refresh();
     });
   }
@@ -156,8 +206,8 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">POS</h1>
           <p className="text-sm text-muted-foreground">
-            Add products, capture serials when required, take payment, and stock
-            is deducted automatically.
+            Retail price from the default price list. Serialized items: pick
+            serials from stock.
           </p>
         </div>
 
@@ -247,76 +297,98 @@ export function PosClient({ products, warehouses, branches }: PosClientProps) {
           </p>
         ) : (
           <ul className="space-y-3">
-            {cart.map((line) => (
-              <li
-                key={line.productId}
-                className="space-y-2 rounded-lg border border-border/50 p-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-sm">{line.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      @ {line.unitPrice.toFixed(2)}
-                    </p>
+            {cart.map((line) => {
+              const options = freeSerials(line.productId, line.selectedSerials);
+              return (
+                <li
+                  key={line.productId}
+                  className="space-y-2 rounded-lg border border-border/50 p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-sm">{line.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        @ {line.unitPrice.toFixed(2)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs text-destructive"
+                      onClick={() =>
+                        setCart((c) =>
+                          c.filter((x) => x.productId !== line.productId),
+                        )
+                      }
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="text-xs text-destructive"
-                    onClick={() =>
-                      setCart((c) =>
-                        c.filter((x) => x.productId !== line.productId),
-                      )
-                    }
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">Qty</Label>
-                  <Input
-                    className="h-8 w-20"
-                    type="number"
-                    min={1}
-                    value={line.quantity}
-                    onChange={(e) => {
-                      const q = Math.max(1, Number(e.target.value) || 1);
-                      setCart((c) =>
-                        c.map((x) =>
-                          x.productId === line.productId
-                            ? { ...x, quantity: q }
-                            : x,
-                        ),
-                      );
-                    }}
-                  />
-                  <span className="ml-auto tabular-nums text-sm font-medium">
-                    {(line.quantity * line.unitPrice).toFixed(2)}
-                  </span>
-                </div>
-                {line.serialized && (
-                  <div className="space-y-1">
-                    <Label className="text-xs">
-                      Serial numbers * ({parseSerials(line.serialsText).length}/
-                      {line.quantity})
-                    </Label>
-                    <Textarea
-                      rows={Math.min(4, line.quantity)}
-                      value={line.serialsText}
-                      onChange={(e) =>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs">Qty</Label>
+                    <Input
+                      className="h-8 w-20"
+                      type="number"
+                      min={1}
+                      value={line.quantity}
+                      onChange={(e) => {
+                        const q = Math.max(1, Number(e.target.value) || 1);
                         setCart((c) =>
                           c.map((x) =>
                             x.productId === line.productId
-                              ? { ...x, serialsText: e.target.value }
+                              ? {
+                                  ...x,
+                                  quantity: q,
+                                  selectedSerials: x.selectedSerials.slice(0, q),
+                                }
                               : x,
                           ),
-                        )
-                      }
-                      placeholder="One serial per line"
+                        );
+                      }}
                     />
+                    <span className="ml-auto tabular-nums text-sm font-medium">
+                      {(line.quantity * line.unitPrice).toFixed(2)}
+                    </span>
                   </div>
-                )}
-              </li>
-            ))}
+                  {line.serialized && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">
+                        Select serials ({line.selectedSerials.length}/
+                        {line.quantity})
+                      </Label>
+                      {options.length === 0 ? (
+                        <p className="text-xs text-destructive">
+                          No available serials in stock for this product.
+                        </p>
+                      ) : (
+                        <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-primary/20 bg-primary/5 p-2">
+                          {options.map((serial) => {
+                            const checked =
+                              line.selectedSerials.includes(serial);
+                            return (
+                              <label
+                                key={serial}
+                                className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-background/80"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() =>
+                                    toggleSerial(line.productId, serial)
+                                  }
+                                />
+                                <span className="font-mono text-xs">
+                                  {serial}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
 
