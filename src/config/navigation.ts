@@ -95,6 +95,18 @@ export const navigation: NavigationItem[] = [
       permission: "categories.view",
     },
     {
+      label: "Manufacturers",
+      href: "/inventory/manufacturers",
+      icon: Building2,
+      permission: "products.view",
+    },
+    {
+      label: "Pharmacy catalogues",
+      href: "/inventory/pharmacy-catalogues",
+      icon: ClipboardList,
+      permission: "products.view",
+    },
+    {
       label: "Stock",
       href: "/inventory/stock",
       icon: Boxes,

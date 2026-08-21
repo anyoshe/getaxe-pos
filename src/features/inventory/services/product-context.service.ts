@@ -11,6 +11,10 @@ import {
 } from "@/repositories/settings/units.repository";
 
 import {
+  pharmacyReferenceRepository,
+} from "@/repositories/pharmacy/reference-data.repository";
+
+import {
   BusinessCapabilityRepository,
 } from "@/features/capabilities/repositories";
 
@@ -35,11 +39,21 @@ export class ProductContextService {
       suppliers,
       units,
       capabilities,
+      manufacturers,
+      dosageForms,
+      drugCategories,
+      drugStrengths,
+      prescriptionTypes,
     ] = await Promise.all([
       categoryRepository.findAll(businessId),
       supplierRepository.findAll(businessId),
       unitsRepository.findAll(businessId),
       new BusinessCapabilityRepository().listEnabled(businessId),
+      pharmacyReferenceRepository.listManufacturers(businessId),
+      pharmacyReferenceRepository.listDosageForms(businessId),
+      pharmacyReferenceRepository.listDrugCategories(businessId),
+      pharmacyReferenceRepository.listDrugStrengths(businessId),
+      pharmacyReferenceRepository.listPrescriptionTypes(businessId),
     ]);
 
     const productRulesByType = PRODUCT_TYPES.reduce((result, productType) => {
@@ -68,11 +82,11 @@ export class ProductContextService {
       categories,
       suppliers,
       units,
-      manufacturers: [],
-      dosageForms: [],
-      drugCategories: [],
-      drugStrengths: [],
-      prescriptionTypes: [],
+      manufacturers,
+      dosageForms,
+      drugCategories,
+      drugStrengths,
+      prescriptionTypes,
       taxRates: [],
       incomeAccounts: [],
       expenseAccounts: [],
