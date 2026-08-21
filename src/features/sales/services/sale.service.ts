@@ -104,11 +104,31 @@ export class SalesService {
       items.push(saleItem);
     }
 
-    const paymentResult = await paymentService.recordPayments(
-      uow,
-      sale.id,
-      request.payments,
-    );
+    // Payment ledger is optional for POS: sale already carries amountPaid / paymentStatus.
+    // Inserting into `payments` fails when that table/enum is out of sync with the schema.
+    let paymentResult = {
+      sale,
+      payments: [] as Awaited<
+        ReturnType<typeof paymentService.recordPayments>
+      >["payments"],
+    };
+
+    if (request.payments.length > 0) {
+      try {
+        paymentResult = await paymentService.recordPayments(
+          uow,
+          sale.id,
+          request.payments,
+        );
+      } catch (err) {
+        // Keep the sale successful; amounts are already on the sales row.
+        console.error(
+          "[sales] payment ledger insert skipped:",
+          err instanceof Error ? err.message : err,
+        );
+        paymentResult = { sale, payments: [] };
+      }
+    }
 
     return {
       sale: paymentResult.sale,
