@@ -60,6 +60,29 @@ export class CustomerRepository extends BaseRepository {
     });
   }
 
+  /** Match phone ignoring spaces/dashes (stored value may vary). */
+  async findByPhone(businessId: string, phone: string) {
+    const normalized = phone.replace(/[\s\-()]/g, "");
+    if (!normalized) return null;
+
+    const rows = await this.database
+      .select()
+      .from(customers)
+      .where(
+        and(
+          eq(customers.businessId, businessId),
+          eq(customers.active, true),
+        ),
+      );
+
+    return (
+      rows.find((c) => {
+        if (!c.phone) return false;
+        return c.phone.replace(/[\s\-()]/g, "") === normalized;
+      }) ?? null
+    );
+  }
+
   async count(businessId: string) {
     const result = await this.database
       .select({

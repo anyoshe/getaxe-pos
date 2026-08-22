@@ -12,6 +12,10 @@ import { Label } from "@/components/ui/label";
 import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
 
 import { createSaleAction } from "../../actions/create-sale";
+import {
+  ensurePosCustomerAction,
+  lookupCustomerByPhoneAction,
+} from "../../actions/pos-customer";
 
 export type PosProduct = {
   id: string;
@@ -95,6 +99,12 @@ export function PosClient({
   const [paymentMethod, setPaymentMethod] = useState<
     "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY"
   >("CASH");
+  const [showCustomer, setShowCustomer] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customerLabel, setCustomerLabel] = useState<string | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [serialPool, setSerialPool] =
     useState<SerialsByProduct>(initialSerials);
@@ -218,6 +228,41 @@ export function PosClient({
     );
   }
 
+  async function lookupCustomer() {
+    if (!customerPhone.trim()) {
+      toast.message("Enter a phone number to look up.");
+      return;
+    }
+    setLookingUp(true);
+    try {
+      const result = await lookupCustomerByPhoneAction(customerPhone);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      if (result.found) {
+        setCustomerId(result.customer.id);
+        setCustomerLabel(result.customer.displayName);
+        setCustomerName(result.customer.displayName);
+        setCustomerPhone(result.customer.phone ?? customerPhone);
+        toast.success(`Customer found: ${result.customer.displayName}`);
+      } else {
+        setCustomerId(null);
+        setCustomerLabel(null);
+        toast.message(result.message);
+      }
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
+  function clearCustomer() {
+    setCustomerId(null);
+    setCustomerLabel(null);
+    setCustomerPhone("");
+    setCustomerName("");
+  }
+
   const total = cart.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
 
   function checkout() {
@@ -239,9 +284,33 @@ export function PosClient({
         }
       }
 
+      let resolvedCustomerId = customerId;
+      let receiptNote: string | null = null;
+
+      // Optional: link or create customer when phone was entered
+      if (customerPhone.trim().length >= 7) {
+        const ensured = await ensurePosCustomerAction({
+          phone: customerPhone,
+          firstName: customerName.trim() || null,
+        });
+        if (!ensured.success) {
+          toast.error(ensured.message);
+          return;
+        }
+        resolvedCustomerId = ensured.customerId;
+        setCustomerId(ensured.customerId);
+        setCustomerLabel(ensured.displayName);
+        receiptNote = `Customer: ${ensured.displayName} (${ensured.phone})`;
+      } else if (customerName.trim()) {
+        // Name only on receipt — no CRM record without phone
+        receiptNote = `Walk-in: ${customerName.trim()}`;
+      }
+
       const result = await createSaleAction({
         warehouseId,
         branchId,
+        customerId: resolvedCustomerId,
+        notes: receiptNote,
         paymentMethod,
         items: cart.map((l) => ({
           productId: l.productId,
@@ -258,6 +327,10 @@ export function PosClient({
 
       toast.success(result.message);
       setCart([]);
+      // keep phone for rapid repeat sales to same loyalty customer; clear name-only walk-in
+      if (!resolvedCustomerId) {
+        setCustomerName("");
+      }
       setSerialPool((prev) => {
         const next = { ...prev };
         for (const line of cart) {
@@ -371,6 +444,81 @@ export function PosClient({
           )}
         </div>
       </header>
+
+      {/* Optional customer — lookup by phone (loyalty) or capture for receipt */}
+      <div className="border-b border-border/50 bg-card/50 px-3 py-2 sm:px-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="text-sm font-medium text-primary hover:underline"
+            onClick={() => setShowCustomer((v) => !v)}
+          >
+            {showCustomer ? "Hide customer" : "Customer (optional)"}
+          </button>
+          {customerLabel ? (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+              {customerLabel}
+              {customerPhone ? ` · ${customerPhone}` : ""}
+              <button
+                type="button"
+                className="ml-1 opacity-70 hover:opacity-100"
+                onClick={clearCustomer}
+              >
+                ×
+              </button>
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              Walk-in · phone lookup for rewards · capture name for receipt
+            </span>
+          )}
+        </div>
+        {showCustomer && (
+          <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+            <Input
+              className="h-9"
+              placeholder="Phone (lookup / rewards)"
+              value={customerPhone}
+              onChange={(e) => {
+                setCustomerPhone(e.target.value);
+                setCustomerId(null);
+                setCustomerLabel(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void lookupCustomer();
+                }
+              }}
+            />
+            <Input
+              className="h-9"
+              placeholder="Name (receipt — optional)"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9"
+              disabled={lookingUp}
+              onClick={() => void lookupCustomer()}
+            >
+              {lookingUp ? "…" : "Lookup"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9"
+              onClick={clearCustomer}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
         {/* Products / scan */}
