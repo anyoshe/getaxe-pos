@@ -112,6 +112,7 @@ export async function createSaleAction(input: unknown) {
         paymentStatus: "COMPLETED",
         notes: data.notes ?? null,
         soldBy: user.id,
+        soldAt: new Date(),
       },
       items: lines.map((l) => ({
         businessId: user.businessId,

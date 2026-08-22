@@ -13,23 +13,12 @@ import { warehousesRepository } from "@/repositories/settings/warehouses.reposit
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { supplierRepository } from "@/repositories/inventory/suppliers.repository";
 import { customerRepository } from "@/repositories/sales/customer.repository";
+import { nairobiDayBounds } from "@/lib/timezone";
 
-function startOfTodayLocal() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function startOfTomorrowLocal() {
-  const d = startOfTodayLocal();
-  d.setDate(d.getDate() + 1);
-  return d;
-}
 
 class DashboardService {
   async getOwnerDashboard(businessId: string): Promise<OwnerDashboard> {
-    const today = startOfTodayLocal();
-    const tomorrow = startOfTomorrowLocal();
+    const { start: today, end: tomorrow } = nairobiDayBounds();
 
     const [
       branches,

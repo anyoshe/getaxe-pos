@@ -5,6 +5,8 @@ import { salesQueryService } from "@/features/sales/services/sales-query.service
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { formatDateTimeNairobi } from "@/lib/timezone";
+
 function money(v: string | number | null) {
   return new Intl.NumberFormat("en-KE", {
     style: "currency",
@@ -13,13 +15,7 @@ function money(v: string | number | null) {
 }
 
 function fmt(d: Date | string) {
-  return new Intl.DateTimeFormat("en-KE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(d));
+  return formatDateTimeNairobi(d);
 }
 
 export default async function InvoicesPage() {
