@@ -5,3 +5,4 @@ export * from "./reverse-payment";
 export * from "./create-sale-return";
 export * from "./void-sale";
 export * from "./create-customer";
+export * from "./create-sales-document";
