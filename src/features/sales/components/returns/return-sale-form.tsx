@@ -1,0 +1,191 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { createSaleReturnAction } from "../../actions/create-sale-return";
+
+type SaleOption = {
+  id: string;
+  invoiceNumber: string;
+  total: string | number;
+  warehouseId: string;
+};
+
+type SaleItem = {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: string | number;
+  productBatchId: string | null;
+};
+
+interface ReturnSaleFormProps {
+  sales: SaleOption[];
+  initialSaleId?: string;
+  initialItems?: SaleItem[];
+}
+
+export function ReturnSaleForm({
+  sales,
+  initialSaleId,
+  initialItems = [],
+}: ReturnSaleFormProps) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [saleId, setSaleId] = useState(initialSaleId ?? sales[0]?.id ?? "");
+  const [reason, setReason] = useState("CUSTOMER_CHANGED_MIND");
+  const [qtys, setQtys] = useState<Record<string, number>>(() => {
+    const m: Record<string, number> = {};
+    for (const i of initialItems) m[i.id] = 0;
+    return m;
+  });
+
+  const sale = sales.find((s) => s.id === saleId);
+
+  const items = useMemo(() => initialItems, [initialItems]);
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!sale) return;
+
+    const selected = items
+      .filter((i) => (qtys[i.id] ?? 0) > 0)
+      .map((i) => ({
+        saleItemId: i.id,
+        productId: i.productId,
+        quantity: qtys[i.id],
+        unitPrice: Number(i.unitPrice),
+        productBatchId: i.productBatchId,
+        warehouseId: sale.warehouseId,
+      }));
+
+    if (selected.length === 0) {
+      toast.error("Select at least one quantity to return.");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await createSaleReturnAction({
+        saleId,
+        reason,
+        items: selected,
+      });
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      router.push("/sales/returns");
+      router.refresh();
+    });
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mx-auto max-w-2xl space-y-6">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+          Sales
+        </p>
+        <h1 className="text-2xl font-semibold">Sale return</h1>
+        <p className="text-sm text-muted-foreground">
+          Restock returned units against the original invoice batches.
+        </p>
+      </div>
+
+      <div className="space-y-4 rounded-xl border p-4">
+        <div className="space-y-2">
+          <Label>Invoice</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            value={saleId}
+            onChange={(e) => {
+              setSaleId(e.target.value);
+              router.push(`/sales/returns?saleId=${e.target.value}`);
+            }}
+          >
+            {sales.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.invoiceNumber} — {Number(s.total).toFixed(2)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Reason</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          >
+            <option value="CUSTOMER_CHANGED_MIND">Customer changed mind</option>
+            <option value="DAMAGED">Damaged</option>
+            <option value="DEFECTIVE">Defective</option>
+            <option value="EXPIRED">Expired</option>
+            <option value="WRONG_ITEM">Wrong item</option>
+            <option value="PRICE_ADJUSTMENT">Price adjustment</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Select an invoice to load line items (open return from invoice
+            detail for full lines).
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {items.map((i) => (
+              <li
+                key={i.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+              >
+                <div>
+                  <p className="font-medium text-sm">{i.productName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sold qty {i.quantity} @ {Number(i.unitPrice).toFixed(2)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">Return</Label>
+                  <Input
+                    className="h-9 w-20"
+                    type="number"
+                    min={0}
+                    max={i.quantity}
+                    value={qtys[i.id] ?? 0}
+                    onChange={(e) =>
+                      setQtys((q) => ({
+                        ...q,
+                        [i.id]: Math.min(
+                          i.quantity,
+                          Math.max(0, Number(e.target.value) || 0),
+                        ),
+                      }))
+                    }
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={pending || items.length === 0}>
+          {pending ? "Saving…" : "Process return"}
+        </Button>
+      </div>
+    </form>
+  );
+}
