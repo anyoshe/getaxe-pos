@@ -1,6 +1,8 @@
 import {
     and,
+    asc,
     eq,
+    gt,
     sql,
 } from "drizzle-orm";
 
@@ -11,6 +13,9 @@ import type {
 import {
     inventoryBalances,
 } from "@/db/schema/inventory/inventory_balances";
+import {
+    productBatches,
+} from "@/db/schema/inventory/product_batches";
 
 import {
     BaseRepository,
@@ -114,25 +119,70 @@ export class InventoryBalanceRepository
         id: string,
         quantity: number
     ) {
-
         const [balance] =
             await this.database
                 .update(inventoryBalances)
                 .set({
                     quantity:
                         sql`${inventoryBalances.quantity} - ${quantity}`,
+                    updatedAt: new Date(),
                 })
                 .where(
-                    eq(
-                        inventoryBalances.id,
-                        id
-                    )
+                    and(
+                        eq(inventoryBalances.id, id),
+                        sql`${inventoryBalances.quantity} >= ${quantity}`,
+                    ),
                 )
                 .returning();
+
+        if (!balance) {
+            throw new Error(
+                "Insufficient warehouse stock for this movement.",
+            );
+        }
 
         return balance;
     }
 
+
+
+    /**
+     * Source of truth for sales: warehouse balances with qty > 0.
+     * Batches joined for FEFO ordering only — missing/inactive batch still sells.
+     */
+    async findForSaleAllocation(
+        businessId: string,
+        productId: string,
+        warehouseId: string,
+    ) {
+        return this.database
+            .select({
+                balanceId: inventoryBalances.id,
+                batchId: inventoryBalances.batchId,
+                quantity: inventoryBalances.quantity,
+                productId: inventoryBalances.productId,
+                warehouseId: inventoryBalances.warehouseId,
+                expiryDate: productBatches.expiryDate,
+                batchActive: productBatches.active,
+            })
+            .from(inventoryBalances)
+            .leftJoin(
+                productBatches,
+                eq(inventoryBalances.batchId, productBatches.id),
+            )
+            .where(
+                and(
+                    eq(inventoryBalances.businessId, businessId),
+                    eq(inventoryBalances.productId, productId),
+                    eq(inventoryBalances.warehouseId, warehouseId),
+                    gt(inventoryBalances.quantity, 0),
+                ),
+            )
+            .orderBy(
+                asc(productBatches.expiryDate),
+                asc(inventoryBalances.createdAt),
+            );
+    }
 
     async getQuantity(
         productId: string,
@@ -168,6 +218,16 @@ export class InventoryBalanceRepository
                 );
 
         return result[0]?.quantity ?? 0;
+    }
+
+
+    async findByIdForUpdate(id: string) {
+        const result = await this.database
+            .select()
+            .from(inventoryBalances)
+            .where(eq(inventoryBalances.id, id))
+            .for("update");
+        return result[0] ?? null;
     }
 
     async findByBatchWarehouseForUpdate(

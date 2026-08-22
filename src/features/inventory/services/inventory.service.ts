@@ -270,28 +270,20 @@ export class InventoryService {
       throw new Error("Stock batch not found.");
     }
 
-    const newQuantity = batch.quantityRemaining + request.quantity;
-
-    if (newQuantity < 0) {
-      throw new Error("Adjustment would create negative stock.");
-    }
-
+    // Warehouse balance is source of truth (same as Stock on Hand / POS)
     const balance = await uow.balances.findByBatchWarehouseForUpdate(
       request.batchId,
       request.warehouseId,
     );
 
-    if (!balance && request.quantity < 0) {
-      throw new Error("No warehouse balance to adjust down.");
-    }
+    const onHand = balance ? Number(balance.quantity) : 0;
+    const nextOnHand = onHand + request.quantity;
 
-    if (balance && balance.quantity + request.quantity < 0) {
-      throw new Error("Adjustment would create negative warehouse stock.");
+    if (nextOnHand < 0) {
+      throw new Error(
+        `Adjustment would create negative warehouse stock (on hand ${onHand}, change ${request.quantity}).`,
+      );
     }
-
-    const updatedBatch = await uow.batches.update(request.batchId, undefined, {
-      quantityRemaining: newQuantity,
-    });
 
     let updatedBalance = balance;
 
@@ -301,7 +293,7 @@ export class InventoryService {
           balance.id,
           request.quantity,
         );
-      } else {
+      } else if (request.quantity < 0) {
         updatedBalance = await uow.balances.decreaseQuantity(
           balance.id,
           Math.abs(request.quantity),
@@ -315,7 +307,14 @@ export class InventoryService {
         warehouseId: request.warehouseId,
         quantity: request.quantity,
       });
+    } else if (request.quantity < 0) {
+      throw new Error("No warehouse balance to adjust down.");
     }
+
+    // Keep batch remaining aligned with warehouse on-hand for this batch line
+    const updatedBatch = await uow.batches.update(request.batchId, undefined, {
+      quantityRemaining: nextOnHand,
+    });
 
     const movement = await uow.movements.create({
       ...request.movement,

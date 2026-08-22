@@ -62,22 +62,29 @@ export class SalesService {
         });
 
         for (const allocation of allocations) {
-          const balance = await uow.balances.findByBatchWarehouseForUpdate(
-            allocation.batchId,
-            allocation.warehouseId,
+          // Balance is source of truth — lock and decrease by balance id
+          const locked = await uow.balances.findByIdForUpdate(
+            allocation.balanceId,
           );
 
-          if (!balance) {
-            throw new Error("Inventory balance not found.");
+          if (!locked || locked.quantity < allocation.quantity) {
+            throw new Error(
+              "Stock changed during sale — refresh and try again.",
+            );
           }
 
-          await uow.balances.decreaseQuantity(balance.id, allocation.quantity);
-
-          await uow.batches.decreaseQuantity(
-            allocation.batchId,
-            sale.businessId,
+          await uow.balances.decreaseQuantity(
+            allocation.balanceId,
             allocation.quantity,
           );
+
+          if (allocation.batchId) {
+            await uow.batches.decreaseQuantity(
+              allocation.batchId,
+              sale.businessId,
+              allocation.quantity,
+            );
+          }
 
           await uow.movements.create({
             businessId: sale.businessId,

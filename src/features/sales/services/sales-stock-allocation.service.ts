@@ -1,72 +1,65 @@
 import { SalesUnitOfWork } from "./unit-of-work";
 
 export interface AllocatedBatch {
-  batchId: string;
-
+  balanceId: string;
+  batchId: string | null;
   warehouseId: string;
-
   quantity: number;
 }
 
 export interface AllocateStockRequest {
   businessId: string;
-
   productId: string;
-
   warehouseId: string;
-
   quantity: number;
-
   saleItemId: string;
 }
 
+/**
+ * Allocate sale qty from inventory_balances (source of truth).
+ * Batch rows are only used for FEFO ordering and sale_item_batches linkage.
+ */
 export class SalesStockAllocationService {
   async allocate(
     uow: SalesUnitOfWork,
     request: AllocateStockRequest,
   ): Promise<AllocatedBatch[]> {
     let remaining = request.quantity;
-
     const allocations: AllocatedBatch[] = [];
 
-    const batches = await uow.batches.findAvailableBatchesByWarehouse(
+    const rows = await uow.balances.findForSaleAllocation(
       request.businessId,
       request.productId,
       request.warehouseId,
     );
 
-    if (batches.length === 0) {
+    if (rows.length === 0) {
       throw new Error(
-        "No stock available in the selected warehouse. Check Stock on Hand for that warehouse, or switch warehouse on POS.",
+        "No stock available in the selected warehouse. Open Stock on Hand, confirm the product and warehouse match the POS warehouse, then try again.",
       );
     }
 
-    for (const batch of batches) {
-      if (remaining <= 0) {
-        break;
-      }
+    for (const row of rows) {
+      if (remaining <= 0) break;
 
-      const available = Number(batch.quantityRemaining);
-
-      if (available <= 0) {
-        continue;
-      }
+      const available = Number(row.quantity);
+      if (available <= 0) continue;
 
       const allocated = Math.min(remaining, available);
 
-      await uow.saleItemBatches.create({
-        saleItemId: request.saleItemId,
-
-        productBatchId: batch.id,
-
-        quantity: allocated,
-      });
+      // sale_item_batches requires a batch id — only link when we have one
+      if (row.batchId) {
+        await uow.saleItemBatches.create({
+          saleItemId: request.saleItemId,
+          productBatchId: row.batchId,
+          quantity: allocated,
+        });
+      }
 
       allocations.push({
-        batchId: batch.id,
-
+        balanceId: row.balanceId,
+        batchId: row.batchId,
         warehouseId: request.warehouseId,
-
         quantity: allocated,
       });
 
