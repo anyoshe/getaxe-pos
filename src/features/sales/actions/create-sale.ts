@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { nowNairobiWallClock } from "@/lib/timezone";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { salesService } from "../services";
 
@@ -112,7 +113,7 @@ export async function createSaleAction(input: unknown) {
         paymentStatus: "COMPLETED",
         notes: data.notes ?? null,
         soldBy: user.id,
-        soldAt: new Date(),
+        soldAt: nowNairobiWallClock(),
       },
       items: lines.map((l) => ({
         businessId: user.businessId,
