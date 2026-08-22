@@ -45,7 +45,7 @@ export const navigation: NavigationItem[] = [
     children: [
       {
         label: "POS",
-        href: "/sales",
+        href: "/sales/pos",
         icon: ShoppingCart,
         permission: "sales.create",
       },

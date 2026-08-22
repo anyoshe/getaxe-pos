@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ScanBarcode, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
 
 import { createSaleAction } from "../../actions/create-sale";
 
@@ -19,14 +22,15 @@ export type PosProduct = {
   trackInventory: boolean;
   serialized: boolean;
   unitPrice: number;
+  retailPrice: number;
+  wholesalePrice: number;
   active: boolean;
 };
 
 type WarehouseOption = { id: string; name: string; branchId: string };
 type BranchOption = { id: string; name: string };
-
-/** Available serials by productId for the current warehouse context */
 type SerialsByProduct = Record<string, string[]>;
+type PriceMode = "retail" | "wholesale";
 
 type CartLine = {
   productId: string;
@@ -34,16 +38,24 @@ type CartLine = {
   quantity: number;
   unitPrice: number;
   serialized: boolean;
-  /** Selected serial numbers (must match quantity when serialized) */
   selectedSerials: string[];
+};
+
+type RecentSale = {
+  id: string;
+  invoiceNumber: string;
+  total: number;
+  soldAt: string;
 };
 
 interface PosClientProps {
   products: PosProduct[];
   warehouses: WarehouseOption[];
   branches: BranchOption[];
-  /** Initial available serials keyed by productId */
   availableSerials: SerialsByProduct;
+  fullScreen?: boolean;
+  cashierName?: string | null;
+  recentSales?: RecentSale[];
 }
 
 export function PosClient({
@@ -51,16 +63,31 @@ export function PosClient({
   warehouses,
   branches,
   availableSerials: initialSerials,
+  fullScreen = false,
+  cashierName,
+  recentSales = [],
 }: PosClientProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const scanRef = useRef<HTMLInputElement>(null);
 
   const sellable = useMemo(
     () => products.filter((p) => p.active !== false),
     [products],
   );
 
+  const productByCode = useMemo(() => {
+    const map = new Map<string, PosProduct>();
+    for (const p of sellable) {
+      if (p.barcode) map.set(p.barcode.trim().toLowerCase(), p);
+      if (p.sku) map.set(p.sku.trim().toLowerCase(), p);
+      map.set(p.id, p);
+    }
+    return map;
+  }, [sellable]);
+
   const [query, setQuery] = useState("");
+  const [priceMode, setPriceMode] = useState<PriceMode>("retail");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [branchId, setBranchId] = useState(
     warehouses[0]?.branchId ?? branches[0]?.id ?? "",
@@ -69,11 +96,34 @@ export function PosClient({
     "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY"
   >("CASH");
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [serialPool, setSerialPool] = useState<SerialsByProduct>(initialSerials);
+  const [serialPool, setSerialPool] =
+    useState<SerialsByProduct>(initialSerials);
+  const [showCamera, setShowCamera] = useState(false);
+
+  useEffect(() => {
+    scanRef.current?.focus();
+  }, []);
+
+  const priceFor = useCallback(
+    (p: PosProduct) =>
+      priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice,
+    [priceMode],
+  );
+
+  // When switching retail/wholesale, update cart unit prices
+  useEffect(() => {
+    setCart((prev) =>
+      prev.map((line) => {
+        const p = sellable.find((x) => x.id === line.productId);
+        if (!p) return line;
+        return { ...line, unitPrice: priceFor(p) };
+      }),
+    );
+  }, [priceMode, priceFor, sellable]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sellable.slice(0, 40);
+    if (!q) return sellable.slice(0, 50);
     return sellable
       .filter(
         (p) =>
@@ -81,43 +131,71 @@ export function PosClient({
           (p.sku && p.sku.toLowerCase().includes(q)) ||
           (p.barcode && p.barcode.toLowerCase().includes(q)),
       )
-      .slice(0, 40);
+      .slice(0, 50);
   }, [query, sellable]);
 
-  /** Serials still free for this product (not already chosen in cart) */
-  function freeSerials(productId: string, lineSelected: string[]): string[] {
+  function freeSerials(productId: string): string[] {
     const pool = serialPool[productId] ?? [];
     const takenElsewhere = new Set(
       cart
         .filter((l) => l.productId !== productId)
         .flatMap((l) => l.selectedSerials),
     );
-    // Own selection is still "available" in the checkbox list
     return pool.filter((s) => !takenElsewhere.has(s));
   }
 
-  function addProduct(p: PosProduct) {
-    setCart((prev) => {
-      const existing = prev.find((l) => l.productId === p.id);
-      if (existing) {
-        return prev.map((l) =>
-          l.productId === p.id
-            ? { ...l, quantity: l.quantity + 1 }
-            : l,
-        );
-      }
-      return [
-        ...prev,
-        {
-          productId: p.id,
-          name: p.name,
-          quantity: 1,
-          unitPrice: p.unitPrice,
-          serialized: p.serialized,
-          selectedSerials: [],
-        },
-      ];
-    });
+  const addProduct = useCallback(
+    (p: PosProduct) => {
+      setCart((prev) => {
+        const existing = prev.find((l) => l.productId === p.id);
+        if (existing) {
+          return prev.map((l) =>
+            l.productId === p.id
+              ? { ...l, quantity: l.quantity + 1, unitPrice: priceFor(p) }
+              : l,
+          );
+        }
+        return [
+          ...prev,
+          {
+            productId: p.id,
+            name: p.name,
+            quantity: 1,
+            unitPrice: priceFor(p),
+            serialized: p.serialized,
+            selectedSerials: [],
+          },
+        ];
+      });
+      toast.success(p.name, { description: "Added to cart" });
+    },
+    [priceFor],
+  );
+
+  function resolveCode(code: string) {
+    const key = code.trim().toLowerCase();
+    if (!key) return;
+    const product =
+      productByCode.get(key) ??
+      sellable.find(
+        (p) =>
+          p.barcode?.toLowerCase() === key ||
+          p.sku?.toLowerCase() === key,
+      );
+    if (!product) {
+      toast.error(`No product for code: ${code}`);
+      return;
+    }
+    addProduct(product);
+    setQuery("");
+    scanRef.current?.focus();
+  }
+
+  function onScanKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      resolveCode(query);
+    }
   }
 
   function toggleSerial(productId: string, serial: string) {
@@ -125,17 +203,17 @@ export function PosClient({
       prev.map((line) => {
         if (line.productId !== productId) return line;
         const has = line.selectedSerials.includes(serial);
-        let selectedSerials: string[];
         if (has) {
-          selectedSerials = line.selectedSerials.filter((s) => s !== serial);
-        } else {
-          if (line.selectedSerials.length >= line.quantity) {
-            toast.message(`Only ${line.quantity} serial(s) needed for this qty.`);
-            return line;
-          }
-          selectedSerials = [...line.selectedSerials, serial];
+          return {
+            ...line,
+            selectedSerials: line.selectedSerials.filter((s) => s !== serial),
+          };
         }
-        return { ...line, selectedSerials };
+        if (line.selectedSerials.length >= line.quantity) {
+          toast.message(`Only ${line.quantity} serial(s) needed.`);
+          return line;
+        }
+        return { ...line, selectedSerials: [...line.selectedSerials, serial] };
       }),
     );
   }
@@ -145,18 +223,17 @@ export function PosClient({
   function checkout() {
     startTransition(async () => {
       if (!warehouseId || !branchId) {
-        toast.error("Select branch and warehouse.");
+        toast.error("Select warehouse.");
         return;
       }
       if (cart.length === 0) {
-        toast.error("Add at least one product.");
+        toast.error("Cart is empty.");
         return;
       }
-
       for (const line of cart) {
         if (line.serialized && line.selectedSerials.length !== line.quantity) {
           toast.error(
-            `${line.name}: select exactly ${line.quantity} serial number(s).`,
+            `${line.name}: select ${line.quantity} serial number(s).`,
           );
           return;
         }
@@ -181,7 +258,6 @@ export function PosClient({
 
       toast.success(result.message);
       setCart([]);
-      // Remove sold serials from pool
       setSerialPool((prev) => {
         const next = { ...prev };
         for (const line of cart) {
@@ -194,184 +270,277 @@ export function PosClient({
         return next;
       });
       router.refresh();
+      scanRef.current?.focus();
     });
   }
 
+  const shell = fullScreen
+    ? "fixed inset-0 z-50 flex flex-col bg-background"
+    : "flex flex-col gap-4";
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      <section className="space-y-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            Sales
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">POS</h1>
-          <p className="text-sm text-muted-foreground">
-            Retail price from the default price list. Serialized items: pick
-            serials from stock.
-          </p>
+    <div className={shell}>
+      {/* Top bar */}
+      <header className="flex flex-wrap items-center gap-3 border-b border-border/60 bg-primary px-4 py-3 text-primary-foreground">
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold tracking-tight">GetAxe POS</span>
+          {cashierName ? (
+            <span className="hidden text-sm opacity-90 sm:inline">
+              · {cashierName}
+            </span>
+          ) : null}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>Warehouse</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={warehouseId}
-              onChange={(e) => {
-                setWarehouseId(e.target.value);
-                const w = warehouses.find((x) => x.id === e.target.value);
-                if (w?.branchId) setBranchId(w.branchId);
-              }}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="flex rounded-lg bg-primary-foreground/15 p-0.5 text-sm">
+            <button
+              type="button"
+              className={`rounded-md px-3 py-1.5 font-medium transition ${
+                priceMode === "retail"
+                  ? "bg-primary-foreground text-primary shadow-sm"
+                  : "opacity-90 hover:opacity-100"
+              }`}
+              onClick={() => setPriceMode("retail")}
             >
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Payment</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={paymentMethod}
-              onChange={(e) =>
-                setPaymentMethod(e.target.value as typeof paymentMethod)
-              }
+              Retail
+            </button>
+            <button
+              type="button"
+              className={`rounded-md px-3 py-1.5 font-medium transition ${
+                priceMode === "wholesale"
+                  ? "bg-primary-foreground text-primary shadow-sm"
+                  : "opacity-90 hover:opacity-100"
+              }`}
+              onClick={() => setPriceMode("wholesale")}
             >
-              <option value="CASH">Cash</option>
-              <option value="MPESA">M-Pesa</option>
-              <option value="CARD">Card</option>
-              <option value="MOBILE_MONEY">Mobile money</option>
-            </select>
+              Wholesale
+            </button>
           </div>
-        </div>
 
-        <Input
-          placeholder="Search name, SKU, or barcode…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+          <select
+            className="h-9 rounded-md border-0 bg-primary-foreground/15 px-2 text-sm text-primary-foreground"
+            value={warehouseId}
+            onChange={(e) => {
+              setWarehouseId(e.target.value);
+              const w = warehouses.find((x) => x.id === e.target.value);
+              if (w?.branchId) setBranchId(w.branchId);
+            }}
+          >
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id} className="text-foreground">
+                {w.name}
+              </option>
+            ))}
+          </select>
 
-        <div className="max-h-[28rem] space-y-1 overflow-y-auto rounded-xl border p-2">
-          {filtered.length === 0 ? (
-            <p className="p-4 text-center text-sm text-muted-foreground">
-              No products match.
-            </p>
+          <select
+            className="h-9 rounded-md border-0 bg-primary-foreground/15 px-2 text-sm text-primary-foreground"
+            value={paymentMethod}
+            onChange={(e) =>
+              setPaymentMethod(e.target.value as typeof paymentMethod)
+            }
+          >
+            <option value="CASH" className="text-foreground">
+              Cash
+            </option>
+            <option value="MPESA" className="text-foreground">
+              M-Pesa
+            </option>
+            <option value="CARD" className="text-foreground">
+              Card
+            </option>
+            <option value="MOBILE_MONEY" className="text-foreground">
+              Mobile money
+            </option>
+          </select>
+
+          {fullScreen ? (
+            <Link
+              href="/inventory/stock"
+              className="rounded-md bg-primary-foreground/15 px-3 py-1.5 text-sm hover:bg-primary-foreground/25"
+            >
+              Exit
+            </Link>
           ) : (
-            filtered.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => addProduct(p)}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-primary/5"
-              >
-                <span>
-                  <span className="font-medium">{p.name}</span>
-                  {p.sku ? (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {p.sku}
-                    </span>
-                  ) : null}
-                  {p.serialized ? (
-                    <span className="ml-2 rounded-full bg-primary/10 px-1.5 text-[10px] text-primary">
-                      serial
-                    </span>
-                  ) : null}
-                </span>
-                <span className="tabular-nums text-muted-foreground">
-                  {p.unitPrice.toFixed(2)}
-                </span>
-              </button>
-            ))
+            <Link
+              href="/sales/pos"
+              className="rounded-md bg-primary-foreground/15 px-3 py-1.5 text-sm hover:bg-primary-foreground/25"
+            >
+              Full screen
+            </Link>
           )}
         </div>
-      </section>
+      </header>
 
-      <section className="space-y-4 rounded-xl border border-border/60 bg-card/40 p-4">
-        <h2 className="font-semibold">Cart</h2>
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
+        {/* Products / scan */}
+        <section className="flex min-h-0 flex-col border-r border-border/50 p-3 sm:p-4">
+          <div className="mb-3 flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                ref={scanRef}
+                autoFocus
+                className="h-12 pr-12 text-base"
+                placeholder="Scan barcode / QR or type SKU, then Enter…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onScanKeyDown}
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Camera scan"
+                onClick={() => setShowCamera((v) => !v)}
+              >
+                <ScanBarcode className="h-5 w-5" />
+              </button>
+            </div>
+            <Button
+              type="button"
+              className="h-12 px-5"
+              onClick={() => resolveCode(query)}
+            >
+              Add
+            </Button>
+          </div>
 
-        {cart.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Tap products on the left to add them.
+          {showCamera && (
+            <div className="mb-3 rounded-xl border border-primary/20 bg-card p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium">Camera scanner</p>
+                <button type="button" onClick={() => setShowCamera(false)}>
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <BarcodeScanner
+                continuous
+                onScan={(code) => {
+                  resolveCode(code);
+                }}
+                onClose={() => setShowCamera(false)}
+              />
+            </div>
+          )}
+
+          <p className="mb-2 text-xs text-muted-foreground">
+            Showing {priceMode} prices · tap product or scan to add
           </p>
-        ) : (
-          <ul className="space-y-3">
-            {cart.map((line) => {
-              const options = freeSerials(line.productId, line.selectedSerials);
-              return (
-                <li
-                  key={line.productId}
-                  className="space-y-2 rounded-lg border border-border/50 p-3"
+
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border bg-card/40 p-2">
+            {filtered.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                No products match.
+              </p>
+            ) : (
+              filtered.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => addProduct(p)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-primary/8"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium text-sm">{line.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        @ {line.unitPrice.toFixed(2)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-xs text-destructive"
-                      onClick={() =>
-                        setCart((c) =>
-                          c.filter((x) => x.productId !== line.productId),
-                        )
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs">Qty</Label>
-                    <Input
-                      className="h-8 w-20"
-                      type="number"
-                      min={1}
-                      value={line.quantity}
-                      onChange={(e) => {
-                        const q = Math.max(1, Number(e.target.value) || 1);
-                        setCart((c) =>
-                          c.map((x) =>
-                            x.productId === line.productId
-                              ? {
-                                  ...x,
-                                  quantity: q,
-                                  selectedSerials: x.selectedSerials.slice(0, q),
-                                }
-                              : x,
-                          ),
-                        );
-                      }}
-                    />
-                    <span className="ml-auto tabular-nums text-sm font-medium">
-                      {(line.quantity * line.unitPrice).toFixed(2)}
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{p.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {[p.sku, p.barcode].filter(Boolean).join(" · ") || "—"}
+                      {p.serialized ? " · serial" : ""}
                     </span>
-                  </div>
-                  {line.serialized && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">
-                        Select serials ({line.selectedSerials.length}/
-                        {line.quantity})
-                      </Label>
-                      {options.length === 0 ? (
-                        <p className="text-xs text-destructive">
-                          No available serials in stock for this product.
+                  </span>
+                  <span className="shrink-0 tabular-nums font-semibold text-primary">
+                    {priceFor(p).toFixed(2)}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </section>
+
+        {/* Cart */}
+        <section className="flex min-h-0 flex-col bg-muted/30 p-3 sm:p-4">
+          <h2 className="mb-2 text-lg font-semibold">Cart</h2>
+
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+            {cart.length === 0 ? (
+              <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+                Scan or search to start a sale
+              </p>
+            ) : (
+              cart.map((line) => {
+                const options = freeSerials(line.productId);
+                return (
+                  <div
+                    key={line.productId}
+                    className="space-y-2 rounded-xl border bg-card p-3 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{line.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          @ {line.unitPrice.toFixed(2)} · {priceMode}
                         </p>
-                      ) : (
-                        <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-primary/20 bg-primary/5 p-2">
-                          {options.map((serial) => {
-                            const checked =
-                              line.selectedSerials.includes(serial);
-                            return (
+                      </div>
+                      <button
+                        type="button"
+                        className="text-xs text-destructive"
+                        onClick={() =>
+                          setCart((c) =>
+                            c.filter((x) => x.productId !== line.productId),
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Qty</Label>
+                      <Input
+                        className="h-9 w-20"
+                        type="number"
+                        min={1}
+                        value={line.quantity}
+                        onChange={(e) => {
+                          const q = Math.max(1, Number(e.target.value) || 1);
+                          setCart((c) =>
+                            c.map((x) =>
+                              x.productId === line.productId
+                                ? {
+                                    ...x,
+                                    quantity: q,
+                                    selectedSerials: x.selectedSerials.slice(
+                                      0,
+                                      q,
+                                    ),
+                                  }
+                                : x,
+                            ),
+                          );
+                        }}
+                      />
+                      <span className="ml-auto text-base font-semibold tabular-nums">
+                        {(line.quantity * line.unitPrice).toFixed(2)}
+                      </span>
+                    </div>
+                    {line.serialized && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Serials ({line.selectedSerials.length}/{line.quantity})
+                        </Label>
+                        {options.length === 0 ? (
+                          <p className="text-xs text-destructive">
+                            No available serials
+                          </p>
+                        ) : (
+                          <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border border-primary/20 bg-primary/5 p-2">
+                            {options.map((serial) => (
                               <label
                                 key={serial}
-                                className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-background/80"
+                                className="flex cursor-pointer items-center gap-2 text-sm"
                               >
                                 <input
                                   type="checkbox"
-                                  checked={checked}
+                                  checked={line.selectedSerials.includes(
+                                    serial,
+                                  )}
                                   onChange={() =>
                                     toggleSerial(line.productId, serial)
                                   }
@@ -380,34 +549,47 @@ export function PosClient({
                                   {serial}
                                 </span>
                               </label>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
 
-        <div className="flex items-center justify-between border-t pt-3">
-          <span className="font-medium">Total</span>
-          <span className="text-xl font-semibold tabular-nums">
-            {total.toFixed(2)}
-          </span>
-        </div>
+          <div className="mt-3 space-y-3 border-t pt-3">
+            <div className="flex items-end justify-between">
+              <span className="text-muted-foreground">Total</span>
+              <span className="text-3xl font-bold tabular-nums text-primary">
+                {total.toFixed(2)}
+              </span>
+            </div>
+            <Button
+              className="h-14 w-full text-base font-semibold"
+              size="lg"
+              disabled={pending || cart.length === 0}
+              onClick={checkout}
+            >
+              {pending ? "Processing…" : "Complete sale"}
+            </Button>
+          </div>
 
-        <Button
-          className="w-full"
-          size="lg"
-          disabled={pending || cart.length === 0}
-          onClick={checkout}
-        >
-          {pending ? "Processing…" : "Complete sale"}
-        </Button>
-      </section>
+          {recentSales.length > 0 && (
+            <div className="mt-3 max-h-28 overflow-y-auto text-xs text-muted-foreground">
+              <p className="mb-1 font-medium text-foreground">Recent</p>
+              {recentSales.map((s) => (
+                <div key={s.id} className="flex justify-between py-0.5">
+                  <span>{s.invoiceNumber}</span>
+                  <span className="tabular-nums">{s.total.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

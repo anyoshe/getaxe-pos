@@ -72,14 +72,21 @@ export class ProductRepository extends BaseRepository {
 
     const productIds = rows.map((r) => r.id);
 
-    // Prefer the business default (retail) price list
-    const defaultList = await this.database.query.priceLists.findFirst({
+    // Price lists: default = retail; match wholesale by code/name
+    const allLists = await this.database.query.priceLists.findMany({
       where: and(
         eq(priceLists.businessId, businessId),
-        eq(priceLists.isDefault, true),
         eq(priceLists.active, true),
       ),
     });
+    const defaultList =
+      allLists.find((l) => l.isDefault) ?? allLists[0] ?? null;
+    const wholesaleList =
+      allLists.find(
+        (l) =>
+          /wholesale|ws|trade/i.test(l.code) ||
+          /wholesale|trade/i.test(l.name),
+      ) ?? null;
 
     const priceRows =
       productIds.length === 0
@@ -125,21 +132,34 @@ export class ProductRepository extends BaseRepository {
         return Number(a.minimumQuantity) - Number(b.minimumQuantity);
       });
 
-      const shelf =
-        sorted.find(
-          (p) =>
-            (!defaultList || p.priceListId === defaultList.id) &&
-            Number(p.minimumQuantity) <= 1,
-        ) ??
-        sorted.find((p) => !defaultList || p.priceListId === defaultList.id) ??
-        sorted[0];
+      const pickFromList = (listId: string | null | undefined) => {
+        if (!listId) return null;
+        return (
+          sorted.find(
+            (p) => p.priceListId === listId && Number(p.minimumQuantity) <= 1,
+          ) ?? sorted.find((p) => p.priceListId === listId) ?? null
+        );
+      };
 
-      const sellingPrice = shelf ? Number(shelf.price) : null;
+      const retailRow =
+        pickFromList(defaultList?.id) ??
+        sorted.find((p) => Number(p.minimumQuantity) <= 1) ??
+        sorted[0] ??
+        null;
+      const wholesaleRow = pickFromList(wholesaleList?.id);
+
+      const retailPrice = retailRow ? Number(retailRow.price) : null;
+      const wholesalePrice = wholesaleRow
+        ? Number(wholesaleRow.price)
+        : retailPrice;
+      const sellingPrice = retailPrice;
 
       return {
         ...toDomainProduct(r),
         prices: sorted,
         sellingPrice,
+        retailPrice,
+        wholesalePrice,
         batches: [],
         stockMovements: [],
         inventoryBalances: [],

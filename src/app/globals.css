@@ -48,32 +48,31 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+
 /*
   GetAxe brand palette
-  Primary: deep teal (trust + retail energy)
-  Accent: warm amber (highlights / success moments)
-  Charts: multi-hue for dashboards
+  Primary: blue (trust + retail)
+  Accent: warm amber (highlights)
 */
 :root {
-  --background: oklch(0.99 0.01 175);
-  --foreground: oklch(0.22 0.03 250);
+  --background: oklch(0.99 0.01 250);
+  --foreground: oklch(0.22 0.04 250);
 
-  --card: oklch(1 0.005 175);
-  --card-foreground: oklch(0.22 0.03 250);
+  --card: oklch(1 0.005 250);
+  --card-foreground: oklch(0.22 0.04 250);
 
-  --popover: oklch(1 0.005 175);
-  --popover-foreground: oklch(0.22 0.03 250);
+  --popover: oklch(1 0.005 250);
+  --popover-foreground: oklch(0.22 0.04 250);
 
-  /* Brand teal */
-  --primary: oklch(0.48 0.12 175);
-  --primary-foreground: oklch(0.99 0.01 175);
+  /* Brand blue */
+  --primary: oklch(0.48 0.16 250);
+  --primary-foreground: oklch(0.99 0.01 250);
 
-  /* Soft teal wash */
-  --secondary: oklch(0.94 0.03 175);
-  --secondary-foreground: oklch(0.32 0.08 175);
+  --secondary: oklch(0.94 0.03 250);
+  --secondary-foreground: oklch(0.32 0.10 250);
 
-  --muted: oklch(0.96 0.015 175);
-  --muted-foreground: oklch(0.48 0.03 250);
+  --muted: oklch(0.96 0.015 250);
+  --muted-foreground: oklch(0.48 0.04 250);
 
   /* Amber accent */
   --accent: oklch(0.92 0.06 85);
@@ -81,46 +80,46 @@
 
   --destructive: oklch(0.55 0.22 25);
 
-  --border: oklch(0.90 0.02 175);
-  --input: oklch(0.92 0.02 175);
-  --ring: oklch(0.55 0.12 175);
+  --border: oklch(0.90 0.02 250);
+  --input: oklch(0.92 0.02 250);
+  --ring: oklch(0.55 0.14 250);
 
-  --chart-1: oklch(0.55 0.14 175);
+  --chart-1: oklch(0.55 0.16 250);
   --chart-2: oklch(0.70 0.14 85);
-  --chart-3: oklch(0.55 0.16 250);
+  --chart-3: oklch(0.55 0.14 200);
   --chart-4: oklch(0.62 0.15 145);
   --chart-5: oklch(0.60 0.18 25);
 
   --radius: 0.625rem;
 
-  --sidebar: oklch(0.28 0.06 175);
-  --sidebar-foreground: oklch(0.96 0.01 175);
-  --sidebar-primary: oklch(0.78 0.12 175);
-  --sidebar-primary-foreground: oklch(0.20 0.04 175);
-  --sidebar-accent: oklch(0.34 0.06 175);
-  --sidebar-accent-foreground: oklch(0.96 0.01 175);
-  --sidebar-border: oklch(0.36 0.05 175);
-  --sidebar-ring: oklch(0.70 0.10 175);
+  --sidebar: oklch(0.28 0.08 250);
+  --sidebar-foreground: oklch(0.96 0.01 250);
+  --sidebar-primary: oklch(0.78 0.12 250);
+  --sidebar-primary-foreground: oklch(0.20 0.05 250);
+  --sidebar-accent: oklch(0.34 0.07 250);
+  --sidebar-accent-foreground: oklch(0.96 0.01 250);
+  --sidebar-border: oklch(0.36 0.06 250);
+  --sidebar-ring: oklch(0.70 0.12 250);
 }
 
 .dark {
-  --background: oklch(0.18 0.025 250);
-  --foreground: oklch(0.96 0.01 175);
+  --background: oklch(0.18 0.03 250);
+  --foreground: oklch(0.96 0.01 250);
 
-  --card: oklch(0.22 0.03 250);
-  --card-foreground: oklch(0.96 0.01 175);
+  --card: oklch(0.22 0.04 250);
+  --card-foreground: oklch(0.96 0.01 250);
 
-  --popover: oklch(0.22 0.03 250);
-  --popover-foreground: oklch(0.96 0.01 175);
+  --popover: oklch(0.22 0.04 250);
+  --popover-foreground: oklch(0.96 0.01 250);
 
-  --primary: oklch(0.72 0.12 175);
-  --primary-foreground: oklch(0.18 0.04 175);
+  --primary: oklch(0.72 0.14 250);
+  --primary-foreground: oklch(0.18 0.05 250);
 
-  --secondary: oklch(0.28 0.04 175);
-  --secondary-foreground: oklch(0.92 0.02 175);
+  --secondary: oklch(0.28 0.05 250);
+  --secondary-foreground: oklch(0.92 0.02 250);
 
   --muted: oklch(0.28 0.03 250);
-  --muted-foreground: oklch(0.72 0.02 175);
+  --muted-foreground: oklch(0.72 0.03 250);
 
   --accent: oklch(0.35 0.06 85);
   --accent-foreground: oklch(0.92 0.04 85);
@@ -129,22 +128,22 @@
 
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.65 0.1 175);
+  --ring: oklch(0.65 0.12 250);
 
-  --chart-1: oklch(0.70 0.12 175);
+  --chart-1: oklch(0.70 0.14 250);
   --chart-2: oklch(0.75 0.12 85);
-  --chart-3: oklch(0.65 0.14 250);
+  --chart-3: oklch(0.65 0.12 200);
   --chart-4: oklch(0.68 0.12 145);
   --chart-5: oklch(0.65 0.16 25);
 
-  --sidebar: oklch(0.16 0.03 175);
-  --sidebar-foreground: oklch(0.94 0.01 175);
-  --sidebar-primary: oklch(0.72 0.12 175);
-  --sidebar-primary-foreground: oklch(0.16 0.03 175);
-  --sidebar-accent: oklch(0.24 0.04 175);
-  --sidebar-accent-foreground: oklch(0.94 0.01 175);
+  --sidebar: oklch(0.16 0.04 250);
+  --sidebar-foreground: oklch(0.94 0.01 250);
+  --sidebar-primary: oklch(0.72 0.14 250);
+  --sidebar-primary-foreground: oklch(0.16 0.04 250);
+  --sidebar-accent: oklch(0.24 0.05 250);
+  --sidebar-accent-foreground: oklch(0.94 0.01 250);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.1 175);
+  --sidebar-ring: oklch(0.65 0.12 250);
 }
 
 input:-webkit-autofill,
@@ -159,40 +158,16 @@ select:-webkit-autofill {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-    box-sizing: border-box;
-  }
-
-  html,
-  body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  html {
-    @apply font-sans;
-  }
-}
-
 @keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
   }
   33% {
-    transform: translate(40px, -60px) scale(1.1);
+    transform: translate(18px, -24px) scale(1.06);
   }
   66% {
-    transform: translate(-30px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
+    transform: translate(-14px, 12px) scale(0.96);
   }
 }
 
@@ -208,20 +183,19 @@ select:-webkit-autofill {
   animation-delay: 4s;
 }
 
-/* Brand helpers used by product wizard / marketing surfaces */
 .brand-gradient {
   background: linear-gradient(
     135deg,
-    oklch(0.48 0.12 175) 0%,
-    oklch(0.52 0.11 200) 45%,
-    oklch(0.62 0.12 145) 100%
+    oklch(0.48 0.16 250) 0%,
+    oklch(0.52 0.14 230) 45%,
+    oklch(0.55 0.12 210) 100%
   );
 }
 
 .brand-gradient-soft {
   background: linear-gradient(
     180deg,
-    oklch(0.96 0.03 175) 0%,
-    oklch(0.99 0.01 175) 100%
+    oklch(0.96 0.03 250) 0%,
+    oklch(0.99 0.01 250) 100%
   );
 }
