@@ -7,6 +7,7 @@ export interface DashboardSummary {
   customers: number;
   todaySales: number;
   lowStock: number;
+  todaySalesCount?: number;
 }
 
 export interface OwnerDashboard {

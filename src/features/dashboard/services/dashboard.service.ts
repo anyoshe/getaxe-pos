@@ -1,4 +1,11 @@
+import { and, eq, gte, lt, sql } from "drizzle-orm";
+
 import type { OwnerDashboard } from "../types";
+
+import { db } from "@/db";
+import { sales } from "@/db/schema/sales/sales";
+import { products } from "@/db/schema/inventory/products";
+import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
 
 import { userRepository } from "@/repositories/users/user.repository";
 import { branchesRepository } from "@/repositories/settings/branches.repository";
@@ -7,40 +14,89 @@ import { productRepository } from "@/repositories/inventory/products.repository"
 import { supplierRepository } from "@/repositories/inventory/suppliers.repository";
 import { customerRepository } from "@/repositories/sales/customer.repository";
 
+function startOfTodayLocal() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function startOfTomorrowLocal() {
+  const d = startOfTodayLocal();
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
 class DashboardService {
   async getOwnerDashboard(businessId: string): Promise<OwnerDashboard> {
-    const [branches, warehouses, users, products, suppliers, customers] =
-      await Promise.all([
-        branchesRepository.count(businessId),
+    const today = startOfTodayLocal();
+    const tomorrow = startOfTomorrowLocal();
 
-        warehousesRepository.count(businessId),
+    const [
+      branches,
+      warehouses,
+      users,
+      productCount,
+      suppliers,
+      customers,
+      todaySalesRow,
+      lowStockRow,
+    ] = await Promise.all([
+      branchesRepository.count(businessId),
+      warehousesRepository.count(businessId),
+      userRepository.count(businessId),
+      productRepository.count(businessId),
+      supplierRepository.count(businessId),
+      customerRepository.count(businessId),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${sales.total}), 0)`,
+          count: sql<number>`count(*)`,
+        })
+        .from(sales)
+        .where(
+          and(
+            eq(sales.businessId, businessId),
+            eq(sales.status, "COMPLETED"),
+            gte(sales.soldAt, today),
+            lt(sales.soldAt, tomorrow),
+          ),
+        ),
+      // Products with trackInventory where sum of balances <= reorder_level
+      db
+        .select({
+          count: sql<number>`count(*)::int`,
+        })
+        .from(products)
+        .where(
+          and(
+            eq(products.businessId, businessId),
+            eq(products.active, true),
+            eq(products.trackInventory, true),
+            sql`(
+              select coalesce(sum(${inventoryBalances.quantity}), 0)
+              from ${inventoryBalances}
+              where ${inventoryBalances.productId} = ${products.id}
+                and ${inventoryBalances.businessId} = ${businessId}
+            ) <= coalesce(${products.reorderLevel}, 0)`,
+          ),
+        ),
+    ]);
 
-        userRepository.count(businessId),
-
-        productRepository.count(businessId),
-
-        supplierRepository.count(businessId),
-
-        customerRepository.count(businessId),
-      ]);
+    const todaySales = Number(todaySalesRow[0]?.total ?? 0);
+    const todayCount = Number(todaySalesRow[0]?.count ?? 0);
+    const lowStock = Number(lowStockRow[0]?.count ?? 0);
 
     return {
       summary: {
         branches,
-
         warehouses,
-
         users,
-
-        products,
-
+        products: productCount,
         suppliers,
-
         customers,
-
-        todaySales: 0,
-
-        lowStock: 0,
+        todaySales,
+        lowStock,
+        todaySalesCount: todayCount,
       },
     };
   }
