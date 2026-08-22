@@ -3,19 +3,41 @@ import { productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { salesQueryService } from "@/features/sales/services/sales-query.service";
 import { SalesDocumentForm } from "@/features/sales/components/documents/sales-document-form";
+import { db } from "@/db";
+import { productSerials } from "@/db/schema/inventory/product_serials";
+import { and, eq } from "drizzle-orm";
 
 export default async function SalesOrdersPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [products, warehouses, drafts] = await Promise.all([
+  const [products, warehouses, drafts, serialRows] = await Promise.all([
     productService.getProducts(user.businessId),
     warehousesService.getWarehouses(user.businessId),
     salesQueryService.listSales(user.businessId, {
       status: "DRAFT",
       limit: 100,
     }),
+    db
+      .select({
+        productId: productSerials.productId,
+        serialNumber: productSerials.serialNumber,
+      })
+      .from(productSerials)
+      .where(
+        and(
+          eq(productSerials.businessId, user.businessId),
+          eq(productSerials.status, "AVAILABLE"),
+        ),
+      ),
   ]);
+
+  const availableSerials: Record<string, string[]> = {};
+  for (const row of serialRows) {
+    const list = availableSerials[row.productId] ?? [];
+    list.push(row.serialNumber);
+    availableSerials[row.productId] = list;
+  }
 
   return (
     <div className="p-4 sm:p-6">
@@ -37,8 +59,10 @@ export default async function SalesOrdersPage() {
             sku: p.sku ?? null,
             retailPrice: retail,
             wholesalePrice: wholesale,
+            serialized: Boolean(p.serialized),
           };
         })}
+        availableSerials={availableSerials}
         warehouses={warehouses.map((w) => ({
           id: w.id,
           name: w.name,

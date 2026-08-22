@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
 import { productSerials } from "@/db/schema/inventory/product_serials";
@@ -9,7 +9,6 @@ type ProductSerialInsert = InferInsertModel<typeof productSerials>;
 export class ProductSerialRepository extends BaseRepository {
   async createMany(rows: ProductSerialInsert[]) {
     if (rows.length === 0) return [];
-
     return this.database.insert(productSerials).values(rows).returning();
   }
 
@@ -24,11 +23,8 @@ export class ProductSerialRepository extends BaseRepository {
 
   async findExistingSerials(businessId: string, serialNumbers: string[]) {
     if (serialNumbers.length === 0) return [];
-
     return this.database
-      .select({
-        serialNumber: productSerials.serialNumber,
-      })
+      .select({ serialNumber: productSerials.serialNumber })
       .from(productSerials)
       .where(
         and(
@@ -48,16 +44,67 @@ export class ProductSerialRepository extends BaseRepository {
       eq(productSerials.productId, productId),
       eq(productSerials.status, "AVAILABLE"),
     ];
-
     if (warehouseId) {
       conditions.push(eq(productSerials.warehouseId, warehouseId));
     }
-
     return this.database.query.productSerials.findMany({
       where: and(...conditions),
     });
   }
 
+  /** Reserve serials on quotation / sales order (still not sold). */
+  async markReserved(
+    businessId: string,
+    serialNumbers: string[],
+    reference?: string | null,
+  ) {
+    if (serialNumbers.length === 0) return [];
+    const rows = await this.database
+      .update(productSerials)
+      .set({
+        status: "RESERVED",
+        updatedAt: new Date(),
+        notes: reference ?? null,
+      })
+      .where(
+        and(
+          eq(productSerials.businessId, businessId),
+          inArray(productSerials.serialNumber, serialNumbers),
+          eq(productSerials.status, "AVAILABLE"),
+        ),
+      )
+      .returning();
+
+    if (rows.length !== serialNumbers.length) {
+      const found = new Set(rows.map((r) => r.serialNumber));
+      const missing = serialNumbers.filter((s) => !found.has(s));
+      throw new Error(`Serial not available to reserve: ${missing.join(", ")}`);
+    }
+    return rows;
+  }
+
+  /** Release reserved serials back to AVAILABLE (cancel draft). */
+  async releaseReserved(
+    businessId: string,
+    serialNumbers: string[],
+  ) {
+    if (serialNumbers.length === 0) return [];
+    return this.database
+      .update(productSerials)
+      .set({ status: "AVAILABLE", updatedAt: new Date(), notes: null })
+      .where(
+        and(
+          eq(productSerials.businessId, businessId),
+          inArray(productSerials.serialNumber, serialNumbers),
+          eq(productSerials.status, "RESERVED"),
+        ),
+      )
+      .returning();
+  }
+
+  /**
+   * Mark sold — accepts AVAILABLE (POS) or RESERVED (from quote/order convert).
+   */
   async markSold(
     businessId: string,
     serialNumbers: string[],
@@ -76,7 +123,10 @@ export class ProductSerialRepository extends BaseRepository {
         and(
           eq(productSerials.businessId, businessId),
           inArray(productSerials.serialNumber, serialNumbers),
-          eq(productSerials.status, "AVAILABLE"),
+          or(
+            eq(productSerials.status, "AVAILABLE"),
+            eq(productSerials.status, "RESERVED"),
+          ),
         ),
       )
       .returning();

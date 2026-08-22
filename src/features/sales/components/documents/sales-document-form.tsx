@@ -19,6 +19,7 @@ type ProductOption = {
   sku: string | null;
   retailPrice: number;
   wholesalePrice: number;
+  serialized: boolean;
 };
 
 type WarehouseOption = { id: string; name: string; branchId: string };
@@ -36,6 +37,8 @@ type Line = {
   name: string;
   quantity: number;
   unitPrice: number;
+  serialized: boolean;
+  selectedSerials: string[];
 };
 
 interface SalesDocumentFormProps {
@@ -43,6 +46,7 @@ interface SalesDocumentFormProps {
   products: ProductOption[];
   warehouses: WarehouseOption[];
   drafts: DraftRow[];
+  availableSerials: Record<string, string[]>;
 }
 
 export function SalesDocumentForm({
@@ -50,6 +54,7 @@ export function SalesDocumentForm({
   products,
   warehouses,
   drafts,
+  availableSerials: initialSerials,
 }: SalesDocumentFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -62,11 +67,23 @@ export function SalesDocumentForm({
   const [qty, setQty] = useState("1");
   const [lines, setLines] = useState<Line[]>([]);
   const [priceMode, setPriceMode] = useState<"retail" | "wholesale">("retail");
+  const [serialPool, setSerialPool] =
+    useState<Record<string, string[]>>(initialSerials);
 
   const total = useMemo(
     () => lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0),
     [lines],
   );
+
+  function freeSerials(productId: string): string[] {
+    const pool = serialPool[productId] ?? [];
+    const taken = new Set(
+      lines
+        .filter((l) => l.productId !== productId)
+        .flatMap((l) => l.selectedSerials),
+    );
+    return pool.filter((s) => !taken.has(s));
+  }
 
   function addLine() {
     const p = products.find((x) => x.id === productId);
@@ -82,23 +99,66 @@ export function SalesDocumentForm({
       if (existing) {
         return prev.map((l) =>
           l.productId === p.id
-            ? { ...l, quantity: l.quantity + q, unitPrice }
+            ? {
+                ...l,
+                quantity: l.quantity + q,
+                unitPrice,
+                selectedSerials: l.selectedSerials.slice(0, l.quantity + q),
+              }
             : l,
         );
       }
       return [
         ...prev,
-        { productId: p.id, name: p.name, quantity: q, unitPrice },
+        {
+          productId: p.id,
+          name: p.name,
+          quantity: q,
+          unitPrice,
+          serialized: p.serialized,
+          selectedSerials: [],
+        },
       ];
     });
     setProductId("");
     setQty("1");
   }
 
+  function toggleSerial(productId: string, serial: string) {
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.productId !== productId) return line;
+        const has = line.selectedSerials.includes(serial);
+        if (has) {
+          return {
+            ...line,
+            selectedSerials: line.selectedSerials.filter((s) => s !== serial),
+          };
+        }
+        if (line.selectedSerials.length >= line.quantity) {
+          toast.message(`Only ${line.quantity} serial(s) needed.`);
+          return line;
+        }
+        return {
+          ...line,
+          selectedSerials: [...line.selectedSerials, serial],
+        };
+      }),
+    );
+  }
+
   function save() {
     if (lines.length === 0) {
       toast.error("Add at least one line.");
       return;
+    }
+    for (const line of lines) {
+      if (line.serialized && line.selectedSerials.length !== line.quantity) {
+        toast.error(
+          `${line.name}: select exactly ${line.quantity} serial number(s).`,
+        );
+        return;
+      }
     }
     if (!warehouseId || !branchId) {
       toast.error("Select a warehouse.");
@@ -115,6 +175,7 @@ export function SalesDocumentForm({
           productId: l.productId,
           quantity: l.quantity,
           unitPrice: l.unitPrice,
+          serialNumbers: l.serialized ? l.selectedSerials : [],
         })),
       });
 
@@ -124,6 +185,18 @@ export function SalesDocumentForm({
       }
 
       toast.success(result.message);
+      // Remove reserved serials from local pool
+      setSerialPool((prev) => {
+        const next = { ...prev };
+        for (const line of lines) {
+          if (!line.serialized) continue;
+          const used = new Set(line.selectedSerials);
+          next[line.productId] = (next[line.productId] ?? []).filter(
+            (s) => !used.has(s),
+          );
+        }
+        return next;
+      });
       setLines([]);
       setNotes("");
       router.refresh();
@@ -163,8 +236,8 @@ export function SalesDocumentForm({
         <h1 className="text-2xl font-semibold">New {title.toLowerCase()}</h1>
         <p className="text-sm text-muted-foreground">
           {documentType === "quotation"
-            ? "Save a price offer without affecting stock. Convert to a sale when the customer accepts."
-            : "Record a sales order without deducting stock yet. Convert to a sale when fulfilling."}
+            ? "Save a price offer without selling stock. Serialized items need serials now so convert-to-sale is one click."
+            : "Record an order without deducting stock yet. Pick serials for serialized products so fulfillment is direct."}
         </p>
       </div>
 
@@ -215,6 +288,7 @@ export function SalesDocumentForm({
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                  {p.serialized ? " [serial]" : ""}
                   {p.sku ? ` (${p.sku})` : ""} —{" "}
                   {(priceMode === "wholesale"
                     ? p.wholesalePrice
@@ -240,38 +314,73 @@ export function SalesDocumentForm({
           </div>
         </div>
 
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {lines.length === 0 ? (
             <li className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
               No lines yet
             </li>
           ) : (
-            lines.map((l) => (
-              <li
-                key={l.productId}
-                className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
-              >
-                <span>
-                  {l.name} × {l.quantity} @ {l.unitPrice.toFixed(2)}
-                </span>
-                <span className="flex items-center gap-3">
-                  <span className="font-medium tabular-nums">
-                    {(l.quantity * l.unitPrice).toFixed(2)}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-xs text-destructive"
-                    onClick={() =>
-                      setLines((prev) =>
-                        prev.filter((x) => x.productId !== l.productId),
-                      )
-                    }
-                  >
-                    Remove
-                  </button>
-                </span>
-              </li>
-            ))
+            lines.map((l) => {
+              const options = freeSerials(l.productId);
+              return (
+                <li
+                  key={l.productId}
+                  className="space-y-2 rounded-lg border px-3 py-2 text-sm"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      {l.name} × {l.quantity} @ {l.unitPrice.toFixed(2)}
+                      {l.serialized ? (
+                        <span className="ml-2 text-xs text-primary">
+                          serials {l.selectedSerials.length}/{l.quantity}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <span className="font-medium tabular-nums">
+                        {(l.quantity * l.unitPrice).toFixed(2)}
+                      </span>
+                      <button
+                        type="button"
+                        className="text-xs text-destructive"
+                        onClick={() =>
+                          setLines((prev) =>
+                            prev.filter((x) => x.productId !== l.productId),
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
+                    </span>
+                  </div>
+                  {l.serialized && (
+                    <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border border-primary/20 bg-primary/5 p-2">
+                      {options.length === 0 ? (
+                        <p className="text-xs text-destructive">
+                          No available serials in stock for this product.
+                        </p>
+                      ) : (
+                        options.map((serial) => (
+                          <label
+                            key={serial}
+                            className="flex cursor-pointer items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={l.selectedSerials.includes(serial)}
+                              onChange={() =>
+                                toggleSerial(l.productId, serial)
+                              }
+                            />
+                            <span className="font-mono text-xs">{serial}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })
           )}
         </ul>
 
