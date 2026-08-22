@@ -24,6 +24,8 @@ type SaleItem = {
   quantity: number;
   unitPrice: string | number;
   productBatchId: string | null;
+  serialized: boolean;
+  soldSerials: string[];
 };
 
 interface ReturnSaleFormProps {
@@ -46,10 +48,24 @@ export function ReturnSaleForm({
     for (const i of initialItems) m[i.id] = 0;
     return m;
   });
+  const [serials, setSerials] = useState<Record<string, string[]>>({});
 
   const sale = sales.find((s) => s.id === saleId);
-
   const items = useMemo(() => initialItems, [initialItems]);
+
+  function toggleSerial(itemId: string, serial: string, maxQty: number) {
+    setSerials((prev) => {
+      const cur = prev[itemId] ?? [];
+      if (cur.includes(serial)) {
+        return { ...prev, [itemId]: cur.filter((s) => s !== serial) };
+      }
+      if (cur.length >= maxQty) {
+        toast.message(`Only ${maxQty} serial(s) for this return qty.`);
+        return prev;
+      }
+      return { ...prev, [itemId]: [...cur, serial] };
+    });
+  }
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,11 +80,22 @@ export function ReturnSaleForm({
         unitPrice: Number(i.unitPrice),
         productBatchId: i.productBatchId,
         warehouseId: sale.warehouseId,
+        serialNumbers: i.serialized ? (serials[i.id] ?? []) : [],
       }));
 
     if (selected.length === 0) {
       toast.error("Select at least one quantity to return.");
       return;
+    }
+
+    for (const line of selected) {
+      const item = items.find((i) => i.id === line.saleItemId);
+      if (item?.serialized && line.serialNumbers.length !== line.quantity) {
+        toast.error(
+          `${item.productName}: select ${line.quantity} serial(s) to return.`,
+        );
+        return;
+      }
     }
 
     startTransition(async () => {
@@ -95,7 +122,7 @@ export function ReturnSaleForm({
         </p>
         <h1 className="text-2xl font-semibold">Sale return</h1>
         <p className="text-sm text-muted-foreground">
-          Restock returned units against the original invoice batches.
+          Restocks warehouse balances and returns serials to available stock.
         </p>
       </div>
 
@@ -137,43 +164,78 @@ export function ReturnSaleForm({
 
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Select an invoice to load line items (open return from invoice
-            detail for full lines).
+            Select an invoice to load line items.
           </p>
         ) : (
           <ul className="space-y-3">
-            {items.map((i) => (
-              <li
-                key={i.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
-              >
-                <div>
-                  <p className="font-medium text-sm">{i.productName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Sold qty {i.quantity} @ {Number(i.unitPrice).toFixed(2)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">Return</Label>
-                  <Input
-                    className="h-9 w-20"
-                    type="number"
-                    min={0}
-                    max={i.quantity}
-                    value={qtys[i.id] ?? 0}
-                    onChange={(e) =>
-                      setQtys((q) => ({
-                        ...q,
-                        [i.id]: Math.min(
-                          i.quantity,
-                          Math.max(0, Number(e.target.value) || 0),
-                        ),
-                      }))
-                    }
-                  />
-                </div>
-              </li>
-            ))}
+            {items.map((i) => {
+              const q = qtys[i.id] ?? 0;
+              return (
+                <li
+                  key={i.id}
+                  className="space-y-2 rounded-lg border p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-sm">{i.productName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Sold qty {i.quantity} @ {Number(i.unitPrice).toFixed(2)}
+                        {i.serialized ? " · serialized" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Return</Label>
+                      <Input
+                        className="h-9 w-20"
+                        type="number"
+                        min={0}
+                        max={i.quantity}
+                        value={q}
+                        onChange={(e) => {
+                          const n = Math.min(
+                            i.quantity,
+                            Math.max(0, Number(e.target.value) || 0),
+                          );
+                          setQtys((prev) => ({ ...prev, [i.id]: n }));
+                          setSerials((prev) => ({
+                            ...prev,
+                            [i.id]: (prev[i.id] ?? []).slice(0, n),
+                          }));
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {i.serialized && q > 0 && (
+                    <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border border-primary/20 bg-primary/5 p-2">
+                      <p className="text-xs text-muted-foreground">
+                        Select serials to return ({(serials[i.id] ?? []).length}/
+                        {q})
+                      </p>
+                      {i.soldSerials.length === 0 ? (
+                        <p className="text-xs text-destructive">
+                          No sold serials linked to this invoice. Enter them
+                          under Customers/stock if needed.
+                        </p>
+                      ) : (
+                        i.soldSerials.map((s) => (
+                          <label
+                            key={s}
+                            className="flex cursor-pointer items-center gap-2 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(serials[i.id] ?? []).includes(s)}
+                              onChange={() => toggleSerial(i.id, s, q)}
+                            />
+                            <span className="font-mono text-xs">{s}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

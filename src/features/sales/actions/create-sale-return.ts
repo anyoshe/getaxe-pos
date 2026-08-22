@@ -29,6 +29,7 @@ const schema = z.object({
         unitPrice: z.coerce.number().min(0),
         productBatchId: z.uuid().nullable().optional(),
         warehouseId: z.uuid(),
+        serialNumbers: z.array(z.string()).optional().default([]),
       }),
     )
     .min(1),
@@ -107,6 +108,7 @@ export async function createSaleReturnAction(input: unknown) {
         quantity: l.quantity,
         unitPrice: l.unitPrice.toFixed(2),
         total: l.total.toFixed(2),
+        serialNumbers: l.serialNumbers ?? [],
       })),
     });
 

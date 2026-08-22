@@ -105,6 +105,48 @@ export class ProductSerialRepository extends BaseRepository {
   /**
    * Mark sold — accepts AVAILABLE (POS) or RESERVED (from quote/order convert).
    */
+  /** Return sold serials to AVAILABLE (sale return). */
+  async markAvailable(
+    businessId: string,
+    serialNumbers: string[],
+  ) {
+    if (serialNumbers.length === 0) return [];
+    const rows = await this.database
+      .update(productSerials)
+      .set({
+        status: "AVAILABLE",
+        updatedAt: new Date(),
+        notes: null,
+      })
+      .where(
+        and(
+          eq(productSerials.businessId, businessId),
+          inArray(productSerials.serialNumber, serialNumbers),
+          eq(productSerials.status, "SOLD"),
+        ),
+      )
+      .returning();
+
+    if (rows.length !== serialNumbers.length) {
+      const found = new Set(rows.map((r) => r.serialNumber));
+      const missing = serialNumbers.filter((s) => !found.has(s));
+      throw new Error(
+        `Could not restore serial(s) (not SOLD or missing): ${missing.join(", ")}`,
+      );
+    }
+    return rows;
+  }
+
+  async findSoldBySaleReference(businessId: string, saleReference: string) {
+    return this.database.query.productSerials.findMany({
+      where: and(
+        eq(productSerials.businessId, businessId),
+        eq(productSerials.status, "SOLD"),
+        eq(productSerials.notes, saleReference),
+      ),
+    });
+  }
+
   async markSold(
     businessId: string,
     serialNumbers: string[],

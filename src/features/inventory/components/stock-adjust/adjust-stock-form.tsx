@@ -15,7 +15,9 @@ type BatchOption = {
   batchNumber: string;
   productId: string;
   productName: string;
+  /** Warehouse on-hand (source of truth), not batch.quantityRemaining alone */
   quantityRemaining: number;
+  warehouseId?: string;
 };
 
 type WarehouseOption = { id: string; name: string };
@@ -28,20 +30,25 @@ interface AdjustStockFormProps {
 export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [batchId, setBatchId] = useState("");
-  const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
-  const [quantity, setQuantity] = useState("1");
+  const [selectionKey, setSelectionKey] = useState("");
+  const [quantity, setQuantity] = useState("-1");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
 
-  const batch = batches.find((b) => b.id === batchId);
+  const selected = batches.find(
+    (b) => `${b.id}:${b.warehouseId ?? ""}` === selectionKey,
+  );
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!selected) {
+      toast.error("Select a batch / warehouse line.");
+      return;
+    }
     startTransition(async () => {
       const result = await adjustStockAction({
-        batchId,
-        warehouseId,
+        batchId: selected.id,
+        warehouseId: selected.warehouseId || warehouses[0]?.id,
         quantity: Number(quantity),
         reference: reference || null,
         notes: notes || null,
@@ -53,7 +60,7 @@ export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
       }
 
       toast.success(result.message);
-      router.push("/inventory/stock-movements");
+      router.push("/inventory/stock");
       router.refresh();
     });
   }
@@ -67,8 +74,8 @@ export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
           </p>
           <h1 className="text-xl font-semibold">Adjust stock</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Increase or decrease quantity for an existing batch (damage, count
-            correction, etc.). Use positive for increase, negative for decrease.
+            Quantities shown are <strong>warehouse on-hand</strong> (same as
+            Stock on Hand). Use positive to increase, negative to decrease.
           </p>
         </div>
       </div>
@@ -76,44 +83,33 @@ export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
       <div className="space-y-4 rounded-xl border p-5">
         <div className="space-y-2">
           <Label>
-            Batch <span className="text-destructive">*</span>
+            Stock line <span className="text-destructive">*</span>
           </Label>
           <select
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            value={batchId}
-            onChange={(e) => setBatchId(e.target.value)}
+            value={selectionKey}
+            onChange={(e) => setSelectionKey(e.target.value)}
             required
           >
-            <option value="">Select batch…</option>
-            {batches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.batchNumber} — {b.productName} (rem {b.quantityRemaining})
-              </option>
-            ))}
+            <option value="">Select…</option>
+            {batches.map((b) => {
+              const key = `${b.id}:${b.warehouseId ?? ""}`;
+              const wh =
+                warehouses.find((w) => w.id === b.warehouseId)?.name ??
+                "Warehouse";
+              return (
+                <option key={key} value={key}>
+                  {b.batchNumber} — {b.productName} @ {wh} (on hand{" "}
+                  {b.quantityRemaining})
+                </option>
+              );
+            })}
           </select>
-          {batch && (
+          {selected && (
             <p className="text-xs text-muted-foreground">
-              Remaining on batch: {batch.quantityRemaining}
+              On hand: {selected.quantityRemaining} (warehouse balance)
             </p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label>
-            Warehouse <span className="text-destructive">*</span>
-          </Label>
-          <select
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            value={warehouseId}
-            onChange={(e) => setWarehouseId(e.target.value)}
-            required
-          >
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div className="space-y-2">
@@ -153,7 +149,7 @@ export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Cancel
         </Button>
-        <Button type="submit" disabled={pending || !batchId}>
+        <Button type="submit" disabled={pending || !selectionKey}>
           {pending ? "Saving…" : "Apply adjustment"}
         </Button>
       </div>

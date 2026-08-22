@@ -27,6 +27,9 @@ export interface CreateSaleReturnItemRequest
 
     warehouseId: string;
 
+    /** Required for serialized products — restored to AVAILABLE on return. */
+    serialNumbers?: string[];
+
 }
 
 export interface CreateSaleReturnRequest {

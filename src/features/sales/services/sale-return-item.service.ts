@@ -71,6 +71,9 @@ export class SaleReturnItemService {
                 reference:
                     saleReturn.returnNumber,
 
+                serialNumbers:
+                    item.serialNumbers,
+
             }
         );
 

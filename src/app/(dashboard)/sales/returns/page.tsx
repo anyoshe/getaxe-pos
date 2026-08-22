@@ -5,6 +5,8 @@ import { salesQueryService } from "@/features/sales/services/sales-query.service
 import { ReturnSaleForm } from "@/features/sales/components/returns/return-sale-form";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { productSerialRepository } from "@/repositories/inventory/product-serials.repository";
+import { productRepository } from "@/repositories/inventory/products.repository";
 
 export default async function ReturnsPage({
   searchParams,
@@ -30,6 +32,8 @@ export default async function ReturnsPage({
     quantity: number;
     unitPrice: string | number;
     productBatchId: string | null;
+    serialized: boolean;
+    soldSerials: string[];
   }[] = [];
 
   const saleId = sp.saleId ?? sales[0]?.id;
@@ -39,19 +43,36 @@ export default async function ReturnsPage({
       saleId,
     );
     if (detail) {
-      initialItems = detail.items.map((i) => {
-        const batch =
-          detail.batches.find((b) => b.saleItemId === i.id)?.productBatchId ??
-          null;
-        return {
-          id: i.id,
-          productId: i.productId,
-          productName: i.productName,
-          quantity: i.quantity,
-          unitPrice: i.unitPrice,
-          productBatchId: batch,
-        };
-      });
+      const soldSerials = await productSerialRepository.findSoldBySaleReference(
+        user.businessId,
+        detail.sale.invoiceNumber,
+      );
+
+      initialItems = await Promise.all(
+        detail.items.map(async (i) => {
+          const batch =
+            detail.batches.find((b) => b.saleItemId === i.id)?.productBatchId ??
+            null;
+          const product = await productRepository.findById(
+            i.productId,
+            user.businessId,
+          );
+          const productSerials = soldSerials
+            .filter((s) => s.productId === i.productId)
+            .map((s) => s.serialNumber);
+
+          return {
+            id: i.id,
+            productId: i.productId,
+            productName: i.productName,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            productBatchId: batch,
+            serialized: Boolean(product?.serialized),
+            soldSerials: productSerials,
+          };
+        }),
+      );
     }
   }
 
@@ -90,7 +111,10 @@ export default async function ReturnsPage({
             <tbody>
               {returns.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="p-6 text-center text-muted-foreground">
+                  <td
+                    colSpan={3}
+                    className="p-6 text-center text-muted-foreground"
+                  >
                     No returns yet.
                   </td>
                 </tr>
