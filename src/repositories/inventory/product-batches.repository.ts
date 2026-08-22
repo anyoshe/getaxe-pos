@@ -158,9 +158,13 @@ export class ProductBatchRepository extends BaseRepository {
     productId: string,
     warehouseId: string,
   ) {
+    // Warehouse balance is the source of truth for POS / sales.
+    // quantityRemaining on the batch can lag if older adjustments only
+    // touched balances — still allow sale when balance has stock.
     const results = await this.database
       .select({
         batch: productBatches,
+        balanceQuantity: inventoryBalances.quantity,
       })
       .from(productBatches)
       .innerJoin(
@@ -170,23 +174,25 @@ export class ProductBatchRepository extends BaseRepository {
       .where(
         and(
           eq(productBatches.businessId, businessId),
-
           eq(inventoryBalances.businessId, businessId),
-
           eq(productBatches.productId, productId),
-
           eq(productBatches.active, true),
-
-          gt(productBatches.quantityRemaining, 0),
-
           eq(inventoryBalances.warehouseId, warehouseId),
-
           gt(inventoryBalances.quantity, 0),
         ),
       )
       .orderBy(asc(productBatches.expiryDate), asc(productBatches.createdAt));
 
-    return results.map(({ batch }) => batch);
+    return results.map(({ batch, balanceQuantity }) => ({
+      ...batch,
+      // Prefer warehouse on-hand; never allocate more than either figure if both set
+      quantityRemaining: Math.min(
+        Number(balanceQuantity),
+        Number(batch.quantityRemaining) > 0
+          ? Number(batch.quantityRemaining)
+          : Number(balanceQuantity),
+      ),
+    }));
   }
 
   async findExpiringBefore(businessId: string, date: string) {
@@ -266,7 +272,7 @@ export class ProductBatchRepository extends BaseRepository {
     const [batch] = await this.database
       .update(productBatches)
       .set({
-        quantityRemaining: sql`${productBatches.quantityRemaining} - ${quantity}`,
+        quantityRemaining: sql`GREATEST(0, ${productBatches.quantityRemaining} - ${quantity})`,
       })
       .where(
         businessId

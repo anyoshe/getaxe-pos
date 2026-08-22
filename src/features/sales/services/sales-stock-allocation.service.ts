@@ -36,7 +36,9 @@ export class SalesStockAllocationService {
     );
 
     if (batches.length === 0) {
-      throw new Error("No stock available.");
+      throw new Error(
+        "No stock available in the selected warehouse. Check Stock on Hand for that warehouse, or switch warehouse on POS.",
+      );
     }
 
     for (const batch of batches) {
@@ -72,7 +74,10 @@ export class SalesStockAllocationService {
     }
 
     if (remaining > 0) {
-      throw new Error("Insufficient stock available for this sale.");
+      const onHand = allocations.reduce((s, a) => s + a.quantity, 0);
+      throw new Error(
+        `Insufficient stock in this warehouse (need ${request.quantity}, available ${onHand}).`,
+      );
     }
 
     return allocations;
