@@ -25,6 +25,8 @@ export type PosProduct = {
   productType: string;
   trackInventory: boolean;
   serialized: boolean;
+  trackBatch?: boolean;
+  trackExpiry?: boolean;
   unitPrice: number;
   retailPrice: number;
   wholesalePrice: number;
@@ -34,6 +36,13 @@ export type PosProduct = {
 /** productId → warehouseId → qty from inventory_balances (same as Stock on Hand) */
 export type StockByProductWarehouse = Record<string, Record<string, number>>;
 export type SerialsByProductWarehouse = Record<string, Record<string, string[]>>;
+export type PosBatchOption = {
+  batchId: string;
+  batchNumber: string;
+  expiryDate: string | null;
+  manufactureDate: string | null;
+  quantity: number;
+};
 
 type WarehouseOption = { id: string; name: string; branchId: string };
 type BranchOption = { id: string; name: string };
@@ -58,6 +67,9 @@ type CartLine = {
   factorToStock: number;
   serialized: boolean;
   selectedSerials: string[];
+  selectedBatchId: string | null;
+  trackBatch: boolean;
+  trackExpiry: boolean;
 };
 
 type RecentSale = {
@@ -77,6 +89,7 @@ interface PosClientProps {
   productUnitsByProduct?: Record<string, PosProductUnit[]>;
   /** Optional explicit pack prices; else retail/wholesale × factor */
   pricesByProductUnit?: Record<string, Record<string, number>>;
+  batchesByProductWarehouse?: Record<string, Record<string, PosBatchOption[]>>;
   fullScreen?: boolean;
   cashierName?: string | null;
   recentSales?: RecentSale[];
@@ -91,6 +104,7 @@ export function PosClient({
   serialsByProductWarehouse = {},
   productUnitsByProduct = {},
   pricesByProductUnit = {},
+  batchesByProductWarehouse = {},
   fullScreen = false,
   cashierName,
   recentSales = [],
@@ -123,6 +137,13 @@ export function PosClient({
 
   function stockOnHand(productId: string, whId: string = warehouseId): number {
     return Number(stockByProductWarehouse[productId]?.[whId] ?? 0);
+  }
+
+  function batchesFor(
+    productId: string,
+    whId: string = warehouseId,
+  ): PosBatchOption[] {
+    return batchesByProductWarehouse[productId]?.[whId] ?? [];
   }
   const [paymentMethod, setPaymentMethod] = useState<
     "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY"
@@ -293,7 +314,14 @@ export function PosClient({
             unitLabel: u?.label ?? "unit",
             factorToStock: u?.factorToStock ?? 1,
             serialized: p.serialized,
+            trackBatch: Boolean(p.trackBatch),
+            trackExpiry: Boolean(p.trackExpiry),
             selectedSerials: [],
+            selectedBatchId:
+              (p.trackBatch || p.trackExpiry) &&
+              batchesFor(p.id)[0]?.batchId
+                ? batchesFor(p.id)[0].batchId
+                : null,
           },
         ];
       });
@@ -480,6 +508,7 @@ export function PosClient({
           productId: l.productId,
           quantity: l.quantity,
           unitId: l.unitId,
+          preferredBatchIds: l.selectedBatchId ? [l.selectedBatchId] : [],
           unitPrice: l.unitPrice,
           serialNumbers: l.serialized ? l.selectedSerials : [],
         })),
@@ -915,6 +944,51 @@ export function PosClient({
                         stock units deducted from inventory
                       </p>
                     )}
+
+                    {(line.trackBatch || line.trackExpiry) &&
+                      batchesFor(line.productId).length > 0 && (
+                        <div className="space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-2">
+                          <Label className="text-xs">
+                            Batch / lot{" "}
+                            <span className="text-muted-foreground">
+                              (FEFO — earliest expiry first)
+                            </span>
+                          </Label>
+                          <select
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            value={line.selectedBatchId ?? ""}
+                            onChange={(e) => {
+                              const id = e.target.value || null;
+                              setCart((c) =>
+                                c.map((x) =>
+                                  x.productId === line.productId &&
+                                  x.unitId === line.unitId
+                                    ? { ...x, selectedBatchId: id }
+                                    : x,
+                                ),
+                              );
+                            }}
+                          >
+                            <option value="">Auto FEFO (earliest expiry)</option>
+                            {batchesFor(line.productId).map((b) => (
+                              <option key={b.batchId} value={b.batchId}>
+                                {b.batchNumber}
+                                {b.expiryDate ? ` · exp ${b.expiryDate}` : ""}
+                                {b.manufactureDate
+                                  ? ` · mfg ${b.manufactureDate}`
+                                  : ""}
+                                {` · ${b.quantity} avail`}
+                              </option>
+                            ))}
+                          </select>
+                          {line.selectedBatchId && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Selling from selected lot first; remainder uses next
+                              expiry (FEFO).
+                            </p>
+                          )}
+                        </div>
+                      )}
                     {line.serialized && (
                       <div className="space-y-1">
                         <Label className="text-xs">

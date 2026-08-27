@@ -20,6 +20,7 @@ const lineSchema = z.object({
   unitPrice: z.coerce.number().min(0),
   discount: z.coerce.number().min(0).optional().default(0),
   serialNumbers: z.array(z.string()).optional().default([]),
+  preferredBatchIds: z.array(z.uuid()).optional().default([]),
 });
 
 const schema = z.object({
@@ -147,6 +148,7 @@ export async function createSaleAction(input: unknown) {
           ? (line.serialNumbers ?? []).map((s) => s.trim()).filter(Boolean)
           : [],
         skipStock: !product.trackInventory || product.productType === "service",
+        preferredBatchIds: line.preferredBatchIds ?? [],
       });
     }
 
@@ -198,6 +200,8 @@ export async function createSaleAction(input: unknown) {
         total: l.total,
         serialNumbers: l.serialNumbers,
         skipStock: l.skipStock,
+        preferredBatchIds: (l as { preferredBatchIds?: string[] })
+          .preferredBatchIds,
       })),
       payments: [
         {

@@ -5,8 +5,9 @@ import { branchesService } from "@/features/settings/services/branches.service";
 import { saleRepository } from "@/repositories/sales/sales.repository";
 import { productSerials } from "@/db/schema/inventory/product_serials";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
+import { productBatches } from "@/db/schema/inventory/product_batches";
 import { db } from "@/db";
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, sql } from "drizzle-orm";
 import { productUnits } from "@/db/schema/inventory/product_units";
 import { productPrices } from "@/db/schema/inventory/product_prices";
 import { units } from "@/db/schema/settings/units";
@@ -25,6 +26,7 @@ export default async function FullScreenPosPage() {
     productUnitRows,
     priceRows,
     stockRows,
+    batchRows,
   ] = await Promise.all([
     productService.getProducts(user.businessId),
     warehousesService.getWarehouses(user.businessId),
@@ -92,6 +94,29 @@ export default async function FullScreenPosPage() {
         ),
       )
       .groupBy(inventoryBalances.productId, inventoryBalances.warehouseId),
+    db
+      .select({
+        productId: inventoryBalances.productId,
+        warehouseId: inventoryBalances.warehouseId,
+        batchId: inventoryBalances.batchId,
+        quantity: inventoryBalances.quantity,
+        batchNumber: productBatches.batchNumber,
+        expiryDate: productBatches.expiryDate,
+        manufactureDate: productBatches.manufactureDate,
+      })
+      .from(inventoryBalances)
+      .innerJoin(
+        productBatches,
+        eq(inventoryBalances.batchId, productBatches.id),
+      )
+      .where(
+        and(
+          eq(inventoryBalances.businessId, user.businessId),
+          gt(inventoryBalances.quantity, "0"),
+          eq(productBatches.active, true),
+        ),
+      )
+      .orderBy(asc(productBatches.expiryDate)),
   ]);
 
   const unitsByProduct: Record<
@@ -142,6 +167,37 @@ export default async function FullScreenPosPage() {
   }
 
   /** productId -> unitId -> price (explicit pack price if configured) */
+  /** productId -> warehouseId -> batches (FEFO ordered) */
+  const batchesByProductWarehouse: Record<
+    string,
+    Record<
+      string,
+      {
+        batchId: string;
+        batchNumber: string;
+        expiryDate: string | null;
+        manufactureDate: string | null;
+        quantity: number;
+      }[]
+    >
+  > = {};
+  for (const row of batchRows) {
+    if (!row.batchId) continue;
+    const byWh = batchesByProductWarehouse[row.productId] ?? {};
+    const list = byWh[row.warehouseId] ?? [];
+    list.push({
+      batchId: row.batchId,
+      batchNumber: row.batchNumber,
+      expiryDate: row.expiryDate ? String(row.expiryDate).slice(0, 10) : null,
+      manufactureDate: row.manufactureDate
+        ? String(row.manufactureDate).slice(0, 10)
+        : null,
+      quantity: Number(row.quantity) || 0,
+    });
+    byWh[row.warehouseId] = list;
+    batchesByProductWarehouse[row.productId] = byWh;
+  }
+
   const pricesByProductUnit: Record<string, Record<string, number>> = {};
   for (const row of priceRows as Array<{
     productId: string;
@@ -195,6 +251,8 @@ export default async function FullScreenPosPage() {
             (p as { trackInventory?: boolean }).trackInventory ?? true,
           ),
           serialized: Boolean((p as { serialized?: boolean }).serialized),
+          trackBatch: Boolean((p as { trackBatch?: boolean }).trackBatch),
+          trackExpiry: Boolean((p as { trackExpiry?: boolean }).trackExpiry),
           unitPrice: retailPrice,
           retailPrice,
           wholesalePrice,
@@ -211,6 +269,7 @@ export default async function FullScreenPosPage() {
       availableSerials={availableSerials}
       productUnitsByProduct={unitsByProduct}
       pricesByProductUnit={pricesByProductUnit}
+      batchesByProductWarehouse={batchesByProductWarehouse}
     />
   );
 }

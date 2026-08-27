@@ -17,6 +17,11 @@ export type CreateSaleItemRequest = Omit<
   serialNumbers?: string[];
   /** Service / non-stock products skip warehouse allocation. */
   skipStock?: boolean;
+  /**
+   * Prefer these product_batch ids first (cashier FEFO/manual pick).
+   * Remainder still allocates FEFO from other lots.
+   */
+  preferredBatchIds?: string[];
 };
 
 export interface CreateSaleRequest {

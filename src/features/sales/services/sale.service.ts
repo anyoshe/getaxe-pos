@@ -28,9 +28,11 @@ export class SalesService {
     const items = [];
 
     for (const item of request.items) {
-      const { serialNumbers, skipStock, ...itemData } = item as typeof item & {
-        skipStock?: boolean;
-      };
+      const { serialNumbers, skipStock, preferredBatchIds, ...itemData } =
+        item as typeof item & {
+          skipStock?: boolean;
+          preferredBatchIds?: string[];
+        };
 
       const serials = (serialNumbers ?? [])
         .map((s) => s.trim())
@@ -60,6 +62,7 @@ export class SalesService {
           warehouseId: sale.warehouseId,
           quantity: saleItem.quantity,
           saleItemId: saleItem.id,
+          preferredBatchIds,
         });
 
         for (const allocation of allocations) {

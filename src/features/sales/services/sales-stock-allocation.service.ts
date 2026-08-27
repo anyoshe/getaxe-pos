@@ -13,11 +13,16 @@ export interface AllocateStockRequest {
   warehouseId: string;
   quantity: number;
   saleItemId: string;
+  /**
+   * Optional preferred batch ids (FEFO still used for remainder).
+   * Cashier can pick an earlier-expiring lot or a specific lot.
+   */
+  preferredBatchIds?: string[];
 }
 
 /**
  * Allocate sale qty from inventory_balances (source of truth).
- * Batch rows are only used for FEFO ordering and sale_item_batches linkage.
+ * Default order is FEFO (earliest expiry first). Preferred batches are taken first.
  */
 export class SalesStockAllocationService {
   async allocate(
@@ -39,7 +44,17 @@ export class SalesStockAllocationService {
       );
     }
 
-    for (const row of rows) {
+    const preferred = new Set(
+      (request.preferredBatchIds ?? []).filter(Boolean),
+    );
+
+    // Preferred batches first (in cashier order), then remaining FEFO rows
+    const ordered = [
+      ...rows.filter((r) => r.batchId && preferred.has(r.batchId)),
+      ...rows.filter((r) => !r.batchId || !preferred.has(r.batchId)),
+    ];
+
+    for (const row of ordered) {
       if (remaining <= 0) break;
 
       const available = Number(row.quantity);
@@ -47,7 +62,6 @@ export class SalesStockAllocationService {
 
       const allocated = Math.min(remaining, available);
 
-      // sale_item_batches requires a batch id — only link when we have one
       if (row.batchId) {
         await uow.saleItemBatches.create({
           saleItemId: request.saleItemId,
