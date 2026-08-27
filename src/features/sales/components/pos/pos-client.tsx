@@ -389,6 +389,20 @@ export function PosClient({
         return;
       }
       for (const line of cart) {
+        const prod = sellable.find((x) => x.id === line.productId);
+        if (prod && prod.productType !== "service" && prod.trackInventory !== false) {
+          const factor = line.factorToStock > 0 ? line.factorToStock : 1;
+          const need = line.quantity * factor;
+          const onHand = stockOnHand(line.productId);
+          if (need > onHand + 1e-9) {
+            toast.error(
+              `${line.name}: need ${need} stock unit(s), only ${onHand} in this warehouse (matches Stock on Hand).`,
+            );
+            return;
+          }
+        }
+      }
+      for (const line of cart) {
         if (line.serialized && line.selectedSerials.length !== line.quantity) {
           toast.error(
             `${line.name}: select ${line.quantity} serial number(s).`,
