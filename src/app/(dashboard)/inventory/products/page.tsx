@@ -44,7 +44,7 @@ export default async function Page() {
 
   return (
     <ProductsClient
-      products={products}
+      products={products as any}
       context={context}
     />
   );

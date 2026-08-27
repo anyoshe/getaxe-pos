@@ -5,10 +5,10 @@ import { salesQueryService } from "../services";
 
 export async function getSales(businessId: string) {
   await requireAuthorizedUser("sales.view");
-  return salesQueryService.getSales(businessId);
+  return salesQueryService.listSales(businessId);
 }
 
 export async function getSale(saleId: string) {
-  await requireAuthorizedUser("sales.view");
-  return salesQueryService.getSale(saleId);
+  const user = await requireAuthorizedUser("sales.view");
+  return salesQueryService.getSaleDetail(user.businessId, saleId);
 }

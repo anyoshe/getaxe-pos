@@ -20,17 +20,14 @@ export type SaleReturnItemInsert =
     typeof saleReturnItems
   >;
 
-export interface CreateSaleReturnItemRequest
-    extends SaleReturnItemInsert {
-
-    productId: string;
-
-    warehouseId: string;
-
-    /** Required for serialized products — restored to AVAILABLE on return. */
-    serialNumbers?: string[];
-
-}
+export type CreateSaleReturnItemRequest = Omit<
+  SaleReturnItemInsert,
+  "id" | "saleReturnId"
+> & {
+  productId: string;
+  warehouseId: string;
+  serialNumbers?: string[];
+};
 
 export interface CreateSaleReturnRequest {
 

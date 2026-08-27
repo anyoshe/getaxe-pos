@@ -1,3 +1,4 @@
+import { qtyStr } from "@/lib/quantity";
 import { Repository } from "@/repositories/base";
 
 import {
@@ -95,8 +96,7 @@ export class SupplierReturnService {
                                 movementType:
                                     "PURCHASE_RETURN",
 
-                                quantity:
-                                    -item.quantity,
+                                quantity: qtyStr(-item.quantity),
 
                                 reference:
                                     supplierReturn.returnNumber,

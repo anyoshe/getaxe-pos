@@ -94,4 +94,17 @@ export class PaymentRepository extends BaseRepository {
   }
 }
 
+
+  async findCompletedBySale(saleId: string) {
+    return this.database
+      .select()
+      .from(payments)
+      .where(
+        and(
+          eq(payments.saleId, saleId),
+          eq(payments.status, "COMPLETED"),
+        ),
+      );
+  }
+
 export const paymentRepository = new PaymentRepository();

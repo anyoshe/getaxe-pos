@@ -175,20 +175,15 @@ export interface ProductContext {
   units:
   InferSelectModel<typeof units>[];
 
-  manufacturers:
-  InferSelectModel<typeof manufacturers>[];
+  manufacturers: Array<{ id: string; name: string; businessId?: string | null }>;
 
-  dosageForms:
-  InferSelectModel<typeof dosageForms>[];
+  dosageForms: Array<{ id: string; name: string; code?: string | null }>;
 
-  drugCategories:
-  InferSelectModel<typeof drugCategories>[];
+  drugCategories: Array<{ id: string; name: string; code?: string | null }>;
 
-  drugStrengths:
-  InferSelectModel<typeof drugStrengths>[];
+  drugStrengths: Array<{ id: string; name: string; code?: string | null }>;
 
-  prescriptionTypes:
-  InferSelectModel<typeof prescriptionTypes>[];
+  prescriptionTypes: Array<{ id: string; name: string; code?: string | null }>;
 
   taxRates:
   InferSelectModel<typeof taxRates>[];

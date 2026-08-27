@@ -146,7 +146,7 @@ export class ProductBatchRepository extends BaseRepository {
 
         eq(productBatches.active, true),
 
-        gt(productBatches.quantityRemaining, 0),
+        gt(productBatches.quantityRemaining, "0"),
       ),
 
       orderBy: [asc(productBatches.expiryDate), asc(productBatches.createdAt)],
@@ -178,7 +178,7 @@ export class ProductBatchRepository extends BaseRepository {
           eq(productBatches.productId, productId),
           eq(productBatches.active, true),
           eq(inventoryBalances.warehouseId, warehouseId),
-          gt(inventoryBalances.quantity, 0),
+          gt(inventoryBalances.quantity, "0"),
         ),
       )
       .orderBy(asc(productBatches.expiryDate), asc(productBatches.createdAt));

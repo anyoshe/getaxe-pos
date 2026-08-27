@@ -130,7 +130,7 @@ export class InventoryBalanceRepository
                 .where(
                     and(
                         eq(inventoryBalances.id, id),
-                        sql`${inventoryBalances.quantity} >= ${quantity}`,
+                        sql`${inventoryBalances.quantity} >= ${quantity}::numeric`,
                     ),
                 )
                 .returning();
@@ -175,7 +175,7 @@ export class InventoryBalanceRepository
                     eq(inventoryBalances.businessId, businessId),
                     eq(inventoryBalances.productId, productId),
                     eq(inventoryBalances.warehouseId, warehouseId),
-                    gt(inventoryBalances.quantity, 0),
+                    gt(inventoryBalances.quantity, "0"),
                 ),
             )
             .orderBy(

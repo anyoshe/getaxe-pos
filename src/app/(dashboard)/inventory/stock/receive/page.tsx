@@ -17,7 +17,7 @@ export default async function ReceiveStockPage() {
   return (
     <div className="p-4 sm:p-6">
       <ReceiveStockForm
-        products={products}
+        products={products as any}
         warehouses={warehouses.map((w) => ({
           id: w.id,
           name: w.name,

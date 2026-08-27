@@ -1,5 +1,6 @@
 "use server";
 
+import { qtyStr } from "@/lib/quantity";
 import { revalidatePath } from "next/cache";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
@@ -180,7 +181,7 @@ export async function receiveStockAction(input: unknown) {
   }
 
   try {
-    const result = await inventoryService.receiveStock({
+    const result = (await inventoryService.receiveStock({
       warehouseId: data.warehouseId,
       serialNumbers: product.serialized ? serialNumbers : [],
       batch: {
@@ -193,8 +194,8 @@ export async function receiveStockAction(input: unknown) {
         purchaseInvoice: data.reference ?? null,
         costPrice: (unitCostStock ?? data.unitCost ?? product.costPrice ?? 0).toString(),
         sellingPrice: null,
-        quantityReceived: quantityStock,
-        quantityRemaining: quantityStock,
+        quantityReceived: qtyStr(quantityStock),
+        quantityRemaining: qtyStr(quantityStock),
         active: true,
       },
       movement: {
@@ -203,7 +204,7 @@ export async function receiveStockAction(input: unknown) {
         warehouseId: data.warehouseId,
         userId: user.id,
         movementType: data.movementType,
-        quantity: quantityStock,
+        quantity: qtyStr(quantityStock),
         enteredUnitId,
         quantityEntered: String(quantityEntered),
         conversionFactor: String(conversionFactor),
@@ -229,9 +230,9 @@ export async function receiveStockAction(input: unknown) {
       message: product.serialized
         ? `Received ${data.quantity} of ${product.name} with ${serialNumbers.length} serial(s).`
         : `Received ${data.quantity} of ${product.name}.`,
-      batchId: result.batch.id,
-      movementId: result.movement.id,
-      serialCount: result.serials?.length ?? 0,
+      batchId: (result as { batch: { id: string } }).batch.id,
+      movementId: (result as { movement: { id: string } }).movement.id,
+      serialCount: (result as { serials?: unknown[] }).serials?.length ?? 0,
     };
   } catch (error) {
     return {

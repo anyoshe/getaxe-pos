@@ -12,9 +12,7 @@ const nullableUuid = z.preprocess(
 const requiredUuid = (label: string) =>
   z.preprocess(
     emptyToNull,
-    z
-      .string({ required_error: `${label} is required` })
-      .uuid({ message: `${label} is required` }),
+    z.string().uuid({ message: `${label} is required` }),
   );
 
 export const createProductSchema = z.object({

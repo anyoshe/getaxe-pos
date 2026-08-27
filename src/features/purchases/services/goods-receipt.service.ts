@@ -1,3 +1,4 @@
+import { qtyStr } from "@/lib/quantity";
 import { Repository } from "@/repositories/base";
 
 import {
@@ -81,11 +82,9 @@ export class GoodsReceiptService {
                                 expiryDate:
                                     item.expiryDate ?? null,
 
-                                quantityReceived:
-                                    item.quantity,
+                                quantityReceived: qtyStr(item.quantity),
 
-                                quantityRemaining:
-                                    item.quantity,
+                                quantityRemaining: qtyStr(item.quantity),
 
                                 costPrice:
                                     item.unitCost,
@@ -104,8 +103,7 @@ export class GoodsReceiptService {
                                 movementType:
                                     "PURCHASE",
 
-                                quantity:
-                                    item.quantity,
+                                quantity: qtyStr(item.quantity),
 
                                 reference:
                                     receipt.receiptNumber,

@@ -45,7 +45,7 @@ export default async function Page() {
   return (
     <ProductPricesClient
       units={units.map((u) => ({ id: u.id, name: u.name }))}
-      products={products}
+      products={products as any}
       priceLists={priceLists}
       productPrices={productPrices}
     />

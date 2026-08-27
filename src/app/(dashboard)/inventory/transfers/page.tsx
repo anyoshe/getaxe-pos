@@ -23,7 +23,7 @@ export default async function TransfersPage() {
           batchNumber: b.batchNumber,
           productId: b.productId,
           productName: productName.get(b.productId) ?? "Product",
-          quantityRemaining: b.quantityRemaining,
+          quantityRemaining: Number(b.quantityRemaining),
         }))}
         warehouses={warehouses.map((w) => ({ id: w.id, name: w.name }))}
       />

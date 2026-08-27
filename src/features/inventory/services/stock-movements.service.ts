@@ -1,3 +1,4 @@
+import { qty } from "@/lib/quantity";
 import { stockMovementRepository } from "@/repositories/inventory";
 
 import type { InferInsertModel } from "drizzle-orm";
@@ -38,7 +39,7 @@ export class StockMovementService {
   async createStockMovement(
     data: StockMovementInsert
   ) {
-    if (data.quantity === 0) {
+    if (qty(data.quantity) === 0) {
       throw new Error(
         "Quantity cannot be zero."
       );

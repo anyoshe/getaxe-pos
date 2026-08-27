@@ -9,7 +9,10 @@ export type SaleInsert = InferInsertModel<typeof sales>;
 
 export type SaleItemInsert = InferInsertModel<typeof saleItems>;
 
-export type CreateSaleItemRequest = SaleItemInsert & {
+export type CreateSaleItemRequest = Omit<
+  SaleItemInsert,
+  "id" | "saleId"
+> & {
   /** Required when product is serialized — one serial per unit. */
   serialNumbers?: string[];
   /** Service / non-stock products skip warehouse allocation. */

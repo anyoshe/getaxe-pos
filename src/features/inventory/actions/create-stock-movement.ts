@@ -1,3 +1,4 @@
+import { qtyStr } from "@/lib/quantity";
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -66,6 +67,7 @@ export async function createStockMovementAction(
   try {
     await stockMovementService.createStockMovement({
       ...parsed.data,
+      quantity: qtyStr(parsed.data.quantity),
       unitCost:
         parsed.data.unitCost?.toString() ??
         null,

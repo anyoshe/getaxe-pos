@@ -151,7 +151,7 @@ export async function createSaleAction(input: unknown) {
     const subtotal = lines.reduce((s, l) => s + Number(l.total), 0);
     const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
 
-    const result = await salesService.createSale({
+    const result = (await salesService.createSale({
       sale: {
         businessId: user.businessId,
         branchId: data.branchId,
@@ -174,6 +174,16 @@ export async function createSaleAction(input: unknown) {
         businessId: user.businessId,
         productId: l.productId,
         quantity: l.quantity,
+        unitId: (l as { unitId?: string | null }).unitId ?? null,
+        quantityEntered:
+          (l as { quantityEntered?: number }).quantityEntered != null
+            ? String((l as { quantityEntered?: number }).quantityEntered)
+            : null,
+        quantityStock: l.quantity,
+        conversionFactor:
+          (l as { conversionFactor?: number }).conversionFactor != null
+            ? String((l as { conversionFactor?: number }).conversionFactor)
+            : null,
         unitPrice: l.unitPrice,
         discount: l.discount,
         tax: l.tax,
@@ -190,10 +200,10 @@ export async function createSaleAction(input: unknown) {
 
     return {
       success: true as const,
-      message: `Sale ${result.sale.invoiceNumber} completed.`,
-      saleId: result.sale.id,
-      invoiceNumber: result.sale.invoiceNumber,
-      total: result.sale.total,
+      message: `Sale ${(result as any).sale.invoiceNumber} completed.`,
+      saleId: (result as any).sale.id,
+      invoiceNumber: (result as any).sale.invoiceNumber,
+      total: (result as any).sale.total,
     };
   } catch (error) {
     return {

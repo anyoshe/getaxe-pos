@@ -1,3 +1,4 @@
+import { qty } from "@/lib/quantity";
 import { productBatchRepository } from "@/repositories/inventory";
 
 import type { InferInsertModel } from "drizzle-orm";
@@ -199,7 +200,7 @@ export class ProductBatchService {
 
 
     if (
-      existing.quantityRemaining > 0
+      qty(existing.quantityRemaining) > 0
     ) {
       throw new Error(
         "Cannot archive a batch that still has stock remaining."

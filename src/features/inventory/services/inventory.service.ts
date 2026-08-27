@@ -1,3 +1,4 @@
+import { qty, qtyStr } from "@/lib/quantity";
 import { Repository } from "@/repositories/base";
 
 import { InventoryUnitOfWork } from "./unit-of-work";
@@ -34,9 +35,9 @@ export class InventoryService {
       .filter(Boolean);
 
     if (serialNumbers.length > 0) {
-      if (serialNumbers.length !== request.batch.quantityReceived) {
+      if (serialNumbers.length !== qty(request.batch.quantityReceived)) {
         throw new Error(
-          `Expected ${request.batch.quantityReceived} serial numbers, got ${serialNumbers.length}.`,
+          `Expected ${qty(request.batch.quantityReceived)} serial numbers, got ${serialNumbers.length}.`,
         );
       }
 
@@ -68,7 +69,7 @@ export class InventoryService {
     if (existingBalance) {
       balance = await uow.balances.increaseQuantity(
         existingBalance.id,
-        batch.quantityReceived,
+        qty(batch.quantityReceived),
       );
     } else {
       balance = await uow.balances.create({
@@ -76,7 +77,7 @@ export class InventoryService {
         productId: batch.productId,
         batchId: batch.id,
         warehouseId: request.warehouseId,
-        quantity: batch.quantityReceived,
+        quantity: qtyStr(batch.quantityReceived),
       });
     }
 
@@ -139,11 +140,11 @@ export class InventoryService {
       throw new Error("No stock available in this warehouse.");
     }
 
-    if (balance.quantity < request.quantity) {
+    if (qty(balance.quantity) < request.quantity) {
       throw new Error("Insufficient warehouse stock.");
     }
 
-    if (batch.quantityRemaining < request.quantity) {
+    if (qty(batch.quantityRemaining) < request.quantity) {
       throw new Error("Insufficient batch quantity.");
     }
 
@@ -165,7 +166,7 @@ export class InventoryService {
 
       warehouseId: request.warehouseId,
 
-      quantity: -request.quantity,
+      quantity: qtyStr(-request.quantity),
     });
 
     return {
@@ -200,13 +201,13 @@ export class InventoryService {
         throw new Error("No stock available in selected warehouse.");
       }
 
-      if (balance.quantity < allocation.quantity) {
+      if (qty(balance.quantity) < allocation.quantity) {
         throw new Error(
           `Insufficient warehouse stock for batch ${batch.batchNumber}.`,
         );
       }
 
-      if (batch.quantityRemaining < allocation.quantity) {
+      if (qty(batch.quantityRemaining) < allocation.quantity) {
         throw new Error(
           `Insufficient remaining quantity for batch ${batch.batchNumber}.`,
         );
@@ -233,7 +234,7 @@ export class InventoryService {
 
         movementType: "SALE",
 
-        quantity: -allocation.quantity,
+        quantity: qtyStr(-allocation.quantity),
       });
 
       movements.push(movement);
@@ -305,7 +306,7 @@ export class InventoryService {
         productId: batch.productId,
         batchId: batch.id,
         warehouseId: request.warehouseId,
-        quantity: request.quantity,
+        quantity: qtyStr(request.quantity),
       });
     } else if (request.quantity < 0) {
       throw new Error("No warehouse balance to adjust down.");
@@ -313,7 +314,7 @@ export class InventoryService {
 
     // Keep batch remaining aligned with warehouse on-hand for this batch line
     const updatedBatch = await uow.batches.update(request.batchId, undefined, {
-      quantityRemaining: nextOnHand,
+      quantityRemaining: qtyStr(nextOnHand),
     });
 
     const movement = await uow.movements.create({
@@ -323,7 +324,7 @@ export class InventoryService {
       productId: batch.productId,
       businessId: batch.businessId,
       movementType: "ADJUSTMENT",
-      quantity: request.quantity,
+      quantity: qtyStr(request.quantity),
     });
 
     return {
@@ -352,7 +353,7 @@ export class InventoryService {
       throw new Error("Source warehouse stock not found.");
     }
 
-    if (source.quantity < request.quantity) {
+    if (qty(source.quantity) < request.quantity) {
       throw new Error("Insufficient stock for transfer.");
     }
 
@@ -380,7 +381,7 @@ export class InventoryService {
 
         warehouseId: request.toWarehouseId,
 
-        quantity: request.quantity,
+        quantity: qtyStr(request.quantity),
       });
     }
 
@@ -395,7 +396,7 @@ export class InventoryService {
 
       movementType: "TRANSFER_OUT",
 
-      quantity: -request.quantity,
+      quantity: qtyStr(-request.quantity),
 
       reference: request.movement.reference,
 
@@ -415,7 +416,7 @@ export class InventoryService {
 
       movementType: "TRANSFER_IN",
 
-      quantity: request.quantity,
+      quantity: qtyStr(request.quantity),
 
       reference: request.movement.reference,
 

@@ -1,3 +1,4 @@
+import { qty, qtyStr } from "@/lib/quantity";
 import { Repository } from "@/repositories/base";
 
 import { SalesUnitOfWork } from "./unit-of-work";
@@ -67,7 +68,7 @@ export class SalesService {
             allocation.balanceId,
           );
 
-          if (!locked || locked.quantity < allocation.quantity) {
+          if (!locked || qty(locked.quantity) < allocation.quantity) {
             throw new Error(
               "Stock changed during sale — refresh and try again.",
             );
@@ -93,7 +94,7 @@ export class SalesService {
             warehouseId: allocation.warehouseId,
             userId: sale.soldBy,
             movementType: "SALE",
-            quantity: -allocation.quantity,
+            quantity: qtyStr(-allocation.quantity),
             reference: sale.invoiceNumber,
             notes: "Sale transaction",
           });

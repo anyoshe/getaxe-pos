@@ -161,11 +161,11 @@ export async function createSalesDocumentAction(input: unknown) {
 
       return {
         success: true as const,
-        message: `${docLabel} ${result.sale.invoiceNumber} saved${
+        message: `${docLabel} ${(result as any).sale.invoiceNumber} saved${
           allSerials.length ? ` (${allSerials.length} serials reserved)` : ""
         }.`,
-        id: result.sale.id,
-        invoiceNumber: result.sale.invoiceNumber,
+        id: (result as any).sale.id,
+        invoiceNumber: (result as any).sale.invoiceNumber,
         documentType: data.documentType,
       };
     } catch (err) {

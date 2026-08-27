@@ -1,3 +1,4 @@
+import { qtyStr } from "@/lib/quantity";
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -76,6 +77,11 @@ export async function updateProductBatchAction(
       user.businessId,
       {
         ...parsed.data,
+      quantityReceived: qtyStr(parsed.data.quantityReceived),
+      quantityRemaining: qtyStr(
+        (parsed.data as { quantityRemaining?: number }).quantityRemaining ??
+          parsed.data.quantityReceived,
+      ),
 
         costPrice:
           parsed.data.costPrice.toString(),

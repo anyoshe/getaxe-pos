@@ -1,3 +1,4 @@
+import { qtyStr } from "@/lib/quantity";
 import { SalesUnitOfWork } from "./unit-of-work";
 
 export interface RestoreStockRequest {
@@ -25,7 +26,7 @@ export class SalesStockReturnService {
         productId: request.productId,
         batchId: request.batchId,
         warehouseId: request.warehouseId,
-        quantity: request.quantity,
+        quantity: qtyStr(request.quantity),
       });
     } else {
       await uow.balances.increaseQuantity(balance.id, request.quantity);
@@ -57,7 +58,7 @@ export class SalesStockReturnService {
       warehouseId: request.warehouseId,
       userId: request.userId,
       movementType: "SALE_RETURN",
-      quantity: request.quantity,
+      quantity: qtyStr(request.quantity),
       reference: request.reference,
       notes: "Sale return",
     });

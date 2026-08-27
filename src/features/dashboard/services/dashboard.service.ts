@@ -29,7 +29,6 @@ class DashboardService {
       customers,
       todaySalesRow,
       lowStockRow,
-      totalOnHandRow,
     ] = await Promise.all([
       branchesRepository.count(businessId),
       warehousesRepository.count(businessId),

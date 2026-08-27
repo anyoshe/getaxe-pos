@@ -1,3 +1,4 @@
+import { qty } from "@/lib/quantity";
 import type {
   TransferStockRequest,
   ReceiveStockRequest,
@@ -14,7 +15,7 @@ export class InventoryValidator {
   ) {
 
     if (
-      request.batch.quantityReceived <= 0
+      qty(request.batch.quantityReceived) <= 0
     ) {
       throw new Error(
         "Received quantity must be greater than zero."
@@ -32,7 +33,7 @@ export class InventoryValidator {
 
     const serialNumbers = request.serialNumbers ?? [];
     if (serialNumbers.length > 0) {
-      if (serialNumbers.length !== request.batch.quantityReceived) {
+      if (serialNumbers.length !== qty(request.batch.quantityReceived)) {
         throw new Error(
           `Serial count (${serialNumbers.length}) must match quantity (${request.batch.quantityReceived}).`,
         );
