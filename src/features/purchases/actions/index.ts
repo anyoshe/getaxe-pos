@@ -6,3 +6,4 @@ export * from "./receive-goods";
 export * from "./post-goods-receipt";
 export * from "./create-supplier-return";
 export * from "./post-supplier-return";
+export * from "./purchasing-ui";

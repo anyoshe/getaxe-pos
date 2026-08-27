@@ -157,7 +157,7 @@ export const navigation: NavigationItem[] = [
     children: [
       {
         label: "Suppliers",
-        href: "/suppliers",
+        href: "/inventory/suppliers",
         icon: Truck,
         permission: "suppliers.view",
       },
@@ -170,6 +170,12 @@ export const navigation: NavigationItem[] = [
       {
         label: "Goods Received",
         href: "/purchases/receiving",
+        icon: PackageCheck,
+        permission: "goods_receipts.view",
+      },
+      {
+        label: "Supplier Returns",
+        href: "/purchases/returns",
         icon: PackageCheck,
         permission: "goods_receipts.view",
       },
