@@ -17,6 +17,10 @@ export class ProfileLoader {
       ["HARDWARE", HARDWARE_PROFILE],
       ["SUPERMARKET", SUPERMARKET_PROFILE],
       ["PHARMACY", PHARMACY_PROFILE],
+      // Chemist / clinic / hospital share pharmacy catalogue capabilities
+      ["CHEMIST", PHARMACY_PROFILE],
+      ["CLINIC", PHARMACY_PROFILE],
+      ["HOSPITAL", PHARMACY_PROFILE],
     ]);
 
   load(
