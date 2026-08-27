@@ -30,11 +30,13 @@ import {
   productRuleResolver,
 } from "./product-rule-resolver";
 
+import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/seed-pharmacy-catalogues.service";
+
 export class ProductContextService {
   async getContext(
     businessId: string,
   ): Promise<ProductContext> {
-    const [
+    let [
       categories,
       suppliers,
       units,
@@ -55,6 +57,26 @@ export class ProductContextService {
       pharmacyReferenceRepository.listDrugStrengths(businessId),
       pharmacyReferenceRepository.listPrescriptionTypes(businessId),
     ]);
+
+    // Auto-seed pharmacy defaults when medicine capabilities are on but catalogues empty
+    const hasPharmacyCap = capabilities.some((c) => c.startsWith("pharmacy."));
+    if (
+      hasPharmacyCap &&
+      dosageForms.length === 0 &&
+      drugCategories.length === 0
+    ) {
+      await seedPharmacyCataloguesForBusiness(businessId, "PHARMACY");
+      const refreshed = await Promise.all([
+        pharmacyReferenceRepository.listDosageForms(businessId),
+        pharmacyReferenceRepository.listDrugCategories(businessId),
+        pharmacyReferenceRepository.listDrugStrengths(businessId),
+        pharmacyReferenceRepository.listPrescriptionTypes(businessId),
+      ]);
+      dosageForms = refreshed[0];
+      drugCategories = refreshed[1];
+      drugStrengths = refreshed[2];
+      prescriptionTypes = refreshed[3];
+    }
 
     const productRulesByType = PRODUCT_TYPES.reduce((result, productType) => {
       result[productType] = productRuleResolver.resolve({

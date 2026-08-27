@@ -14,6 +14,7 @@ import {
   createDrugStrengthAction,
   createPrescriptionTypeAction,
 } from "@/features/pharmacy/actions/reference-data";
+import { seedDefaultPharmacyCataloguesAction } from "@/features/pharmacy/actions/seed-default-catalogues";
 
 type Row = { id: string; name: string; code?: string };
 
@@ -60,6 +61,30 @@ export function PharmacyCataloguesClient({
           category, strength, and prescription type in the product wizard.
           Full prescriptions and dispensation come later in the Pharmacy module.
         </p>
+        <div className="mt-3">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => {
+              startTransition(async () => {
+                const result = await seedDefaultPharmacyCataloguesAction();
+                if (!result.success) {
+                  toast.error(result.message);
+                  return;
+                }
+                toast.success(result.message);
+                router.refresh();
+              });
+            }}
+          >
+            {pending ? "Seeding…" : "Load default pharmacy catalogues"}
+          </Button>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Adds standard dosage forms, therapeutic categories, strengths, and
+            OTC/POM types if missing. Safe to run more than once.
+          </p>
+        </div>
       </div>
 
       <CatalogueBlock

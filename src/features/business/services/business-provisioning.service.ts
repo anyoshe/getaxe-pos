@@ -9,6 +9,7 @@ import {
 } from "@/features/settings/services";
 
 import { businessCapabilityService } from "@/features/capabilities/services";
+import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/seed-pharmacy-catalogues.service";
 
 import type { BusinessType } from "../constants/business-types";
 
@@ -187,6 +188,12 @@ export class BusinessProvisioningService {
 
       input.businessType,
     );
+
+    //
+    // Step 7b
+    // Pharmacy / clinic default catalogues (dosage forms, categories, strengths, Rx types)
+    //
+    await seedPharmacyCataloguesForBusiness(business.id, input.businessType);
 
     //
     // Step 8
