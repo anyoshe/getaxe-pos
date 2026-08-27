@@ -82,3 +82,35 @@ export function nairobiDayBounds(reference = new Date()): {
   const end = new Date(Date.UTC(p.year, p.month - 1, p.day + 1, 0, 0, 0, 0));
   return { start, end };
 }
+
+/** Period bounds in Nairobi wall-clock (naive UTC fields for timestamp w/o tz). */
+export function nairobiPeriodBounds(
+  period: "day" | "week" | "month",
+  reference = new Date(),
+): { start: Date; end: Date; label: string } {
+  const p = partsInZone(reference, BUSINESS_TIMEZONE);
+  const end = new Date(Date.UTC(p.year, p.month - 1, p.day + 1, 0, 0, 0));
+
+  if (period === "day") {
+    const start = new Date(Date.UTC(p.year, p.month - 1, p.day, 0, 0, 0));
+    return {
+      start,
+      end,
+      label: `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`,
+    };
+  }
+
+  if (period === "week") {
+    // Last 7 calendar days including today
+    const start = new Date(Date.UTC(p.year, p.month - 1, p.day - 6, 0, 0, 0));
+    return { start, end, label: "Last 7 days" };
+  }
+
+  // month: from 1st of current Nairobi month
+  const start = new Date(Date.UTC(p.year, p.month - 1, 1, 0, 0, 0));
+  return {
+    start,
+    end,
+    label: `${p.year}-${String(p.month).padStart(2, "0")}`,
+  };
+}

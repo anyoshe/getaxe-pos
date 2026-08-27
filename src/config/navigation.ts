@@ -266,6 +266,12 @@ export const navigation: NavigationItem[] = [
         icon: Wallet,
         permission: "reports.view",
       },
+      {
+        label: "Audit trail",
+        href: "/reports/audit",
+        icon: ClipboardList,
+        permission: "reports.view",
+      },
     ],
   },
   {
