@@ -68,8 +68,7 @@ export function ProductPackagingEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
-  function onAdd(e: React.FormEvent) {
-    e.preventDefault();
+  function onAdd() {
     if (!unitId) {
       toast.error("Select a unit.");
       return;
@@ -133,7 +132,7 @@ export function ProductPackagingEditor({
         </ul>
       )}
 
-      <form onSubmit={onAdd} className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label>Unit</Label>
           <select
@@ -193,11 +192,16 @@ export function ProductPackagingEditor({
           Default purchase unit
         </label>
         <div className="sm:col-span-2">
-          <Button type="submit" size="sm" disabled={pending}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending}
+            onClick={() => onAdd()}
+          >
             {pending ? "Saving…" : "Add / update packaging unit"}
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

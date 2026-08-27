@@ -87,7 +87,7 @@ export async function upsertProductUnitAction(input: unknown) {
 }
 
 export async function listProductUnitsAction(productId: string) {
-  const user = await requireAuthorizedUser("products.read");
+  const user = await requireAuthorizedUser("products.view");
   const rows = await productUnitRepository.listByProduct(
     user.businessId,
     productId,
