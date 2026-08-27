@@ -48,7 +48,9 @@ export class GoodsReceiptService {
 
                 const receiptItems = [];
 
+                let lineIndex = 0;
                 for (const item of request.items) {
+                    lineIndex += 1;
 
                     const receiptItem =
                         await uow.goodsReceiptItems.create({
@@ -59,6 +61,19 @@ export class GoodsReceiptService {
                     receiptItems.push(
                         receiptItem
                     );
+
+                    // Unique per product: empty batch numbers collide on product_batch_unique
+                    const rawBatch = (item.batchNumber ?? "").trim();
+                    const batchNumber =
+                      rawBatch.length > 0
+                        ? rawBatch
+                        : `${receipt.receiptNumber}-L${lineIndex}-${item.productId.slice(0, 8)}`;
+
+                    const rawExpiry = item.expiryDate;
+                    const expiryDate =
+                      rawExpiry && String(rawExpiry).trim() !== ""
+                        ? String(rawExpiry).slice(0, 10)
+                        : null;
 
                     await inventoryService.receiveStockWithUnitOfWork(
                         inventoryUow,
@@ -76,11 +91,9 @@ export class GoodsReceiptService {
                                 supplierId:
                                     receipt.supplierId,
 
-                                batchNumber:
-                                    item.batchNumber ?? "",
+                                batchNumber,
 
-                                expiryDate:
-                                    item.expiryDate ?? null,
+                                expiryDate,
 
                                 quantityReceived: qtyStr(item.quantity),
 

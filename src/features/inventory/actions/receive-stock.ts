@@ -72,7 +72,7 @@ export async function receiveStockAction(input: unknown) {
   } else {
     batchNumber =
       batchNumber ||
-      `AUTO-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
+      `AUTO-${Date.now().toString(36).toUpperCase()}`;
   }
 
   if (product.trackExpiry) {
@@ -188,7 +188,7 @@ export async function receiveStockAction(input: unknown) {
         businessId: user.businessId,
         productId: product.id,
         supplierId: data.supplierId ?? product.supplierId ?? null,
-        batchNumber,
+        batchNumber: (batchNumber && String(batchNumber).trim()) || `RCV-${Date.now().toString(36).toUpperCase()}`,
         manufactureDate: data.manufactureDate ?? null,
         expiryDate: data.expiryDate ?? null,
         purchaseInvoice: data.reference ?? null,
