@@ -25,6 +25,7 @@ export type ReceivePo = {
   supplierName: string;
   status: string;
   items: {
+    lineId: string;
     productId: string;
     productName: string;
     quantity: number;
@@ -87,7 +88,7 @@ export function GoodsReceivingClient({
   const selected = receivable.find((p) => p.id === poId);
 
   function stateFor(item: ReceivePo["items"][0]): LineState {
-    const existing = lineState[item.productId];
+    const existing = lineState[item.lineId];
     if (existing) return existing;
     const remaining = Math.max(0, item.quantity - item.receivedQuantity);
     const u =
@@ -103,11 +104,11 @@ export function GoodsReceivingClient({
     };
   }
 
-  function patchLine(productId: string, base: ReceivePo["items"][0], patch: Partial<LineState>) {
+  function patchLine(lineId: string, base: ReceivePo["items"][0], patch: Partial<LineState>) {
     const cur = stateFor(base);
     setLineState((prev) => ({
       ...prev,
-      [productId]: { ...cur, ...patch },
+      [lineId]: { ...cur, ...patch },
     }));
   }
 
@@ -219,7 +220,7 @@ export function GoodsReceivingClient({
 
               return (
                 <div
-                  key={it.productId}
+                  key={it.lineId}
                   className="space-y-2 rounded-lg border bg-card p-3 text-sm"
                 >
                   <div className="font-medium">{it.productName}</div>
@@ -237,7 +238,7 @@ export function GoodsReceivingClient({
                         onChange={(e) => {
                           const next = it.units.find((x) => x.unitId === e.target.value);
                           const f = next?.factorToStock || 1;
-                          patchLine(it.productId, it, {
+                          patchLine(it.lineId, it, {
                             unitId: e.target.value,
                             costPerOrderUnit: it.unitCost * f,
                             quantity: f > 0 ? remainingStock / f : remainingStock,
@@ -265,7 +266,7 @@ export function GoodsReceivingClient({
                         step="any"
                         value={st.quantity}
                         onChange={(e) =>
-                          patchLine(it.productId, it, {
+                          patchLine(it.lineId, it, {
                             quantity: Number(e.target.value),
                           })
                         }
@@ -279,7 +280,7 @@ export function GoodsReceivingClient({
                         step="0.01"
                         value={st.costPerOrderUnit}
                         onChange={(e) =>
-                          patchLine(it.productId, it, {
+                          patchLine(it.lineId, it, {
                             costPerOrderUnit: Number(e.target.value),
                           })
                         }

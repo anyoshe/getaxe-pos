@@ -92,6 +92,7 @@ export default async function GoodsReceivingPage() {
         status: string;
         supplier?: { name?: string } | null;
         items?: Array<{
+          id: string;
           productId: string;
           quantity: number;
           receivedQuantity: number;
@@ -104,9 +105,10 @@ export default async function GoodsReceivingPage() {
         supplierId: p.supplierId,
         supplierName: p.supplier?.name ?? "—",
         status: p.status,
-        items: (p.items ?? []).map((it) => {
+        items: (p.items ?? []).map((it, idx) => {
           const meta = productMeta.get(it.productId);
           return {
+            lineId: it.id || `${p.id}-${it.productId}-${idx}`,
             productId: it.productId,
             productName: meta?.name ?? it.productId.slice(0, 8),
             quantity: Number(it.quantity),
