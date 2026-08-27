@@ -57,7 +57,36 @@ export class InventoryService {
       }
     }
 
-    const batch = await uow.batches.create(request.batch);
+    const incomingQty = qty(request.batch.quantityReceived);
+    const batchNumber = String(request.batch.batchNumber ?? "").trim();
+
+    let batch = batchNumber
+      ? await uow.batches.findByProductAndBatchNumber(
+          request.batch.businessId,
+          request.batch.productId,
+          batchNumber,
+        )
+      : null;
+
+    if (batch) {
+      // Re-receive same lot after adjustment / partial: add qty, refresh costs/dates
+      batch = await uow.batches.update(batch.id, request.batch.businessId, {
+        quantityReceived: qtyStr(qty(batch.quantityReceived) + incomingQty),
+        quantityRemaining: qtyStr(qty(batch.quantityRemaining) + incomingQty),
+        costPrice: request.batch.costPrice ?? batch.costPrice,
+        supplierId: request.batch.supplierId ?? batch.supplierId,
+        expiryDate: request.batch.expiryDate ?? batch.expiryDate,
+        manufactureDate:
+          request.batch.manufactureDate ?? batch.manufactureDate,
+        active: true,
+      });
+    } else {
+      batch = await uow.batches.create(request.batch);
+    }
+
+    if (!batch) {
+      throw new Error("Failed to create or update product batch.");
+    }
 
     const existingBalance = await uow.balances.findByBatchWarehouse(
       batch.id,
@@ -69,7 +98,7 @@ export class InventoryService {
     if (existingBalance) {
       balance = await uow.balances.increaseQuantity(
         existingBalance.id,
-        qty(batch.quantityReceived),
+        incomingQty,
       );
     } else {
       balance = await uow.balances.create({
@@ -77,7 +106,7 @@ export class InventoryService {
         productId: batch.productId,
         batchId: batch.id,
         warehouseId: request.warehouseId,
-        quantity: qtyStr(batch.quantityReceived),
+        quantity: qtyStr(incomingQty),
       });
     }
 

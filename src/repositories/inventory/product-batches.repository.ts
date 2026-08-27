@@ -51,6 +51,20 @@ export class ProductBatchRepository extends BaseRepository {
     });
   }
 
+  async findByProductAndBatchNumber(
+    businessId: string,
+    productId: string,
+    batchNumber: string,
+  ) {
+    return this.database.query.productBatches.findFirst({
+      where: and(
+        eq(productBatches.businessId, businessId),
+        eq(productBatches.productId, productId),
+        eq(productBatches.batchNumber, batchNumber),
+      ),
+    });
+  }
+
   async create(data: ProductBatchInsert) {
     const [batch] = await this.database
       .insert(productBatches)
