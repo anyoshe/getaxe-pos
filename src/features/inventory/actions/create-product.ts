@@ -110,8 +110,12 @@ export async function createProductAction(
       name:
         formData.get("name"),
 
-      genericName:
-        formData.get("genericName") || null,
+      genericName: (() => {
+        const v = formData.get("genericName");
+        if (v === null || v === undefined) return null;
+        const s = String(v).trim();
+        return s === "" ? null : s;
+      })(),
 
       productBrand:
         formData.get("productBrand") || null,

@@ -42,7 +42,7 @@ export const PRODUCT_FIELD_DEFINITIONS: ProductFieldDefinition[] = [
   { key: "trackBatch", label: "Track Batch", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.batch-control", required: true },
   { key: "trackExpiry", label: "Track Expiry", step: "inventory", productTypes: ["physical", "medicine", "raw-material", "finished-product"], capability: "inventory.expiry-control", required: true },
   { key: "serialized", label: "Serialized", step: "inventory", productTypes: ["physical", "finished-product"] },
-  { key: "genericName", label: "Generic Name", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
+  { key: "genericName", label: "Generic Name", step: "product-information", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "drugCategoryId", label: "Drug Category", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "dosageFormId", label: "Dosage Form", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "drugStrengthId", label: "Drug Strength", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
@@ -146,21 +146,41 @@ export class ProductRuleResolver {
       genericName: "Generic name",
     };
 
+    const CATALOGUE_FIELDS = new Set([
+      "dosageFormId",
+      "drugCategoryId",
+      "drugStrengthId",
+      "prescriptionTypeId",
+      "categoryId",
+      "manufacturerId",
+    ]);
+
     const required = ruleSet.requiredFields;
     for (const field of required) {
       const value = input[field as keyof CreateProductInput];
-      const isEmpty = value === null || value === undefined || value === "";
+      const isEmpty =
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        (typeof value === "string" && value.trim() === "");
 
       if (isEmpty) {
         const label = FIELD_LABELS[field] ?? field;
-        setError(
-          field,
-          `${label} is required for medicine products. Select it from the pharmacy catalogue (or seed defaults under Pharmacy catalogues).`,
-        );
+        if (CATALOGUE_FIELDS.has(field)) {
+          setError(
+            field,
+            `${label} is required for medicine. Select it from the list (seed defaults under Pharmacy catalogues if empty).`,
+          );
+        } else {
+          setError(
+            field,
+            `${label} is required for medicine products.`,
+          );
+        }
       }
     }
 
-    // Hard gate: medicine always needs pharmacy classification when capability is on
+    // Hard gate: medicine always needs pharmacy classification selects
     if (input.productType === "medicine") {
       const pharmacyFields: { key: keyof CreateProductInput; label: string }[] = [
         { key: "dosageFormId", label: "Dosage form" },
@@ -176,6 +196,14 @@ export class ProductRuleResolver {
             `${label} is required. Open Pharmacy catalogues to load defaults if the list is empty.`,
           );
         }
+      }
+
+      const gn = input.genericName;
+      if (gn === null || gn === undefined || String(gn).trim() === "") {
+        setError(
+          "genericName",
+          "Generic name is required (e.g. Amoxicillin, Paracetamol) — enter it on the Product Information step.",
+        );
       }
     }
 

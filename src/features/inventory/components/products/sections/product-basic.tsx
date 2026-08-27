@@ -66,7 +66,8 @@ export function ProductBasic({
             name="genericName"
             label="Generic Name"
             required={isRequired("genericName")}
-            placeholder="e.g. Paracetamol"
+            placeholder="e.g. Paracetamol / Amoxicillin"
+            description="Active ingredient name (not the brand). Required for medicine."
           />
         )}
         {showField("productBrand") && (
