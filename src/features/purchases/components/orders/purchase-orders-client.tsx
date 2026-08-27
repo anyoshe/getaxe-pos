@@ -57,9 +57,9 @@ type Line = {
 function defaultUnit(product: ProductOpt | undefined): ProductUnitOpt | null {
   if (!product || product.units.length === 0) return null;
   return (
-    product.units.find((u) => u.isPurchaseDefault && u.allowPurchase) ??
+    product.units.find((u) => u.isPurchaseDefault) ??
+    product.units.find((u) => u.factorToStock > 1) ??
     product.units.find((u) => u.isStockUnit) ??
-    product.units.find((u) => u.allowPurchase) ??
     product.units[0]
   );
 }
@@ -309,9 +309,8 @@ export function PurchaseOrdersClient({
                 const lineTotal = line.quantity * line.costPerOrderUnit;
                 const orderUnitName = unitLabel(product, line.unitId);
                 const stockUnitName = product?.stockUnitLabel ?? "stock unit";
-                const purchaseUnits = (product?.units ?? []).filter(
-                  (u) => u.allowPurchase !== false,
-                );
+                // All packaging units on the product (box, strip, carton, piece…)
+                const purchaseUnits = product?.units ?? [];
 
                 return (
                   <div

@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label";
 
 import { receivePurchaseOrderAction } from "../../actions/purchasing-ui";
 
+export type ProductUnitOpt = {
+  unitId: string;
+  label: string;
+  factorToStock: number;
+  isStockUnit: boolean;
+  isPurchaseDefault: boolean;
+};
+
 export type ReceivePo = {
   id: string;
   orderNumber: string;
@@ -21,7 +29,10 @@ export type ReceivePo = {
     productName: string;
     quantity: number;
     receivedQuantity: number;
+    /** Cost per stock unit (as stored on PO) */
     unitCost: number;
+    stockUnitLabel: string;
+    units: ProductUnitOpt[];
   }[];
 };
 
@@ -34,6 +45,20 @@ type ReceiptRow = {
   supplierName: string;
   receivedAt: string;
 };
+
+type LineState = {
+  unitId: string | null;
+  quantity: number;
+  /** Cost for one of the selected receive unit */
+  costPerOrderUnit: number;
+};
+
+function money(n: number) {
+  return n.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  });
+}
 
 export function GoodsReceivingClient({
   purchaseOrders,
@@ -57,13 +82,33 @@ export function GoodsReceivingClient({
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [invoice, setInvoice] = useState("");
   const [notes, setNotes] = useState("");
+  const [lineState, setLineState] = useState<Record<string, LineState>>({});
 
   const selected = receivable.find((p) => p.id === poId);
 
-  const [qtys, setQtys] = useState<Record<string, number>>({});
+  function stateFor(item: ReceivePo["items"][0]): LineState {
+    const existing = lineState[item.productId];
+    if (existing) return existing;
+    const remaining = Math.max(0, item.quantity - item.receivedQuantity);
+    const u =
+      item.units.find((x) => x.isPurchaseDefault) ??
+      item.units.find((x) => x.isStockUnit) ??
+      item.units[0];
+    const factor = u?.factorToStock || 1;
+    return {
+      unitId: u?.unitId ?? null,
+      // Default remaining in stock units expressed in selected unit
+      quantity: factor > 0 ? remaining / factor : remaining,
+      costPerOrderUnit: item.unitCost * factor,
+    };
+  }
 
-  function openQty(productId: string, remaining: number) {
-    return qtys[productId] ?? remaining;
+  function patchLine(productId: string, base: ReceivePo["items"][0], patch: Partial<LineState>) {
+    const cur = stateFor(base);
+    setLineState((prev) => ({
+      ...prev,
+      [productId]: { ...cur, ...patch },
+    }));
   }
 
   function submit() {
@@ -73,12 +118,12 @@ export function GoodsReceivingClient({
     }
     const items = selected.items
       .map((it) => {
-        const remaining = Math.max(0, it.quantity - it.receivedQuantity);
-        const q = openQty(it.productId, remaining);
+        const st = stateFor(it);
         return {
           productId: it.productId,
-          quantity: q,
-          unitCost: it.unitCost,
+          quantity: st.quantity,
+          unitId: st.unitId,
+          unitCost: st.costPerOrderUnit,
         };
       })
       .filter((i) => i.quantity > 0);
@@ -110,7 +155,8 @@ export function GoodsReceivingClient({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Goods received</h1>
         <p className="text-sm text-muted-foreground">
-          Receive against approved purchase orders — stock is posted to inventory.
+          Receive in any packaging unit configured on the product (box, strip, piece…).
+          Stock is always stored in the product stock unit.
         </p>
       </div>
 
@@ -121,7 +167,10 @@ export function GoodsReceivingClient({
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={poId}
-              onChange={(e) => setPoId(e.target.value)}
+              onChange={(e) => {
+                setPoId(e.target.value);
+                setLineState({});
+              }}
             >
               {receivable.length === 0 && (
                 <option value="">No approved orders</option>
@@ -158,36 +207,90 @@ export function GoodsReceivingClient({
         </div>
 
         {selected && (
-          <div className="space-y-2">
-            <Label>Quantities to receive (stock units)</Label>
+          <div className="space-y-3">
+            <Label>Lines to receive</Label>
             {selected.items.map((it) => {
-              const remaining = Math.max(0, it.quantity - it.receivedQuantity);
+              const remainingStock = Math.max(0, it.quantity - it.receivedQuantity);
+              const st = stateFor(it);
+              const u = it.units.find((x) => x.unitId === st.unitId);
+              const factor = u?.factorToStock || 1;
+              const stockQty = st.quantity * factor;
+              const unitName = u?.label ?? it.stockUnitLabel;
+
               return (
                 <div
                   key={it.productId}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2 text-sm"
+                  className="space-y-2 rounded-lg border bg-card p-3 text-sm"
                 >
-                  <div>
-                    <div className="font-medium">{it.productName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Ordered {it.quantity} · Received {it.receivedQuantity} ·
-                      Remaining {remaining} · Cost {it.unitCost}
+                  <div className="font-medium">{it.productName}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Ordered {it.quantity} {it.stockUnitLabel} · already received{" "}
+                    {it.receivedQuantity} · remaining {remainingStock}{" "}
+                    {it.stockUnitLabel}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Receive unit</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                        value={st.unitId ?? ""}
+                        onChange={(e) => {
+                          const next = it.units.find((x) => x.unitId === e.target.value);
+                          const f = next?.factorToStock || 1;
+                          patchLine(it.productId, it, {
+                            unitId: e.target.value,
+                            costPerOrderUnit: it.unitCost * f,
+                            quantity: f > 0 ? remainingStock / f : remainingStock,
+                          });
+                        }}
+                      >
+                        {it.units.length === 0 && (
+                          <option value="">{it.stockUnitLabel}</option>
+                        )}
+                        {it.units.map((unit) => (
+                          <option key={unit.unitId} value={unit.unitId}>
+                            {unit.label}
+                            {unit.factorToStock !== 1
+                              ? ` (= ${unit.factorToStock} ${it.stockUnitLabel})`
+                              : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Qty ({unitName})</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={st.quantity}
+                        onChange={(e) =>
+                          patchLine(it.productId, it, {
+                            quantity: Number(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Cost / {unitName}</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={st.costPerOrderUnit}
+                        onChange={(e) =>
+                          patchLine(it.productId, it, {
+                            costPerOrderUnit: Number(e.target.value),
+                          })
+                        }
+                      />
                     </div>
                   </div>
-                  <Input
-                    className="w-28"
-                    type="number"
-                    min={0}
-                    max={remaining || undefined}
-                    step="any"
-                    value={openQty(it.productId, remaining)}
-                    onChange={(e) =>
-                      setQtys((prev) => ({
-                        ...prev,
-                        [it.productId]: Number(e.target.value),
-                      }))
-                    }
-                  />
+                  <div className="text-xs text-muted-foreground">
+                    → Posts <strong>{money(stockQty)}</strong> {it.stockUnitLabel} at{" "}
+                    <strong>{money(factor > 0 ? st.costPerOrderUnit / factor : st.costPerOrderUnit)}</strong>{" "}
+                    / {it.stockUnitLabel}
+                  </div>
                 </div>
               );
             })}

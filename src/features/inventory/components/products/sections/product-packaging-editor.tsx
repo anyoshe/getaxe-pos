@@ -106,8 +106,9 @@ export function ProductPackagingEditor({
       <div>
         <h3 className="text-sm font-semibold">Packaging conversions</h3>
         <p className="text-xs text-muted-foreground">
-          Map supplier or sales packs to the stock unit. Example: 1 Box = 100
-          capsules. Inventory always stores the stock unit.
+          Map every pack you buy or sell: Box, Strip, Carton, etc. Example:
+          1 Strip = 10 capsules, 1 Box = 100 capsules. These appear on purchase
+          orders and goods received. Inventory always stores the stock unit.
         </p>
       </div>
 

@@ -67,7 +67,7 @@ export async function createPurchaseOrderAction(input: unknown) {
           })),
           unitId: line.unitId,
           quantityEntered: line.quantity,
-          requirePurchase: true,
+          // Any product packaging unit may be used on a PO (box, strip, carton…)
           allowDecimals: true,
         });
         qty = resolved.quantityStock;
@@ -171,6 +171,7 @@ const receiveSchema = z.object({
       z.object({
         productId: z.uuid(),
         quantity: z.coerce.number().positive(),
+        unitId: z.uuid().nullable().optional(),
         unitCost: z.coerce.number().min(0),
         batchNumber: z.string().nullable().optional(),
         expiryDate: z.string().nullable().optional(),
@@ -199,18 +200,52 @@ export async function receivePurchaseOrderAction(input: unknown) {
 
   const receiptNumber = `GRN-${Date.now().toString(36).toUpperCase()}`;
   let subtotal = 0;
-  const items = data.items.map((line) => {
-    const total = line.quantity * line.unitCost;
+  const items = [];
+
+  for (const line of data.items) {
+    let qty = line.quantity;
+    let cost = line.unitCost;
+    try {
+      const units = await productUnitRepository.listByProduct(
+        user.businessId,
+        line.productId,
+      );
+      if (units.length > 0 && line.unitId) {
+        const resolved = resolveToStock({
+          productUnits: units.map((u) => ({
+            unitId: u.unitId,
+            factorToStock: Number(u.factorToStock),
+            isStockUnit: u.isStockUnit,
+            allowPurchase: u.allowPurchase,
+            active: u.active,
+            validTo: u.validTo,
+          })),
+          unitId: line.unitId,
+          quantityEntered: line.quantity,
+          allowDecimals: true,
+        });
+        qty = resolved.quantityStock;
+        cost = costPerStockUnit(line.unitCost, resolved.factorToStock);
+      }
+    } catch (err) {
+      return {
+        success: false as const,
+        message:
+          err instanceof Error ? err.message : "Unit conversion failed on receive.",
+      };
+    }
+
+    const total = qty * cost;
     subtotal += total;
-    return {
+    items.push({
       productId: line.productId,
-      quantity: line.quantity,
-      unitCost: line.unitCost.toFixed(4),
+      quantity: Math.round(qty) || qty,
+      unitCost: cost.toFixed(4),
       batchNumber: line.batchNumber ?? null,
       expiryDate: line.expiryDate ?? null,
       total: total.toFixed(2),
-    };
-  });
+    });
+  }
 
   try {
     const result = await goodsReceiptService.receiveGoods({
