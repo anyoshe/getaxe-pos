@@ -7,3 +7,4 @@ export * from "./stock_movements";
 export * from "./suppliers";
 export * from "./inventory_balances";
 export * from "./product_serials";
+export * from "./product_units";

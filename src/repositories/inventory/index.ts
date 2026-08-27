@@ -7,3 +7,4 @@ export * from "./product-batches.repository";
 export * from "./stock-movements.repository";
 export * from "./inventory-balances.repository";
 export * from "./product-serials.repository";
+export * from "./product-units.repository";

@@ -12,6 +12,7 @@ import { sql } from "drizzle-orm";
 import { businesses } from "../core/businesses";
 import { sales } from "./sales";
 import { products } from "../inventory/products";
+import { units } from "../settings/units";
 import { saleReturnItems } from "./sale_return_items";
 
 import { relations } from "drizzle-orm";
@@ -43,8 +44,23 @@ export const saleItems = pgTable(
         onDelete: "restrict",
       }),
 
+    /** Legacy: treated as stock qty when quantity_stock is null. */
     quantity: integer("quantity")
       .notNull(),
+
+    unitId: uuid("unit_id").references(() => units.id),
+
+    quantityEntered: numeric("quantity_entered", {
+      precision: 18,
+      scale: 6,
+    }),
+
+    quantityStock: integer("quantity_stock"),
+
+    conversionFactor: numeric("conversion_factor", {
+      precision: 18,
+      scale: 6,
+    }),
 
     unitPrice: numeric("unit_price", {
       precision: 12,

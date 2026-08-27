@@ -6,11 +6,15 @@ import { z } from "zod";
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { nowNairobiWallClock } from "@/lib/timezone";
 import { productRepository } from "@/repositories/inventory/products.repository";
+import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
+import { resolveToStock } from "@/features/inventory/services/unit-conversion.service";
 import { salesService } from "../services";
 
 const lineSchema = z.object({
   productId: z.uuid(),
-  quantity: z.coerce.number().int().positive(),
+  quantity: z.coerce.number().positive(),
+  /** Sales unit; omit for stock unit (factor 1). */
+  unitId: z.uuid().optional().nullable(),
   unitPrice: z.coerce.number().min(0),
   discount: z.coerce.number().min(0).optional().default(0),
   serialNumbers: z.array(z.string()).optional().default([]),
@@ -64,24 +68,74 @@ export async function createSaleAction(input: unknown) {
         };
       }
 
+      let quantityStock = Math.round(Number(line.quantity));
+      let quantityEntered = Number(line.quantity);
+      let conversionFactor = 1;
+      let lineUnitId: string | null = line.unitId ?? product.salesUnitId ?? product.stockUnitId ?? null;
+
+      try {
+        const productUnits = await productUnitRepository.listByProduct(
+          user.businessId,
+          line.productId,
+        );
+        if (productUnits.length > 0) {
+          const resolved = resolveToStock({
+            productUnits: productUnits.map((u) => ({
+              unitId: u.unitId,
+              factorToStock: Number(u.factorToStock),
+              isStockUnit: u.isStockUnit,
+              allowSale: u.allowSale,
+              allowPurchase: u.allowPurchase,
+              active: u.active,
+              validTo: u.validTo,
+            })),
+            unitId: line.unitId ?? product.salesUnitId ?? undefined,
+            quantityEntered: Number(line.quantity),
+            requireSale: true,
+          });
+          quantityStock = resolved.quantityStock;
+          quantityEntered = resolved.quantityEntered;
+          conversionFactor = resolved.factorToStock;
+          lineUnitId = resolved.unitId;
+        }
+      } catch (err) {
+        return {
+          success: false as const,
+          message:
+            err instanceof Error
+              ? err.message
+              : "Unit conversion failed for a sale line.",
+        };
+      }
+
       if (product.serialized) {
         const serials = (line.serialNumbers ?? [])
           .map((s) => s.trim())
           .filter(Boolean);
-        if (serials.length !== line.quantity) {
+        if (serials.length !== quantityStock) {
           return {
             success: false as const,
-            message: `${product.name} is serialized — enter ${line.quantity} serial number(s).`,
+            message: `${product.name} is serialized — enter ${quantityStock} serial number(s) (stock units).`,
+          };
+        }
+        if (conversionFactor !== 1) {
+          return {
+            success: false as const,
+            message: `${product.name}: serialized products must sell in stock units (factor 1).`,
           };
         }
       }
 
       const discount = line.discount ?? 0;
-      const lineTotal = line.quantity * line.unitPrice - discount;
+      const lineTotal = quantityEntered * line.unitPrice - discount;
 
       lines.push({
         productId: line.productId,
-        quantity: line.quantity,
+        quantity: quantityStock,
+        unitId: lineUnitId,
+        quantityEntered,
+        quantityStock,
+        conversionFactor,
         unitPrice: line.unitPrice.toFixed(2),
         discount: discount.toFixed(2),
         tax: "0",

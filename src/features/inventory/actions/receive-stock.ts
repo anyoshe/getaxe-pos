@@ -6,6 +6,11 @@ import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { inventoryService } from "../services/inventory.service";
 import { receiveStockSchema } from "../schemas/receive-stock";
+import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
+import {
+  resolveToStock,
+  costPerStockUnit,
+} from "../services/unit-conversion.service";
 
 /**
  * Ad-hoc stock receive (opening stock / purchase without full GRN).
@@ -90,18 +95,71 @@ export async function receiveStockAction(input: unknown) {
     };
   }
 
+  // Normalize entered qty → stock units
+  let quantityStock = Math.round(Number(data.quantity));
+  let quantityEntered = Number(data.quantity);
+  let conversionFactor = 1;
+  let enteredUnitId: string | null =
+    data.unitId ?? product.purchaseUnitId ?? product.stockUnitId ?? null;
+  let unitCostStock =
+    data.unitCost != null ? Number(data.unitCost) : null;
+
+  try {
+    const productUnits = await productUnitRepository.listByProduct(
+      user.businessId,
+      product.id,
+    );
+    if (productUnits.length > 0) {
+      const resolved = resolveToStock({
+        productUnits: productUnits.map((u) => ({
+          unitId: u.unitId,
+          factorToStock: Number(u.factorToStock),
+          isStockUnit: u.isStockUnit,
+          allowSale: u.allowSale,
+          allowPurchase: u.allowPurchase,
+          active: u.active,
+          validTo: u.validTo,
+        })),
+        unitId: data.unitId ?? product.purchaseUnitId ?? undefined,
+        quantityEntered: Number(data.quantity),
+        requirePurchase: true,
+      });
+      quantityStock = resolved.quantityStock;
+      quantityEntered = resolved.quantityEntered;
+      conversionFactor = resolved.factorToStock;
+      enteredUnitId = resolved.unitId;
+      if (data.unitCost != null) {
+        unitCostStock = costPerStockUnit(Number(data.unitCost), conversionFactor);
+      }
+    }
+  } catch (err) {
+    return {
+      success: false as const,
+      message:
+        err instanceof Error ? err.message : "Unit conversion failed on receive.",
+    };
+  }
+
+  if (product.serialized && conversionFactor !== 1) {
+    return {
+      success: false as const,
+      message:
+        "Serialized products must be received in stock units (conversion factor 1).",
+    };
+  }
+
   const serialNumbers = (data.serialNumbers ?? [])
     .map((s) => s.trim())
     .filter(Boolean);
 
   if (product.serialized) {
-    if (serialNumbers.length !== data.quantity) {
+    if (serialNumbers.length !== quantityStock) {
       return {
         success: false as const,
-        message: `This product is serialized. Enter exactly ${data.quantity} serial number(s).`,
+        message: `This product is serialized. Enter exactly ${quantityStock} serial number(s).`,
         errors: {
           serialNumbers: [
-            `Expected ${data.quantity} serial numbers, got ${serialNumbers.length}.`,
+            `Expected ${quantityStock} serial numbers, got ${serialNumbers.length}.`,
           ],
         },
       };
@@ -133,10 +191,10 @@ export async function receiveStockAction(input: unknown) {
         manufactureDate: data.manufactureDate ?? null,
         expiryDate: data.expiryDate ?? null,
         purchaseInvoice: data.reference ?? null,
-        costPrice: (data.unitCost ?? product.costPrice ?? 0).toString(),
+        costPrice: (unitCostStock ?? data.unitCost ?? product.costPrice ?? 0).toString(),
         sellingPrice: null,
-        quantityReceived: data.quantity,
-        quantityRemaining: data.quantity,
+        quantityReceived: quantityStock,
+        quantityRemaining: quantityStock,
         active: true,
       },
       movement: {
@@ -145,13 +203,18 @@ export async function receiveStockAction(input: unknown) {
         warehouseId: data.warehouseId,
         userId: user.id,
         movementType: data.movementType,
-        quantity: data.quantity,
+        quantity: quantityStock,
+        enteredUnitId,
+        quantityEntered: String(quantityEntered),
+        conversionFactor: String(conversionFactor),
         unitCost:
-          data.unitCost != null
-            ? data.unitCost.toString()
-            : product.costPrice != null
-              ? String(product.costPrice)
-              : null,
+          unitCostStock != null
+            ? unitCostStock.toFixed(4)
+            : data.unitCost != null
+              ? data.unitCost.toString()
+              : product.costPrice != null
+                ? String(product.costPrice)
+                : null,
         reference: data.reference ?? null,
         notes: data.notes ?? null,
       },

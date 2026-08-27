@@ -9,3 +9,4 @@ export * from "./inventory.service";
 export * from "./unit-of-work";
 export * from "./product-context.service";
 export * from "./product-rule-resolver";
+export * from "./unit-conversion.service";

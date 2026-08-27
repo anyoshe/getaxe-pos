@@ -34,6 +34,11 @@ export const units = pgTable(
 
     description: text("description"),
 
+    /** count | mass | volume | length | area */
+    category: text("category").default("count").notNull(),
+
+    allowDecimals: boolean("allow_decimals").default(false).notNull(),
+
     active: boolean("active")
       .default(true)
       .notNull(),

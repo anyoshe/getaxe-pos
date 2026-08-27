@@ -15,6 +15,7 @@ import { productBatches } from "./product_batches";
 import { users } from "../users/users";
 import { stockMovementTypeEnum } from "../shared";
 import { warehouses } from "../settings/warehouses";
+import { units } from "../settings/units";
 
 export const stockMovements = pgTable(
     "stock_movements",
@@ -44,8 +45,24 @@ export const stockMovements = pgTable(
         movementType: stockMovementTypeEnum("movement_type")
             .notNull(),
 
+        /** Always in product stock units (canonical). */
         quantity: integer("quantity")
             .notNull(),
+
+        /** Unit the user entered (audit). */
+        enteredUnitId: uuid("entered_unit_id")
+            .references(() => units.id),
+
+        quantityEntered: numeric("quantity_entered", {
+            precision: 18,
+            scale: 6,
+        }),
+
+        /** Snapshot of factor_to_stock at posting time. */
+        conversionFactor: numeric("conversion_factor", {
+            precision: 18,
+            scale: 6,
+        }),
 
         unitCost: numeric("unit_cost", {
             precision: 12,

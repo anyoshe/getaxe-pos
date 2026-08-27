@@ -12,6 +12,7 @@ import {
 import { businesses } from "../core/businesses";
 import { products } from "./products";
 import { priceLists } from "./price_lists";
+import { units } from "../settings/units";
 import { relations } from "drizzle-orm";
 
 export const productPrices = pgTable(
@@ -34,6 +35,9 @@ export const productPrices = pgTable(
     priceListId: uuid("price_list_id")
       .notNull()
       .references(() => priceLists.id),
+
+    /** Sales unit this price applies to; null = legacy default sales unit. */
+    unitId: uuid("unit_id").references(() => units.id),
 
     price: numeric("price", {
       precision: 12,
