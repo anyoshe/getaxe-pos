@@ -33,6 +33,9 @@ export type ReceivePo = {
     /** Cost per stock unit (as stored on PO) */
     unitCost: number;
     stockUnitLabel: string;
+    trackBatch: boolean;
+    trackExpiry: boolean;
+    serialized: boolean;
     units: ProductUnitOpt[];
   }[];
 };
@@ -52,6 +55,9 @@ type LineState = {
   quantity: number;
   /** Cost for one of the selected receive unit */
   costPerOrderUnit: number;
+  batchNumber: string;
+  expiryDate: string;
+  manufactureDate: string;
 };
 
 function money(n: number) {
@@ -101,6 +107,9 @@ export function GoodsReceivingClient({
       // Default remaining in stock units expressed in selected unit
       quantity: factor > 0 ? remaining / factor : remaining,
       costPerOrderUnit: item.unitCost * factor,
+      batchNumber: "",
+      expiryDate: "",
+      manufactureDate: "",
     };
   }
 
@@ -117,6 +126,19 @@ export function GoodsReceivingClient({
       toast.error("Select a purchase order and warehouse.");
       return;
     }
+    for (const it of selected.items) {
+      const st = stateFor(it);
+      if (st.quantity <= 0) continue;
+      if (it.trackBatch && !st.batchNumber.trim()) {
+        toast.error(`${it.productName}: batch number is required.`);
+        return;
+      }
+      if (it.trackExpiry && !st.expiryDate) {
+        toast.error(`${it.productName}: expiry date is required.`);
+        return;
+      }
+    }
+
     const items = selected.items
       .map((it) => {
         const st = stateFor(it);
@@ -125,6 +147,9 @@ export function GoodsReceivingClient({
           quantity: st.quantity,
           unitId: st.unitId,
           unitCost: st.costPerOrderUnit,
+          batchNumber: st.batchNumber.trim() || null,
+          expiryDate: st.expiryDate || null,
+          manufactureDate: st.manufactureDate || null,
         };
       })
       .filter((i) => i.quantity > 0);
@@ -287,6 +312,65 @@ export function GoodsReceivingClient({
                       />
                     </div>
                   </div>
+                  {(it.trackBatch || it.trackExpiry) && (
+                    <div className="grid gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 sm:grid-cols-3">
+                      {it.trackBatch && (
+                        <div className="space-y-1 sm:col-span-1">
+                          <Label className="text-xs">
+                            Batch number <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            value={st.batchNumber}
+                            onChange={(e) =>
+                              patchLine(it.lineId, it, {
+                                batchNumber: e.target.value,
+                              })
+                            }
+                            placeholder="e.g. LOT-2026-001"
+                            required
+                          />
+                        </div>
+                      )}
+                      {it.trackExpiry && (
+                        <>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              Expiry date{" "}
+                              <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              type="date"
+                              value={st.expiryDate}
+                              onChange={(e) =>
+                                patchLine(it.lineId, it, {
+                                  expiryDate: e.target.value,
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              Manufacture date{" "}
+                              <span className="text-muted-foreground">
+                                (optional)
+                              </span>
+                            </Label>
+                            <Input
+                              type="date"
+                              value={st.manufactureDate}
+                              onChange={(e) =>
+                                patchLine(it.lineId, it, {
+                                  manufactureDate: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <div className="text-xs text-muted-foreground">
                     → Posts <strong>{money(stockQty)}</strong> {it.stockUnitLabel} at{" "}
                     <strong>{money(factor > 0 ? st.costPerOrderUnit / factor : st.costPerOrderUnit)}</strong>{" "}

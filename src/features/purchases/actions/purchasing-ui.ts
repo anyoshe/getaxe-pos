@@ -175,6 +175,7 @@ const receiveSchema = z.object({
         unitCost: z.coerce.number().min(0),
         batchNumber: z.string().nullable().optional(),
         expiryDate: z.string().nullable().optional(),
+        manufactureDate: z.string().nullable().optional(),
       }),
     )
     .min(1),
@@ -241,8 +242,9 @@ export async function receivePurchaseOrderAction(input: unknown) {
       productId: line.productId,
       quantity: Math.round(qty) || qty,
       unitCost: cost.toFixed(4),
-      batchNumber: line.batchNumber ?? null,
-      expiryDate: line.expiryDate ?? null,
+      batchNumber: line.batchNumber?.trim() || null,
+      expiryDate: line.expiryDate?.trim() || null,
+      manufactureDate: line.manufactureDate?.trim() || null,
       total: total.toFixed(2),
     });
   }

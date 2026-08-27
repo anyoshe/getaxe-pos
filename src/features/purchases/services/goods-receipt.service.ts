@@ -95,6 +95,22 @@ export class GoodsReceiptService {
 
                                 expiryDate,
 
+                                manufactureDate:
+                                  (item as { manufactureDate?: string | null })
+                                    .manufactureDate &&
+                                  String(
+                                    (item as { manufactureDate?: string | null })
+                                      .manufactureDate,
+                                  ).trim() !== ""
+                                    ? String(
+                                        (
+                                          item as {
+                                            manufactureDate?: string | null;
+                                          }
+                                        ).manufactureDate,
+                                      ).slice(0, 10)
+                                    : null,
+
                                 quantityReceived: qtyStr(item.quantity),
 
                                 quantityRemaining: qtyStr(item.quantity),

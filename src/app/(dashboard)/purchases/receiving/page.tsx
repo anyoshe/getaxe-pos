@@ -42,15 +42,25 @@ export default async function GoodsReceivingPage() {
   ]);
 
   const productMeta = new Map(
-    (products as Array<{ id: string; name: string; stockUnit?: { name?: string } | null }>).map(
-      (p) => [
-        p.id,
-        {
-          name: p.name,
-          stockUnitLabel: p.stockUnit?.name ?? "unit",
-        },
-      ],
-    ),
+    (
+      products as Array<{
+        id: string;
+        name: string;
+        stockUnit?: { name?: string } | null;
+        trackBatch?: boolean;
+        trackExpiry?: boolean;
+        serialized?: boolean;
+      }>
+    ).map((p) => [
+      p.id,
+      {
+        name: p.name,
+        stockUnitLabel: p.stockUnit?.name ?? "unit",
+        trackBatch: Boolean(p.trackBatch),
+        trackExpiry: Boolean(p.trackExpiry),
+        serialized: Boolean(p.serialized),
+      },
+    ]),
   );
 
   const unitsByProduct = new Map<
@@ -115,6 +125,9 @@ export default async function GoodsReceivingPage() {
             receivedQuantity: Number(it.receivedQuantity ?? 0),
             unitCost: Number(it.unitCost),
             stockUnitLabel: meta?.stockUnitLabel ?? "unit",
+            trackBatch: meta?.trackBatch ?? false,
+            trackExpiry: meta?.trackExpiry ?? false,
+            serialized: meta?.serialized ?? false,
             units: unitsByProduct.get(it.productId) ?? [],
           };
         }),
