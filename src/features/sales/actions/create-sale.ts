@@ -179,7 +179,7 @@ export async function createSaleAction(input: unknown) {
           (l as { quantityEntered?: number }).quantityEntered != null
             ? String((l as { quantityEntered?: number }).quantityEntered)
             : null,
-        quantityStock: String(l.quantity),
+        quantityStock: Number(l.quantity),
         conversionFactor:
           (l as { conversionFactor?: number }).conversionFactor != null
             ? String((l as { conversionFactor?: number }).conversionFactor)
