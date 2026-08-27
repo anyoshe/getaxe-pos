@@ -313,6 +313,12 @@ export const navigation: NavigationItem[] = [
       {
         label: "Units",
         href: "/settings/units",
+      },
+      {
+        label: "Audit log",
+        href: "/settings/audit-log",
+        icon: ClipboardList,
+        permission: "accounts.view",
         icon: Ruler,
         permission: "units.view",
       },

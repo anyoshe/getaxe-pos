@@ -1,6 +1,7 @@
 "use server";
 
 import { financeService } from "@/features/finance/services/finance.service";
+import { logActivity } from "@/features/audit/services/activity-log.service";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -211,7 +212,7 @@ export async function createSaleAction(input: unknown) {
           method: data.paymentMethod,
           status: "COMPLETED",
           amount: subtotal.toFixed(2),
-          reference: null,
+          transactionReference: null,
           receivedBy: user.id,
         },
       ],
@@ -221,6 +222,15 @@ export async function createSaleAction(input: unknown) {
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
     revalidatePath("/finance/payments");
+
+    void logActivity({
+      businessId: user.businessId,
+      userId: user.id,
+      action: "CREATE",
+      entity: "SALE",
+      entityId: (result as any).sale?.id,
+      description: `POS sale ${(result as any).sale?.invoiceNumber} total ${(result as any).sale?.total} (${data.paymentMethod})`,
+    });
 
     return {
       success: true as const,

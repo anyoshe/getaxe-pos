@@ -1,5 +1,7 @@
 "use server";
 
+import { logActivity } from "@/features/audit/services/activity-log.service";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -114,6 +116,14 @@ export async function createPurchaseOrderAction(input: unknown) {
     });
 
     revalidatePath("/purchases/orders");
+    void logActivity({
+      businessId: user.businessId,
+      userId: user.id,
+      action: "CREATE",
+      entity: "PURCHASE_ORDER",
+      entityId: (result as { order: { id: string } }).order.id,
+      description: `Purchase order ${orderNumber} created`,
+    });
     return {
       success: true as const,
       message: `Purchase order ${orderNumber} created.`,
@@ -275,6 +285,15 @@ export async function receivePurchaseOrderAction(input: unknown) {
     revalidatePath("/purchases/orders");
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
+
+    void logActivity({
+      businessId: user.businessId,
+      userId: user.id,
+      action: "CREATE",
+      entity: "GOODS_RECEIPT",
+      entityId: (result as { receipt?: { id: string } })?.receipt?.id,
+      description: `Goods receipt ${receiptNumber} posted`,
+    });
 
     return {
       success: true as const,
