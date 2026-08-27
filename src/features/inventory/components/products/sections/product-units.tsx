@@ -4,12 +4,14 @@ import type { UseFormReturn } from "react-hook-form";
 import { FormSection, FormSearchableSelect } from "@/components/forms";
 import type { ProductContext } from "../../../types";
 import type { ProductFormInput } from "../product-form.types";
+import { ProductPackagingEditor } from "./product-packaging-editor";
 
 interface ProductUnitsProps {
   form: UseFormReturn<ProductFormInput>;
   context: ProductContext;
   visibleFields?: string[];
   requiredFields?: string[];
+  productId?: string | null;
 }
 
 export function ProductUnits({
@@ -17,6 +19,7 @@ export function ProductUnits({
   context,
   visibleFields,
   requiredFields,
+  productId,
 }: ProductUnitsProps) {
   const visibleSet = new Set(visibleFields ?? []);
   const requiredSet = new Set(requiredFields ?? []);
@@ -64,6 +67,21 @@ export function ProductUnits({
           />
         )}
       </div>
+      {productId ? (
+        <ProductPackagingEditor
+          productId={productId}
+          units={context.units.map((u) => ({
+            id: u.id,
+            name: u.name,
+            code: (u as { code?: string }).code,
+          }))}
+        />
+      ) : (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Save the product first, then edit it to add packaging conversions
+          (e.g. 1 box = 100 tablets).
+        </p>
+      )}
     </FormSection>
   );
 }

@@ -92,6 +92,7 @@ export async function createSaleAction(input: unknown) {
             unitId: line.unitId ?? product.salesUnitId ?? undefined,
             quantityEntered: Number(line.quantity),
             requireSale: true,
+            allowDecimals: true,
           });
           quantityStock = resolved.quantityStock;
           quantityEntered = resolved.quantityEntered;

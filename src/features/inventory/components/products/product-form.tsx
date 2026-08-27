@@ -278,6 +278,7 @@ export function ProductForm({
         >
 
             <ProductWizard
+                productId={product?.id}
                 wizard={wizard}
                 form={form}
                 context={context}

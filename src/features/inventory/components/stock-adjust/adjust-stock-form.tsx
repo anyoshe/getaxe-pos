@@ -25,13 +25,15 @@ type WarehouseOption = { id: string; name: string };
 interface AdjustStockFormProps {
   batches: BatchOption[];
   warehouses: WarehouseOption[];
+  units?: { id: string; name: string }[];
 }
 
-export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
+export function AdjustStockForm({ batches, warehouses, units = [] }: AdjustStockFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selectionKey, setSelectionKey] = useState("");
   const [quantity, setQuantity] = useState("-1");
+  const [unitId, setUnitId] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -50,6 +52,7 @@ export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
         batchId: selected.id,
         warehouseId: selected.warehouseId || warehouses[0]?.id,
         quantity: Number(quantity),
+        unitId: unitId || null,
         reference: reference || null,
         notes: notes || null,
       });
@@ -112,6 +115,26 @@ export function AdjustStockForm({ batches, warehouses }: AdjustStockFormProps) {
           )}
         </div>
 
+        {units.length > 0 && (
+          <div className="space-y-2">
+            <Label>Unit (optional)</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={unitId}
+              onChange={(e) => setUnitId(e.target.value)}
+            >
+              <option value="">Stock unit (no conversion)</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Enter qty in this unit; system converts to stock units using product packaging.
+            </p>
+          </div>
+        )}
         <div className="space-y-2">
           <Label>
             Quantity change <span className="text-destructive">*</span>

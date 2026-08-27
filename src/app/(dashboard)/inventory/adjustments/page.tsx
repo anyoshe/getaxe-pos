@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { productBatchService, productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
+import { unitsService } from "@/features/settings/services/units.service";
 import { AdjustStockForm } from "@/features/inventory/components/stock-adjust/adjust-stock-form";
 import { db } from "@/db";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
@@ -11,7 +12,7 @@ export default async function AdjustmentsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [batches, products, warehouses, balances] = await Promise.all([
+  const [batches, products, warehouses, balances, units] = await Promise.all([
     productBatchService.getProductBatches(user.businessId),
     productService.getProducts(user.businessId),
     warehousesService.getWarehouses(user.businessId),
@@ -19,6 +20,7 @@ export default async function AdjustmentsPage() {
       .select()
       .from(inventoryBalances)
       .where(eq(inventoryBalances.businessId, user.businessId)),
+    unitsService.getUnits(user.businessId),
   ]);
 
   const productName = new Map(products.map((p) => [p.id, p.name]));
@@ -61,6 +63,7 @@ export default async function AdjustmentsPage() {
   return (
     <div className="p-4 sm:p-6">
       <AdjustStockForm
+        units={units.map((u) => ({ id: u.id, name: u.name }))}
         batches={options.map((o) => ({
           id: o.id,
           batchNumber: o.batchNumber,

@@ -33,6 +33,8 @@ interface ProductPriceDialogProps {
 
   priceLists: PriceList[];
 
+  units?: { id: string; name: string }[];
+
   onSuccess: () => void;
 }
 
@@ -42,6 +44,7 @@ export function ProductPriceDialog({
   productPrice,
   products,
   priceLists,
+  units = [],
   onSuccess,
 }: ProductPriceDialogProps) {
   const editing =
@@ -66,6 +69,7 @@ export function ProductPriceDialog({
         productPrice={productPrice}
         products={products}
         priceLists={priceLists}
+        units={units}
         onSuccess={() => {
           onOpenChange(false);
           onSuccess();

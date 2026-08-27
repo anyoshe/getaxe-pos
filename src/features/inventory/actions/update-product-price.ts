@@ -32,6 +32,9 @@ export async function updateProductPriceAction(
       priceListId:
         formData.get("priceListId"),
 
+      unitId:
+        formData.get("unitId") || null,
+
       price:
         formData.get("price"),
 

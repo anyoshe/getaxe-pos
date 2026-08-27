@@ -7,6 +7,7 @@ import {
   priceListService,
   productPriceService,
 } from "@/features/inventory/services";
+import { unitsService } from "@/features/settings/services/units.service";
 
 import {
   ProductPricesClient,
@@ -24,6 +25,7 @@ export default async function Page() {
     products,
     priceLists,
     productPrices,
+    units,
   ] = await Promise.all([
     productService.getProducts(
       user.businessId
@@ -36,10 +38,13 @@ export default async function Page() {
     productPriceService.getProductPrices(
       user.businessId
     ),
+
+    unitsService.getUnits(user.businessId),
   ]);
 
   return (
     <ProductPricesClient
+      units={units.map((u) => ({ id: u.id, name: u.name }))}
       products={products}
       priceLists={priceLists}
       productPrices={productPrices}

@@ -2,6 +2,7 @@ import {
     pgTable,
     uuid,
     integer,
+    numeric,
     timestamp,
     index,
     uniqueIndex,
@@ -45,8 +46,8 @@ export const inventoryBalances = pgTable(
                 onDelete: "cascade",
             }),
 
-        quantity: integer("quantity")
-            .default(0)
+        quantity: numeric("quantity", { precision: 18, scale: 6 })
+            .default("0")
             .notNull(),
 
         createdAt: timestamp("created_at")

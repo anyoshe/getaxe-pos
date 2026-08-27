@@ -48,12 +48,15 @@ interface ProductPricesClientProps {
   products: Product[];
 
   priceLists: PriceList[];
+
+  units?: { id: string; name: string }[];
 }
 
 export function ProductPricesClient({
   productPrices,
   products,
   priceLists,
+  units = [],
 }: ProductPricesClientProps) {
   const router =
     useRouter();

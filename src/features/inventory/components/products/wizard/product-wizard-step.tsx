@@ -22,6 +22,7 @@ interface ProductWizardStepProps {
     context: ProductContext;
     /** Prefer wizard state so rules resolve even if form productType lags. */
     productType?: ProductType | null;
+    productId?: string | null;
 }
 
 type SectionProps = {
@@ -29,6 +30,7 @@ type SectionProps = {
     context: ProductContext;
     visibleFields?: string[];
     requiredFields?: string[];
+    productId?: string | null;
 };
 
 const STEP_COMPONENTS: Record<string, ComponentType<SectionProps>> = {
@@ -47,6 +49,7 @@ export function ProductWizardStep({
     form,
     context,
     productType: productTypeProp,
+    productId,
 }: ProductWizardStepProps) {
     const Component = STEP_COMPONENTS[stepId];
 
@@ -85,6 +88,7 @@ export function ProductWizardStep({
             context={context}
             visibleFields={visibleFields}
             requiredFields={requiredFields}
+            productId={productId}
         />
     );
 }

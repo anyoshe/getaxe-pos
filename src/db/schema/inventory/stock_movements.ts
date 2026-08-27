@@ -46,7 +46,7 @@ export const stockMovements = pgTable(
             .notNull(),
 
         /** Always in product stock units (canonical). */
-        quantity: integer("quantity")
+        quantity: numeric("quantity", { precision: 18, scale: 6 })
             .notNull(),
 
         /** Unit the user entered (audit). */

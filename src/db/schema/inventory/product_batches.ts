@@ -55,10 +55,10 @@ export const productBatches = pgTable(
       scale: 2,
     }),
 
-    quantityReceived: integer("quantity_received")
+    quantityReceived: numeric("quantity_received", { precision: 18, scale: 6 })
       .notNull(),
 
-    quantityRemaining: integer("quantity_remaining")
+    quantityRemaining: numeric("quantity_remaining", { precision: 18, scale: 6 })
       .notNull(),
 
     active: boolean("active")

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
+import { resolveToStock } from "../services/unit-conversion.service";
 import { inventoryService } from "../services/inventory.service";
 
 const schema = z.object({
@@ -11,7 +13,8 @@ const schema = z.object({
   batchId: z.uuid(),
   fromWarehouseId: z.uuid(),
   toWarehouseId: z.uuid(),
-  quantity: z.coerce.number().int().positive(),
+  quantity: z.coerce.number().positive(),
+  unitId: z.uuid().nullable().optional(),
   notes: z.string().trim().nullable().optional(),
   reference: z.string().trim().nullable().optional(),
 });
@@ -37,13 +40,44 @@ export async function transferStockAction(input: unknown) {
     };
   }
 
+  let quantityStock = data.quantity;
+
+  try {
+    const productUnits = await productUnitRepository.listByProduct(
+      user.businessId,
+      data.productId,
+    );
+    if (productUnits.length > 0 && data.unitId) {
+      const resolved = resolveToStock({
+        productUnits: productUnits.map((u) => ({
+          unitId: u.unitId,
+          factorToStock: Number(u.factorToStock),
+          isStockUnit: u.isStockUnit,
+          allowSale: u.allowSale,
+          allowPurchase: u.allowPurchase,
+          active: u.active,
+          validTo: u.validTo,
+        })),
+        unitId: data.unitId,
+        quantityEntered: data.quantity,
+        allowDecimals: true,
+      });
+      quantityStock = resolved.quantityStock;
+    }
+  } catch (err) {
+    return {
+      success: false as const,
+      message: err instanceof Error ? err.message : "Unit conversion failed.",
+    };
+  }
+
   try {
     await inventoryService.transferStock({
       productId: data.productId,
       batchId: data.batchId,
       fromWarehouseId: data.fromWarehouseId,
       toWarehouseId: data.toWarehouseId,
-      quantity: data.quantity,
+      quantity: quantityStock,
       movement: {
         userId: user.id,
         reference: data.reference ?? null,
@@ -57,7 +91,7 @@ export async function transferStockAction(input: unknown) {
 
     return {
       success: true as const,
-      message: `Transferred ${data.quantity} unit(s).`,
+      message: `Transferred ${quantityStock} stock unit(s).`,
     };
   } catch (error) {
     return {

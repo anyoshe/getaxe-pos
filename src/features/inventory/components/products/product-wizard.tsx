@@ -19,6 +19,7 @@ interface ProductWizardProps {
     context: ProductContext;
     pending: boolean;
     onSubmit: () => void;
+    productId?: string | null;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -35,6 +36,7 @@ export function ProductWizard({
     context,
     pending,
     onSubmit,
+    productId,
 }: ProductWizardProps) {
     if (!wizard.hasProductType) {
         return (
@@ -64,6 +66,7 @@ export function ProductWizard({
                     form={form}
                     context={context}
                     productType={wizard.productType}
+                    productId={productId}
                 />
             </div>
 

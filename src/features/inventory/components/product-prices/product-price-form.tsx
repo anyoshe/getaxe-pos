@@ -44,6 +44,8 @@ interface ProductPriceFormValues {
 
   priceListId: string;
 
+  unitId: string;
+
   price: string;
 
   minimumQuantity: string;
@@ -58,6 +60,8 @@ interface ProductPriceFormProps {
 
   priceLists: PriceList[];
 
+  units?: { id: string; name: string }[];
+
   onSuccess: () => void;
 
   onCancel: () => void;
@@ -67,6 +71,7 @@ export function ProductPriceForm({
   productPrice,
   products,
   priceLists,
+  units = [],
   onSuccess,
   onCancel,
 }: ProductPriceFormProps) {
@@ -84,6 +89,9 @@ export function ProductPriceForm({
 
         priceListId:
           productPrice?.priceListId ?? "",
+
+        unitId:
+          (productPrice as { unitId?: string | null })?.unitId ?? "",
 
         price:
           productPrice?.price ?? "",
@@ -103,6 +111,9 @@ export function ProductPriceForm({
 
       priceListId:
         productPrice?.priceListId ?? "",
+
+      unitId:
+        (productPrice as { unitId?: string | null })?.unitId ?? "",
 
       price:
         productPrice?.price ?? "",
@@ -136,6 +147,10 @@ export function ProductPriceForm({
         "priceListId",
         values.priceListId
       );
+
+      if (values.unitId) {
+        formData.set("unitId", values.unitId);
+      }
 
       formData.set(
         "price",
@@ -217,6 +232,28 @@ export function ProductPriceForm({
           }
         />
 
+        {units.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Sales unit (optional)</label>
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={form.watch("unitId") ?? ""}
+              onChange={(e) =>
+                form.setValue("unitId", e.target.value, { shouldDirty: true })
+              }
+            >
+              <option value="">Default / any unit</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Price applies when POS sells in this unit (e.g. strip vs box).
+            </p>
+          </div>
+        )}
         <FormTextField
           form={form}
           name="price"

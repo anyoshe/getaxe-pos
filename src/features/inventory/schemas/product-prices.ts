@@ -7,6 +7,8 @@ export const createProductPriceSchema = z.object({
 
   priceListId: z.uuid(),
 
+  unitId: z.uuid().nullable().optional(),
+
   price: z.coerce
     .number()
     .positive("Price must be greater than zero."),

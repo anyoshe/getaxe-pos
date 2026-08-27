@@ -36,11 +36,22 @@ type BranchOption = { id: string; name: string };
 type SerialsByProduct = Record<string, string[]>;
 type PriceMode = "retail" | "wholesale";
 
+export type PosProductUnit = {
+  unitId: string;
+  factorToStock: number;
+  isSalesDefault: boolean;
+  isStockUnit: boolean;
+  label: string;
+};
+
 type CartLine = {
   productId: string;
   name: string;
   quantity: number;
   unitPrice: number;
+  unitId: string | null;
+  unitLabel: string;
+  factorToStock: number;
   serialized: boolean;
   selectedSerials: string[];
 };
@@ -57,6 +68,7 @@ interface PosClientProps {
   warehouses: WarehouseOption[];
   branches: BranchOption[];
   availableSerials: SerialsByProduct;
+  productUnitsByProduct?: Record<string, PosProductUnit[]>;
   fullScreen?: boolean;
   cashierName?: string | null;
   recentSales?: RecentSale[];
@@ -67,6 +79,7 @@ export function PosClient({
   warehouses,
   branches,
   availableSerials: initialSerials,
+  productUnitsByProduct = {},
   fullScreen = false,
   cashierName,
   recentSales = [],
@@ -154,13 +167,26 @@ export function PosClient({
     return pool.filter((s) => !takenElsewhere.has(s));
   }
 
+  function defaultUnitFor(productId: string): PosProductUnit | null {
+    const list = productUnitsByProduct[productId] ?? [];
+    if (list.length === 0) return null;
+    return (
+      list.find((u) => u.isSalesDefault) ??
+      list.find((u) => u.isStockUnit) ??
+      list[0]
+    );
+  }
+
   const addProduct = useCallback(
     (p: PosProduct) => {
+      const u = defaultUnitFor(p.id);
       setCart((prev) => {
-        const existing = prev.find((l) => l.productId === p.id);
+        const existing = prev.find(
+          (l) => l.productId === p.id && l.unitId === (u?.unitId ?? null),
+        );
         if (existing) {
           return prev.map((l) =>
-            l.productId === p.id
+            l.productId === p.id && l.unitId === (u?.unitId ?? null)
               ? { ...l, quantity: l.quantity + 1, unitPrice: priceFor(p) }
               : l,
           );
@@ -172,15 +198,39 @@ export function PosClient({
             name: p.name,
             quantity: 1,
             unitPrice: priceFor(p),
+            unitId: u?.unitId ?? null,
+            unitLabel: u?.label ?? "unit",
+            factorToStock: u?.factorToStock ?? 1,
             serialized: p.serialized,
             selectedSerials: [],
           },
         ];
       });
-      toast.success(p.name, { description: "Added to cart" });
+      toast.success(p.name, {
+        description: u ? `Added (${u.label})` : "Added to cart",
+      });
     },
-    [priceFor],
+    [priceFor, productUnitsByProduct],
   );
+
+  function setLineUnit(productId: string, unitId: string) {
+    const u = (productUnitsByProduct[productId] ?? []).find(
+      (x) => x.unitId === unitId,
+    );
+    if (!u) return;
+    setCart((prev) =>
+      prev.map((l) =>
+        l.productId === productId
+          ? {
+              ...l,
+              unitId: u.unitId,
+              unitLabel: u.label,
+              factorToStock: u.factorToStock,
+            }
+          : l,
+      ),
+    );
+  }
 
   function resolveCode(code: string) {
     const key = code.trim().toLowerCase();
@@ -315,6 +365,7 @@ export function PosClient({
         items: cart.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,
+          unitId: l.unitId,
           unitPrice: l.unitPrice,
           serialNumbers: l.serialized ? l.selectedSerials : [],
         })),
@@ -625,6 +676,34 @@ export function PosClient({
                         <p className="font-medium">{line.name}</p>
                         <p className="text-xs text-muted-foreground">
                           @ {line.unitPrice.toFixed(2)} · {priceMode}
+                          {(productUnitsByProduct[line.productId]?.length ?? 0) >
+                            1 && (
+                            <select
+                              className="mt-1 h-7 max-w-full rounded border border-input bg-background px-1 text-xs"
+                              value={line.unitId ?? ""}
+                              onChange={(e) =>
+                                setLineUnit(line.productId, e.target.value)
+                              }
+                            >
+                              {(productUnitsByProduct[line.productId] ?? []).map(
+                                (u) => (
+                                  <option key={u.unitId} value={u.unitId}>
+                                    {u.label}
+                                    {u.factorToStock !== 1
+                                      ? ` (×${u.factorToStock})`
+                                      : ""}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          )}
+                          {(productUnitsByProduct[line.productId]?.length ?? 0) <=
+                            1 &&
+                            line.unitLabel && (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                / {line.unitLabel}
+                              </span>
+                            )}
                         </p>
                       </div>
                       <button

@@ -5,14 +5,16 @@ import { branchesService } from "@/features/settings/services/branches.service";
 import { saleRepository } from "@/repositories/sales/sales.repository";
 import { productSerials } from "@/db/schema/inventory/product_serials";
 import { db } from "@/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
+import { productUnits } from "@/db/schema/inventory/product_units";
+import { units } from "@/db/schema/settings/units";
 import { PosClient } from "@/features/sales/components/pos/pos-client";
 
 export default async function FullScreenPosPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [products, warehouses, branches, sales, availableSerialRows] =
+  const [products, warehouses, branches, sales, availableSerialRows, productUnitRows] =
     await Promise.all([
       productService.getProducts(user.businessId),
       warehousesService.getWarehouses(user.businessId),
@@ -30,7 +32,50 @@ export default async function FullScreenPosPage() {
             eq(productSerials.status, "AVAILABLE"),
           ),
         ),
+      db
+        .select({
+          productId: productUnits.productId,
+          unitId: productUnits.unitId,
+          factorToStock: productUnits.factorToStock,
+          isSalesDefault: productUnits.isSalesDefault,
+          isStockUnit: productUnits.isStockUnit,
+          allowSale: productUnits.allowSale,
+          unitCode: units.code,
+          unitName: units.name,
+        })
+        .from(productUnits)
+        .innerJoin(units, eq(productUnits.unitId, units.id))
+        .where(
+          and(
+            eq(productUnits.businessId, user.businessId),
+            eq(productUnits.active, true),
+            eq(productUnits.allowSale, true),
+            isNull(productUnits.validTo),
+          ),
+        ),
     ]);
+
+  const unitsByProduct: Record<
+    string,
+    {
+      unitId: string;
+      factorToStock: number;
+      isSalesDefault: boolean;
+      isStockUnit: boolean;
+      label: string;
+    }[]
+  > = {};
+  for (const row of productUnitRows) {
+    const list = unitsByProduct[row.productId] ?? [];
+    list.push({
+      unitId: row.unitId,
+      factorToStock: Number(row.factorToStock),
+      isSalesDefault: row.isSalesDefault,
+      isStockUnit: row.isStockUnit,
+      label: row.unitName || row.unitCode,
+    });
+    unitsByProduct[row.productId] = list;
+  }
 
   const availableSerials: Record<string, string[]> = {};
   for (const row of availableSerialRows) {
@@ -88,6 +133,7 @@ export default async function FullScreenPosPage() {
       }))}
       branches={branches.map((b) => ({ id: b.id, name: b.name }))}
       availableSerials={availableSerials}
+      productUnitsByProduct={unitsByProduct}
     />
   );
 }
