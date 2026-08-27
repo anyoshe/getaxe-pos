@@ -212,7 +212,25 @@ export const navigation: NavigationItem[] = [
         permission: "expenses.view",
       },
       {
-        label: "Accounts",
+        label: "Other income",
+        href: "/finance/incomes",
+        icon: Banknote,
+        permission: "accounts.view",
+      },
+      {
+        label: "Cash & bank",
+        href: "/finance/cash-accounts",
+        icon: Wallet,
+        permission: "accounts.view",
+      },
+      {
+        label: "Tax rates",
+        href: "/finance/tax-rates",
+        icon: CircleDollarSign,
+        permission: "accounts.view",
+      },
+      {
+        label: "Chart of accounts",
         href: "/finance/accounts",
         icon: CircleDollarSign,
         permission: "accounts.view",

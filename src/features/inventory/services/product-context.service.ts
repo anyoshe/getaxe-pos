@@ -31,6 +31,7 @@ import {
 } from "./product-rule-resolver";
 
 import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/seed-pharmacy-catalogues.service";
+import { financeService } from "@/features/finance/services/finance.service";
 
 export class ProductContextService {
   async getContext(
@@ -109,10 +110,14 @@ export class ProductContextService {
       drugCategories,
       drugStrengths,
       prescriptionTypes,
-      taxRates: [],
-      incomeAccounts: [],
-      expenseAccounts: [],
-      inventoryAccounts: [],
+      taxRates: await financeService.getTaxRates(businessId).catch(() => []),
+      ...(await financeService
+        .getAccountsForProductContext(businessId)
+        .catch(() => ({
+          incomeAccounts: [],
+          expenseAccounts: [],
+          inventoryAccounts: [],
+        }))),
     };
   }
 }

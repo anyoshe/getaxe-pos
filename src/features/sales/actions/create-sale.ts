@@ -1,5 +1,7 @@
 "use server";
 
+import { financeService } from "@/features/finance/services/finance.service";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -151,6 +153,10 @@ export async function createSaleAction(input: unknown) {
     const subtotal = lines.reduce((s, l) => s + Number(l.total), 0);
     const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
 
+    const defaultCash = await financeService
+      .getDefaultCashAccount(user.businessId)
+      .catch(() => null);
+
     const result = (await salesService.createSale({
       sale: {
         businessId: user.businessId,
@@ -191,12 +197,24 @@ export async function createSaleAction(input: unknown) {
         serialNumbers: l.serialNumbers,
         skipStock: l.skipStock,
       })),
-      payments: [], // ledger optional — sale.amountPaid / paymentStatus already set
+      payments: [
+        {
+          businessId: user.businessId,
+          saleId: "",
+          cashAccountId: defaultCash?.id ?? null,
+          method: data.paymentMethod,
+          status: "COMPLETED",
+          amount: subtotal.toFixed(2),
+          reference: null,
+          receivedBy: user.id,
+        },
+      ],
     }));
 
     revalidatePath("/sales");
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
+    revalidatePath("/finance/payments");
 
     return {
       success: true as const,
