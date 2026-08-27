@@ -31,6 +31,10 @@ export type PosProduct = {
   active: boolean;
 };
 
+/** productId → warehouseId → qty from inventory_balances (same as Stock on Hand) */
+export type StockByProductWarehouse = Record<string, Record<string, number>>;
+export type SerialsByProductWarehouse = Record<string, Record<string, string[]>>;
+
 type WarehouseOption = { id: string; name: string; branchId: string };
 type BranchOption = { id: string; name: string };
 type SerialsByProduct = Record<string, string[]>;
@@ -68,6 +72,8 @@ interface PosClientProps {
   warehouses: WarehouseOption[];
   branches: BranchOption[];
   availableSerials: SerialsByProduct;
+  stockByProductWarehouse?: StockByProductWarehouse;
+  serialsByProductWarehouse?: SerialsByProductWarehouse;
   productUnitsByProduct?: Record<string, PosProductUnit[]>;
   fullScreen?: boolean;
   cashierName?: string | null;
@@ -79,6 +85,8 @@ export function PosClient({
   warehouses,
   branches,
   availableSerials: initialSerials,
+  stockByProductWarehouse = {},
+  serialsByProductWarehouse = {},
   productUnitsByProduct = {},
   fullScreen = false,
   cashierName,
@@ -109,6 +117,10 @@ export function PosClient({
   const [branchId, setBranchId] = useState(
     warehouses[0]?.branchId ?? branches[0]?.id ?? "",
   );
+
+  function stockOnHand(productId: string, whId: string = warehouseId): number {
+    return Number(stockByProductWarehouse[productId]?.[whId] ?? 0);
+  }
   const [paymentMethod, setPaymentMethod] = useState<
     "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY"
   >("CASH");
@@ -126,6 +138,27 @@ export function PosClient({
   useEffect(() => {
     scanRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    const next: SerialsByProduct = {};
+    for (const [pid, byWh] of Object.entries(serialsByProductWarehouse)) {
+      next[pid] = byWh[warehouseId] ?? [];
+    }
+    // If map empty, keep initial (backward compatible)
+    if (Object.keys(serialsByProductWarehouse).length === 0) {
+      setSerialPool(initialSerials);
+      return;
+    }
+    setSerialPool(next);
+    setCart((prev) =>
+      prev.map((line) => ({
+        ...line,
+        selectedSerials: line.selectedSerials.filter((s) =>
+          (next[line.productId] ?? []).includes(s),
+        ),
+      })),
+    );
+  }, [warehouseId, serialsByProductWarehouse, initialSerials]);
 
   const priceFor = useCallback(
     (p: PosProduct) =>
@@ -146,19 +179,31 @@ export function PosClient({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sellable.slice(0, 50);
-    return sellable
-      .filter(
+    let list = sellable;
+    if (q) {
+      list = sellable.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
           (p.sku && p.sku.toLowerCase().includes(q)) ||
           (p.barcode && p.barcode.toLowerCase().includes(q)),
-      )
-      .slice(0, 50);
-  }, [query, sellable]);
+      );
+    }
+    // Prefer products with stock in the selected warehouse (inventory_balances)
+    list = [...list].sort((a, b) => {
+      const sa = stockOnHand(a.id);
+      const sb = stockOnHand(b.id);
+      if (sa > 0 && sb <= 0) return -1;
+      if (sb > 0 && sa <= 0) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    return list.slice(0, 50);
+  }, [query, sellable, warehouseId, stockByProductWarehouse]);
 
   function freeSerials(productId: string): string[] {
-    const pool = serialPool[productId] ?? [];
+    const pool =
+      serialsByProductWarehouse[productId]?.[warehouseId] ??
+      serialPool[productId] ??
+      [];
     const takenElsewhere = new Set(
       cart
         .filter((l) => l.productId !== productId)
@@ -180,10 +225,28 @@ export function PosClient({
   const addProduct = useCallback(
     (p: PosProduct) => {
       const u = defaultUnitFor(p.id);
+      const factor = u?.factorToStock && u.factorToStock > 0 ? u.factorToStock : 1;
+      const onHand = stockOnHand(p.id);
+      const isService = p.productType === "service" || !p.trackInventory;
+
       setCart((prev) => {
         const existing = prev.find(
           (l) => l.productId === p.id && l.unitId === (u?.unitId ?? null),
         );
+        const nextQtyStock =
+          ((existing?.quantity ?? 0) + 1) * factor;
+        if (!isService && onHand <= 0) {
+          toast.error(
+            `No stock for ${p.name} in this warehouse. Check Stock on Hand or switch warehouse.`,
+          );
+          return prev;
+        }
+        if (!isService && nextQtyStock > onHand + 1e-9) {
+          toast.error(
+            `Only ${onHand} stock unit(s) of ${p.name} in this warehouse.`,
+          );
+          return prev;
+        }
         if (existing) {
           return prev.map((l) =>
             l.productId === p.id && l.unitId === (u?.unitId ?? null)
@@ -643,10 +706,28 @@ export function PosClient({
                     <span className="text-xs text-muted-foreground">
                       {[p.sku, p.barcode].filter(Boolean).join(" · ") || "—"}
                       {p.serialized ? " · serial" : ""}
+                      {p.productType !== "service" && p.trackInventory !== false
+                        ? ` · stock ${stockOnHand(p.id)}`
+                        : ""}
                     </span>
                   </span>
-                  <span className="shrink-0 tabular-nums font-semibold text-primary">
-                    {priceFor(p).toFixed(2)}
+                  <span className="shrink-0 text-right">
+                    <span className="block tabular-nums font-semibold text-primary">
+                      {priceFor(p).toFixed(2)}
+                    </span>
+                    {p.productType !== "service" && p.trackInventory !== false && (
+                      <span
+                        className={
+                          stockOnHand(p.id) > 0
+                            ? "text-[10px] text-muted-foreground"
+                            : "text-[10px] text-destructive"
+                        }
+                      >
+                        {stockOnHand(p.id) > 0
+                          ? `${stockOnHand(p.id)} on hand`
+                          : "Out of stock"}
+                      </span>
+                    )}
                   </span>
                 </button>
               ))
