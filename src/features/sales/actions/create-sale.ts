@@ -93,7 +93,7 @@ export async function createSaleAction(input: unknown) {
             })),
             unitId: line.unitId ?? product.salesUnitId ?? undefined,
             quantityEntered: Number(line.quantity),
-            requireSale: true,
+            // Qty is always in the selected sales unit; convert to stock units here
             allowDecimals: true,
           });
           quantityStock = resolved.quantityStock;
@@ -185,7 +185,9 @@ export async function createSaleAction(input: unknown) {
           (l as { quantityEntered?: number }).quantityEntered != null
             ? String((l as { quantityEntered?: number }).quantityEntered)
             : null,
-        quantityStock: Number(l.quantity),
+        quantityStock: Number(
+          (l as { quantityStock?: number }).quantityStock ?? l.quantity,
+        ),
         conversionFactor:
           (l as { conversionFactor?: number }).conversionFactor != null
             ? String((l as { conversionFactor?: number }).conversionFactor)

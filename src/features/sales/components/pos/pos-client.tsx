@@ -217,6 +217,7 @@ export function PosClient({
     if (list.length === 0) return null;
     return (
       list.find((u) => u.isSalesDefault) ??
+      list.find((u) => u.factorToStock > 1) ??
       list.find((u) => u.isStockUnit) ??
       list[0]
     );
@@ -403,11 +404,16 @@ export function PosClient({
         }
       }
       for (const line of cart) {
-        if (line.serialized && line.selectedSerials.length !== line.quantity) {
-          toast.error(
-            `${line.name}: select ${line.quantity} serial number(s).`,
+        if (line.serialized) {
+          const needSerials = Math.round(
+            line.quantity * (line.factorToStock > 0 ? line.factorToStock : 1),
           );
-          return;
+          if (line.selectedSerials.length !== needSerials) {
+            toast.error(
+              `${line.name}: select ${needSerials} serial number(s) (stock units).`,
+            );
+            return;
+          }
         }
       }
 
@@ -763,42 +769,16 @@ export function PosClient({
                 const options = freeSerials(line.productId);
                 return (
                   <div
-                    key={line.productId}
+                    key={`${line.productId}-${line.unitId ?? "stock"}`}
                     className="space-y-2 rounded-xl border bg-card p-3 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium">{line.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          @ {line.unitPrice.toFixed(2)} · {priceMode}
-                          {(productUnitsByProduct[line.productId]?.length ?? 0) >
-                            1 && (
-                            <select
-                              className="mt-1 h-7 max-w-full rounded border border-input bg-background px-1 text-xs"
-                              value={line.unitId ?? ""}
-                              onChange={(e) =>
-                                setLineUnit(line.productId, e.target.value)
-                              }
-                            >
-                              {(productUnitsByProduct[line.productId] ?? []).map(
-                                (u) => (
-                                  <option key={u.unitId} value={u.unitId}>
-                                    {u.label}
-                                    {u.factorToStock !== 1
-                                      ? ` (×${u.factorToStock})`
-                                      : ""}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                          )}
-                          {(productUnitsByProduct[line.productId]?.length ?? 0) <=
-                            1 &&
-                            line.unitLabel && (
-                              <span className="ml-1 text-xs text-muted-foreground">
-                                / {line.unitLabel}
-                              </span>
-                            )}
+                          Price per{" "}
+                          <strong>{line.unitLabel || "unit"}</strong> ·{" "}
+                          {priceMode} @ {line.unitPrice.toFixed(2)}
                         </p>
                       </div>
                       <button
@@ -813,39 +793,92 @@ export function PosClient({
                         Remove
                       </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Qty</Label>
-                      <Input
-                        className="h-9 w-20"
-                        type="number"
-                        min={1}
-                        value={line.quantity}
-                        onChange={(e) => {
-                          const q = Math.max(1, Number(e.target.value) || 1);
-                          setCart((c) =>
-                            c.map((x) =>
-                              x.productId === line.productId
-                                ? {
-                                    ...x,
-                                    quantity: q,
-                                    selectedSerials: x.selectedSerials.slice(
-                                      0,
-                                      q,
-                                    ),
-                                  }
-                                : x,
-                            ),
-                          );
-                        }}
-                      />
-                      <span className="ml-auto text-base font-semibold tabular-nums">
-                        {(line.quantity * line.unitPrice).toFixed(2)}
-                      </span>
+                    <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Sell unit</Label>
+                        {(productUnitsByProduct[line.productId]?.length ?? 0) >=
+                        1 ? (
+                          <select
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            value={line.unitId ?? ""}
+                            onChange={(e) =>
+                              setLineUnit(line.productId, e.target.value)
+                            }
+                          >
+                            {(productUnitsByProduct[line.productId] ?? []).map(
+                              (u) => (
+                                <option key={u.unitId} value={u.unitId}>
+                                  {u.label}
+                                  {u.factorToStock !== 1
+                                    ? ` (= ${u.factorToStock} stock)`
+                                    : " (stock unit)"}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        ) : (
+                          <div className="flex h-9 items-center rounded-md border bg-muted/40 px-2 text-sm">
+                            {line.unitLabel || "unit"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Qty ({line.unitLabel || "unit"})
+                        </Label>
+                        <Input
+                          className="h-9 w-24"
+                          type="number"
+                          min={0.000001}
+                          step="any"
+                          value={line.quantity}
+                          onChange={(e) => {
+                            const q = Math.max(
+                              0,
+                              Number(e.target.value) || 0,
+                            );
+                            const factor =
+                              line.factorToStock > 0 ? line.factorToStock : 1;
+                            const stockNeed = q * factor;
+                            setCart((c) =>
+                              c.map((x) =>
+                                x.productId === line.productId
+                                  ? {
+                                      ...x,
+                                      quantity: q,
+                                      // Serials still count in stock units
+                                      selectedSerials: x.selectedSerials.slice(
+                                        0,
+                                        Math.round(stockNeed) || 0,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            );
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <Label className="text-xs">Line total</Label>
+                        <div className="flex h-9 items-center justify-end text-base font-semibold tabular-nums">
+                          {(line.quantity * line.unitPrice).toFixed(2)}
+                        </div>
+                      </div>
                     </div>
+                    {line.factorToStock !== 1 && (
+                      <p className="text-xs text-muted-foreground">
+                        {line.quantity} {line.unitLabel} × {line.factorToStock} ={" "}
+                        <strong>
+                          {(line.quantity * line.factorToStock).toLocaleString()}
+                        </strong>{" "}
+                        stock units deducted from inventory
+                      </p>
+                    )}
                     {line.serialized && (
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          Serials ({line.selectedSerials.length}/{line.quantity})
+                          Serials ({line.selectedSerials.length}/
+                          {Math.round(line.quantity * (line.factorToStock || 1))})
                         </Label>
                         {options.length === 0 ? (
                           <p className="text-xs text-destructive">
