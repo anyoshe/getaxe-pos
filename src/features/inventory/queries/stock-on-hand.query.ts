@@ -35,7 +35,7 @@ export async function getStockOnHand(
 
     gt(
       inventoryBalances.quantity,
-      0
+      "0"
     ),
   ];
 
