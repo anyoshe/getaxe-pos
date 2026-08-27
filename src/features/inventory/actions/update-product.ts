@@ -103,10 +103,12 @@ export async function updateProductAction(id: string, formData: FormData) {
   });
 
   if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const messages = Object.values(fieldErrors).flat();
     return {
-      success: false,
-
-      errors: parsed.error.flatten().fieldErrors,
+      success: false as const,
+      message: messages[0] ?? "Check required product fields.",
+      errors: fieldErrors,
     };
   }
 
@@ -118,8 +120,12 @@ export async function updateProductAction(id: string, formData: FormData) {
   });
 
   if (!validationResult.valid) {
+    const messages = Object.values(validationResult.errors).flat();
     return {
-      success: false,
+      success: false as const,
+      message:
+        messages[0] ??
+        "Pharmacy catalogue fields are required for medicine products.",
       errors: validationResult.errors,
     };
   }

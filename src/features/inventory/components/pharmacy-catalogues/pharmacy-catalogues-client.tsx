@@ -15,6 +15,7 @@ import {
   createPrescriptionTypeAction,
 } from "@/features/pharmacy/actions/reference-data";
 import { seedDefaultPharmacyCataloguesAction } from "@/features/pharmacy/actions/seed-default-catalogues";
+import { ensurePharmacyCapabilitiesAction } from "@/features/capabilities/actions/ensure-pharmacy-capabilities";
 
 type Row = { id: string; name: string; code?: string };
 
@@ -62,24 +63,44 @@ export function PharmacyCataloguesClient({
           Full prescriptions and dispensation come later in the Pharmacy module.
         </p>
         <div className="mt-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => {
-              startTransition(async () => {
-                const result = await seedDefaultPharmacyCataloguesAction();
-                if (!result.success) {
-                  toast.error(result.message);
-                  return;
-                }
-                toast.success(result.message);
-                router.refresh();
-              });
-            }}
-          >
-            {pending ? "Seeding…" : "Load default pharmacy catalogues"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                startTransition(async () => {
+                  const result = await ensurePharmacyCapabilitiesAction();
+                  if (!result.success) {
+                    toast.error(result.message);
+                    return;
+                  }
+                  toast.success(result.message);
+                  router.refresh();
+                });
+              }}
+            >
+              Enable pharmacy features
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                startTransition(async () => {
+                  const result = await seedDefaultPharmacyCataloguesAction();
+                  if (!result.success) {
+                    toast.error(result.message);
+                    return;
+                  }
+                  toast.success(result.message);
+                  router.refresh();
+                });
+              }}
+            >
+              {pending ? "Working…" : "Load default catalogues"}
+            </Button>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Adds standard dosage forms, therapeutic categories, strengths, and
             OTC/POM types if missing. Safe to run more than once.

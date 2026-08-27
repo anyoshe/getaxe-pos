@@ -171,15 +171,18 @@ export async function createProductAction(
 
 
   if (!parsed.success) {
-
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const messages = Object.entries(fieldErrors)
+      .flatMap(([key, msgs]) =>
+        (msgs ?? []).map((m) => m),
+      );
     return {
-      success: false,
-
-      errors:
-        parsed.error.flatten()
-          .fieldErrors,
+      success: false as const,
+      message:
+        messages[0] ??
+        "Check required product fields and try again.",
+      errors: fieldErrors,
     };
-
   }
 
   const businessCapabilityRepository = new BusinessCapabilityRepository();
@@ -190,8 +193,12 @@ export async function createProductAction(
   });
 
   if (!validationResult.valid) {
+    const messages = Object.values(validationResult.errors).flat();
     return {
-      success: false,
+      success: false as const,
+      message:
+        messages[0] ??
+        "Pharmacy catalogue fields are required for medicine products.",
       errors: validationResult.errors,
     };
   }

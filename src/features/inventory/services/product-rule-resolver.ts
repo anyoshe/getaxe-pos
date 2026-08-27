@@ -135,13 +135,47 @@ export class ProductRuleResolver {
       errors[key] = current;
     };
 
+    const FIELD_LABELS: Record<string, string> = {
+      name: "Name",
+      categoryId: "Category",
+      dosageFormId: "Dosage form",
+      drugCategoryId: "Drug category",
+      drugStrengthId: "Drug strength",
+      prescriptionTypeId: "Prescription type",
+      manufacturerId: "Manufacturer",
+      genericName: "Generic name",
+    };
+
     const required = ruleSet.requiredFields;
     for (const field of required) {
       const value = input[field as keyof CreateProductInput];
       const isEmpty = value === null || value === undefined || value === "";
 
       if (isEmpty) {
-        setError(field, `${field} is required for ${input.productType}.`);
+        const label = FIELD_LABELS[field] ?? field;
+        setError(
+          field,
+          `${label} is required for medicine products. Select it from the pharmacy catalogue (or seed defaults under Pharmacy catalogues).`,
+        );
+      }
+    }
+
+    // Hard gate: medicine always needs pharmacy classification when capability is on
+    if (input.productType === "medicine") {
+      const pharmacyFields: { key: keyof CreateProductInput; label: string }[] = [
+        { key: "dosageFormId", label: "Dosage form" },
+        { key: "drugCategoryId", label: "Drug category" },
+        { key: "drugStrengthId", label: "Drug strength" },
+        { key: "prescriptionTypeId", label: "Prescription type" },
+      ];
+      for (const { key, label } of pharmacyFields) {
+        const value = input[key];
+        if (value === null || value === undefined || value === "") {
+          setError(
+            key as string,
+            `${label} is required. Open Pharmacy catalogues to load defaults if the list is empty.`,
+          );
+        }
       }
     }
 
