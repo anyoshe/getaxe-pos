@@ -219,7 +219,7 @@ export async function receiveStockAction(input: unknown) {
         reference: data.reference ?? null,
         notes: data.notes ?? null,
       },
-    });
+    }));
 
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");

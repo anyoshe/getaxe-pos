@@ -192,7 +192,7 @@ export async function createSaleAction(input: unknown) {
         skipStock: l.skipStock,
       })),
       payments: [], // ledger optional — sale.amountPaid / paymentStatus already set
-    });
+    }));
 
     revalidatePath("/sales");
     revalidatePath("/inventory/stock");

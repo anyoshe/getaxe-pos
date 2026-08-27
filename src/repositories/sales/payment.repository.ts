@@ -92,8 +92,6 @@ export class PaymentRepository extends BaseRepository {
       ),
     });
   }
-}
-
 
   async findCompletedBySale(saleId: string) {
     return this.database
@@ -106,5 +104,5 @@ export class PaymentRepository extends BaseRepository {
         ),
       );
   }
-
+}
 export const paymentRepository = new PaymentRepository();
