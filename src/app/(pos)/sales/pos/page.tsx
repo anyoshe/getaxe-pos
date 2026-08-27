@@ -8,6 +8,7 @@ import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
 import { db } from "@/db";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { productUnits } from "@/db/schema/inventory/product_units";
+import { productPrices } from "@/db/schema/inventory/product_prices";
 import { units } from "@/db/schema/settings/units";
 import { PosClient } from "@/features/sales/components/pos/pos-client";
 
@@ -22,6 +23,7 @@ export default async function FullScreenPosPage() {
     sales,
     availableSerialRows,
     productUnitRows,
+    priceRows,
     stockRows,
   ] = await Promise.all([
     productService.getProducts(user.businessId),
@@ -60,6 +62,19 @@ export default async function FullScreenPosPage() {
           eq(productUnits.active, true),
           eq(productUnits.allowSale, true),
           isNull(productUnits.validTo),
+        ),
+      ),
+    db
+      .select({
+        productId: productPrices.productId,
+        unitId: productPrices.unitId,
+        price: productPrices.price,
+      })
+      .from(productPrices)
+      .where(
+        and(
+          eq(productPrices.businessId, user.businessId),
+          eq(productPrices.active, true),
         ),
       ),
     // Same source of truth as Inventory → Stock on Hand
@@ -126,8 +141,22 @@ export default async function FullScreenPosPage() {
     availableSerials[pid] = Object.values(byWh).flat();
   }
 
+  /** productId -> unitId -> price (explicit pack price if configured) */
+  const pricesByProductUnit: Record<string, Record<string, number>> = {};
+  for (const row of priceRows as Array<{
+    productId: string;
+    unitId: string | null;
+    price: string;
+  }>) {
+    if (!row.unitId) continue;
+    const byU = pricesByProductUnit[row.productId] ?? {};
+    byU[row.unitId] = Number(row.price) || 0;
+    pricesByProductUnit[row.productId] = byU;
+  }
+
   return (
     <PosClient
+
       fullScreen
       cashierName={user.name ?? user.email}
       recentSales={sales.map((s) => ({
@@ -181,6 +210,7 @@ export default async function FullScreenPosPage() {
       branches={branches.map((b) => ({ id: b.id, name: b.name }))}
       availableSerials={availableSerials}
       productUnitsByProduct={unitsByProduct}
+      pricesByProductUnit={pricesByProductUnit}
     />
   );
 }

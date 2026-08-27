@@ -75,6 +75,8 @@ interface PosClientProps {
   stockByProductWarehouse?: StockByProductWarehouse;
   serialsByProductWarehouse?: SerialsByProductWarehouse;
   productUnitsByProduct?: Record<string, PosProductUnit[]>;
+  /** Optional explicit pack prices; else retail/wholesale × factor */
+  pricesByProductUnit?: Record<string, Record<string, number>>;
   fullScreen?: boolean;
   cashierName?: string | null;
   recentSales?: RecentSale[];
@@ -88,6 +90,7 @@ export function PosClient({
   stockByProductWarehouse = {},
   serialsByProductWarehouse = {},
   productUnitsByProduct = {},
+  pricesByProductUnit = {},
   fullScreen = false,
   cashierName,
   recentSales = [],
@@ -160,10 +163,23 @@ export function PosClient({
     );
   }, [warehouseId, serialsByProductWarehouse, initialSerials]);
 
+  /**
+   * Price for one sell unit:
+   * 1) explicit product_prices for that unit if set
+   * 2) else piece/retail (or wholesale) × factorToStock
+   */
   const priceFor = useCallback(
-    (p: PosProduct) =>
-      priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice,
-    [priceMode],
+    (p: PosProduct, unitId?: string | null, factorToStock = 1) => {
+      const base =
+        priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice;
+      if (unitId) {
+        const explicit = pricesByProductUnit[p.id]?.[unitId];
+        if (explicit != null && explicit > 0) return explicit;
+      }
+      const factor = factorToStock > 0 ? factorToStock : 1;
+      return base * factor;
+    },
+    [priceMode, pricesByProductUnit],
   );
 
   // When switching retail/wholesale, update cart unit prices
@@ -172,7 +188,10 @@ export function PosClient({
       prev.map((line) => {
         const p = sellable.find((x) => x.id === line.productId);
         if (!p) return line;
-        return { ...line, unitPrice: priceFor(p) };
+        return {
+          ...line,
+          unitPrice: priceFor(p, line.unitId, line.factorToStock),
+        };
       }),
     );
   }, [priceMode, priceFor, sellable]);
@@ -251,7 +270,15 @@ export function PosClient({
         if (existing) {
           return prev.map((l) =>
             l.productId === p.id && l.unitId === (u?.unitId ?? null)
-              ? { ...l, quantity: l.quantity + 1, unitPrice: priceFor(p) }
+              ? {
+                  ...l,
+                  quantity: l.quantity + 1,
+                  unitPrice: priceFor(
+                    p,
+                    u?.unitId ?? null,
+                    u?.factorToStock ?? 1,
+                  ),
+                }
               : l,
           );
         }
@@ -261,7 +288,7 @@ export function PosClient({
             productId: p.id,
             name: p.name,
             quantity: 1,
-            unitPrice: priceFor(p),
+            unitPrice: priceFor(p, u?.unitId ?? null, u?.factorToStock ?? 1),
             unitId: u?.unitId ?? null,
             unitLabel: u?.label ?? "unit",
             factorToStock: u?.factorToStock ?? 1,
@@ -282,6 +309,7 @@ export function PosClient({
       (x) => x.unitId === unitId,
     );
     if (!u) return;
+    const p = sellable.find((x) => x.id === productId);
     setCart((prev) =>
       prev.map((l) =>
         l.productId === productId
@@ -290,6 +318,9 @@ export function PosClient({
               unitId: u.unitId,
               unitLabel: u.label,
               factorToStock: u.factorToStock,
+              unitPrice: p
+                ? priceFor(p, u.unitId, u.factorToStock)
+                : l.unitPrice,
             }
           : l,
       ),
@@ -733,7 +764,14 @@ export function PosClient({
                   </span>
                   <span className="shrink-0 text-right">
                     <span className="block tabular-nums font-semibold text-primary">
-                      {priceFor(p).toFixed(2)}
+                      {(() => {
+                        const u = defaultUnitFor(p.id);
+                        return priceFor(
+                          p,
+                          u?.unitId ?? null,
+                          u?.factorToStock ?? 1,
+                        ).toFixed(2);
+                      })()}
                     </span>
                     {p.productType !== "service" && p.trackInventory !== false && (
                       <span
@@ -776,9 +814,12 @@ export function PosClient({
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{line.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Price per{" "}
-                          <strong>{line.unitLabel || "unit"}</strong> ·{" "}
-                          {priceMode} @ {line.unitPrice.toFixed(2)}
+                          <strong>{line.unitPrice.toFixed(2)}</strong> per{" "}
+                          {line.unitLabel || "unit"}
+                          {line.factorToStock !== 1
+                            ? ` (${(line.unitPrice / line.factorToStock).toFixed(2)} per stock unit)`
+                            : ""}{" "}
+                          · {priceMode}
                         </p>
                       </div>
                       <button
