@@ -224,6 +224,12 @@ export const navigation: NavigationItem[] = [
         permission: "accounts.view",
       },
       {
+        label: "Daily reconciliation",
+        href: "/finance/reconciliation",
+        icon: ClipboardList,
+        permission: "accounts.view",
+      },
+      {
         label: "Tax rates",
         href: "/finance/tax-rates",
         icon: CircleDollarSign,

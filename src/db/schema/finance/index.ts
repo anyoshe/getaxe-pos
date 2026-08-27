@@ -9,3 +9,4 @@ export * from "./incomes";
 export * from "./journal_entries";
 export * from "./journal_entry_lines";
 export * from "./tax_rates";
+export * from "./cash_reconciliations";
