@@ -108,7 +108,7 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-full w-[260px] shrink-0 flex-col border-r border-slate-200/80",
+        "flex h-full w-[240px] shrink-0 flex-col border-r border-slate-200/80 xl:w-[260px]",
         "bg-slate-50/95 text-slate-800",
         "dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100",
       )}

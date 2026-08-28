@@ -40,7 +40,7 @@ export function Topbar({ user }: TopbarProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
 
-      <div className="flex h-16 items-center justify-between gap-4 px-4 lg:px-8">
+      <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:gap-4 sm:px-4 lg:px-6">
 
         {/* Left */}
 
