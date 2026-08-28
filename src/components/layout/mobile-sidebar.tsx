@@ -16,7 +16,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 
 import { Logo } from "./logo";
 
@@ -92,16 +91,12 @@ export function MobileSidebar() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 shrink-0 border-slate-200 lg:hidden"
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+      <SheetTrigger
+        type="button"
+        aria-label="Open menu"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-background text-slate-700 shadow-xs transition-colors hover:bg-slate-100 lg:hidden dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+      >
+        <Menu className="h-5 w-5" />
       </SheetTrigger>
 
       <SheetContent
