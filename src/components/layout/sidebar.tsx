@@ -16,7 +16,6 @@ interface SidebarProps {
   user: CurrentUser;
 }
 
-/** Visual sections for a standard ERP sidebar order */
 const SECTION_BREAKS: Record<string, string> = {
   Dashboard: "",
   Capabilities: "",
@@ -56,19 +55,22 @@ export function Sidebar({ user }: SidebarProps) {
   }, [hasPermission]);
 
   useEffect(() => {
-    filteredNavigation.forEach((item) => {
-      if (
-        pathname === item.href ||
-        item.children?.some(
-          (child) =>
-            child.href &&
-            (pathname === child.href || pathname.startsWith(child.href + "/")),
-        )
-      ) {
-        setOpenMenus((prev) =>
-          prev.includes(item.label) ? prev : [...prev, item.label],
-        );
+    setOpenMenus((prev) => {
+      const next = new Set(prev);
+      for (const item of filteredNavigation) {
+        const match =
+          (item.href &&
+            (pathname === item.href ||
+              pathname.startsWith(item.href + "/"))) ||
+          item.children?.some(
+            (child) =>
+              child.href &&
+              (pathname === child.href ||
+                pathname.startsWith(child.href + "/")),
+          );
+        if (match) next.add(item.label);
       }
+      return Array.from(next);
     });
   }, [pathname, filteredNavigation]);
 
@@ -80,55 +82,72 @@ export function Sidebar({ user }: SidebarProps) {
     );
   }
 
-  let lastSection = "";
+  // Build rows with section headers without mutating during render
+  const rows = useMemo(() => {
+    const result: Array<
+      | { type: "section"; label: string }
+      | { type: "item"; item: NavigationItem }
+    > = [];
+    let lastSection = "";
+    for (const item of filteredNavigation) {
+      const section = SECTION_BREAKS[item.label] ?? "";
+      if (section && section !== lastSection) {
+        result.push({ type: "section", label: section });
+        lastSection = section;
+      }
+      result.push({ type: "item", item });
+    }
+    return result;
+  }, [filteredNavigation]);
+
+  const businessLabel =
+    (user as { business?: { name?: string | null } | null }).business?.name ??
+    user.name ??
+    "Workspace";
 
   return (
     <aside
       className={cn(
-        "flex h-screen w-[260px] shrink-0 flex-col border-r border-slate-200/80",
-        "bg-slate-50/90 text-slate-800 backdrop-blur-sm",
-        "dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-100",
+        "flex h-full w-[260px] shrink-0 flex-col border-r border-slate-200/80",
+        "bg-slate-50/95 text-slate-800",
+        "dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100",
       )}
     >
-      <div className="border-b border-slate-200/80 px-5 py-4 dark:border-slate-800">
+      <div className="shrink-0 border-b border-slate-200/80 px-5 py-4 dark:border-slate-800">
         <Logo />
         <p className="mt-1 truncate text-[11px] font-medium tracking-wide text-slate-400">
-          {user.business?.name ?? user.name ?? "Workspace"}
+          {businessLabel}
         </p>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3 scrollbar-thin">
-        {filteredNavigation.map((item) => {
-          const section = SECTION_BREAKS[item.label] ?? "";
-          const showSection = section && section !== lastSection;
-          if (section) lastSection = section;
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
+        {rows.map((row) => {
+          if (row.type === "section") {
+            return (
+              <div key={`section-${row.label}`} className="mb-1.5 mt-4 px-2.5 first:mt-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  {row.label}
+                </p>
+              </div>
+            );
+          }
 
-          return (
-            <div key={item.label}>
-              {showSection ? (
-                <div className="mb-1.5 mt-4 px-2.5 first:mt-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    {section}
-                  </p>
-                </div>
-              ) : null}
-
-              {item.children && item.children.length > 0 ? (
-                <SidebarExpandable
-                  item={item}
-                  pathname={pathname}
-                  openMenus={openMenus}
-                  toggleMenu={toggleMenu}
-                />
-              ) : (
-                <SidebarItem item={item} pathname={pathname} />
-              )}
-            </div>
+          const item = row.item;
+          return item.children && item.children.length > 0 ? (
+            <SidebarExpandable
+              key={item.label}
+              item={item}
+              pathname={pathname}
+              openMenus={openMenus}
+              toggleMenu={toggleMenu}
+            />
+          ) : (
+            <SidebarItem key={item.label} item={item} pathname={pathname} />
           );
         })}
       </nav>
 
-      <div className="border-t border-slate-200/80 px-4 py-3 dark:border-slate-800">
+      <div className="shrink-0 border-t border-slate-200/80 px-4 py-3 dark:border-slate-800">
         <p className="truncate text-[11px] text-slate-400">
           Signed in as{" "}
           <span className="font-medium text-slate-600 dark:text-slate-300">
