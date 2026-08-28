@@ -259,3 +259,134 @@ export async function ensureFinanceDefaults(businessId: string) {
 
   return true;
 }
+export class FinanceService {
+  async getChartOfAccounts(businessId: string) {
+    await ensureFinanceDefaults(businessId);
+    return db
+      .select()
+      .from(chartOfAccounts)
+      .where(
+        and(eq(chartOfAccounts.businessId, businessId), eq(chartOfAccounts.active, true)),
+      )
+      .orderBy(asc(chartOfAccounts.accountCode));
+  }
+
+  async getTaxRates(businessId: string) {
+    await ensureFinanceDefaults(businessId);
+    return db
+      .select()
+      .from(taxRates)
+      .where(and(eq(taxRates.businessId, businessId), eq(taxRates.active, true)))
+      .orderBy(asc(taxRates.code));
+  }
+
+  async getCashAccounts(businessId: string) {
+    await ensureFinanceDefaults(businessId);
+    return db
+      .select()
+      .from(cashAccounts)
+      .where(and(eq(cashAccounts.businessId, businessId), eq(cashAccounts.active, true)))
+      .orderBy(asc(cashAccounts.name));
+  }
+
+  async getDefaultCashAccount(businessId: string) {
+    const rows = await this.getCashAccounts(businessId);
+    return rows.find((r) => r.type === "CASH") ?? rows[0] ?? null;
+  }
+
+  async getExpenseCategories(businessId: string) {
+    await ensureFinanceDefaults(businessId);
+    return db
+      .select()
+      .from(expenseCategories)
+      .where(
+        and(
+          eq(expenseCategories.businessId, businessId),
+          eq(expenseCategories.active, true),
+        ),
+      )
+      .orderBy(asc(expenseCategories.name));
+  }
+
+  async getExpenses(businessId: string) {
+    return db
+      .select()
+      .from(expenses)
+      .where(eq(expenses.businessId, businessId))
+      .orderBy(desc(expenses.expenseDate))
+      .limit(100);
+  }
+
+  async getIncomeCategories(businessId: string) {
+    await ensureFinanceDefaults(businessId);
+    return db
+      .select()
+      .from(incomeCategories)
+      .where(
+        and(
+          eq(incomeCategories.businessId, businessId),
+          eq(incomeCategories.active, true),
+        ),
+      )
+      .orderBy(asc(incomeCategories.name));
+  }
+
+  async getIncomes(businessId: string) {
+    return db
+      .select()
+      .from(incomes)
+      .where(eq(incomes.businessId, businessId))
+      .orderBy(desc(incomes.incomeDate))
+      .limit(100);
+  }
+
+  async getPayments(businessId: string) {
+    return db
+      .select({
+        id: payments.id,
+        amount: payments.amount,
+        method: payments.method,
+        status: payments.status,
+        paidAt: payments.paidAt,
+        saleId: payments.saleId,
+        invoiceNumber: sales.invoiceNumber,
+        cashAccountId: payments.cashAccountId,
+      })
+      .from(payments)
+      .leftJoin(sales, eq(payments.saleId, sales.id))
+      .where(eq(payments.businessId, businessId))
+      .orderBy(desc(payments.paidAt))
+      .limit(100);
+  }
+
+  /** Accounts filtered for product wizard */
+  async getAccountsForProductContext(businessId: string) {
+    await ensureFinanceDefaults(businessId);
+    const accounts = await this.getChartOfAccounts(businessId);
+    const incomeAccounts = accounts.filter(
+      (a) =>
+        a.accountCode.startsWith("4") ||
+        a.accountName.toLowerCase().includes("revenue") ||
+        a.accountName.toLowerCase().includes("sales"),
+    );
+    const expenseAccounts = accounts.filter(
+      (a) =>
+        a.accountCode.startsWith("5") ||
+        a.accountCode.startsWith("6") ||
+        a.accountName.toLowerCase().includes("cost") ||
+        a.accountName.toLowerCase().includes("expense"),
+    );
+    const inventoryAccounts = accounts.filter(
+      (a) =>
+        a.accountCode.startsWith("12") ||
+        a.accountName.toLowerCase().includes("inventory"),
+    );
+    return {
+      incomeAccounts: incomeAccounts.length ? incomeAccounts : accounts,
+      expenseAccounts: expenseAccounts.length ? expenseAccounts : accounts,
+      inventoryAccounts: inventoryAccounts.length ? inventoryAccounts : accounts,
+    };
+  }
+}
+
+export const financeService = new FinanceService();
