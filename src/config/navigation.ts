@@ -249,6 +249,12 @@ export const navigation: NavigationItem[] = [
     module: "reports",
     children: [
       {
+        label: "Overview",
+        href: "/reports",
+        icon: BarChart3,
+        permission: "reports.view",
+      },
+      {
         label: "Sales Reports",
         href: "/reports/sales",
         icon: BarChart3,
@@ -273,12 +279,6 @@ export const navigation: NavigationItem[] = [
         permission: "reports.view",
       },
     ],
-  },
-  {
-    label: "Industry",
-    icon: Wrench,
-    module: "industry",
-    children: [],
   },
   {
     label: "Operations",
@@ -320,6 +320,12 @@ export const navigation: NavigationItem[] = [
         label: "Business Profile",
         href: "/settings/business",
         icon: Building2,
+        permission: "business.view",
+      },
+      {
+        label: "Capabilities",
+        href: "/settings/capabilities",
+        icon: Wrench,
         permission: "business.view",
       },
       {

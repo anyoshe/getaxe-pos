@@ -61,6 +61,12 @@ const cards = [
     icon: CreditCard,
   },
   {
+    href: "/settings/capabilities",
+    title: "Capabilities",
+    desc: "Enable serials, batches, pharmacy, multi-unit…",
+    icon: ShieldCheck,
+  },
+  {
     href: "/settings/audit-log",
     title: "Audit log",
     desc: "Who changed what",
