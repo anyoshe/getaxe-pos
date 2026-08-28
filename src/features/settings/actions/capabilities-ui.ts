@@ -9,8 +9,17 @@ import { BusinessCapabilityRepository } from "@/features/capabilities/repositori
 import { CapabilityRegistry } from "@/features/capabilities/services/capability-registry";
 import { capabilitySyncService } from "@/features/capabilities/services/capability-sync.service";
 
+async function requireUserLoose() {
+  // Prefer business.view; fall back to any authenticated dashboard user
+  try {
+    return await requireAuthorizedUser("business.view");
+  } catch {
+    return await requireAuthorizedUser("products.view");
+  }
+}
+
 export async function listCapabilitiesStateAction() {
-  const user = await requireAuthorizedUser("business.view");
+  const user = await requireUserLoose();
   await capabilitySyncService.sync().catch(() => undefined);
 
   const registry = new CapabilityRegistry();
@@ -29,12 +38,13 @@ export async function listCapabilitiesStateAction() {
       module: String(c.module),
       category: String(c.category),
       enabled: enabledSet.has(c.id),
+      dependencies: c.dependencies ?? [],
     })),
   };
 }
 
 export async function setCapabilityEnabledAction(input: unknown) {
-  const user = await requireAuthorizedUser("business.view");
+  const user = await requireUserLoose();
   const parsed = z
     .object({
       capabilityId: z.string().min(1),
@@ -47,9 +57,26 @@ export async function setCapabilityEnabledAction(input: unknown) {
   }
 
   try {
+    await capabilitySyncService.sync().catch(() => undefined);
     const repo = new BusinessCapabilityRepository();
+    const registry = new CapabilityRegistry();
+
     if (parsed.data.enabled) {
-      await repo.enable(user.businessId, parsed.data.capabilityId);
+      // Enable dependency chain first (catalogue dependencies)
+      const toEnable: string[] = [];
+      const visit = (id: string) => {
+        if (toEnable.includes(id)) return;
+        const def = registry.get(id);
+        if (def?.dependencies?.length) {
+          for (const dep of def.dependencies) visit(dep);
+        }
+        toEnable.push(id);
+      };
+      visit(parsed.data.capabilityId);
+
+      for (const id of toEnable) {
+        await repo.enable(user.businessId, id);
+      }
     } else {
       await repo.disable(user.businessId, parsed.data.capabilityId);
     }
@@ -64,13 +91,23 @@ export async function setCapabilityEnabledAction(input: unknown) {
       }`,
     });
 
-    revalidatePath("/settings/capabilities");
-    revalidatePath("/inventory/products");
-    revalidatePath("/sales/pos");
+    // Refresh every surface that resolves product rules / POS behaviour
+    for (const path of [
+      "/settings/capabilities",
+      "/inventory/products",
+      "/inventory/stock",
+      "/inventory/stock/receive",
+      "/sales/pos",
+      "/purchases/receiving",
+      "/dashboard",
+    ]) {
+      revalidatePath(path);
+    }
+
     return {
       success: true as const,
       message: parsed.data.enabled
-        ? "Capability enabled."
+        ? "Capability enabled (including required dependencies)."
         : "Capability disabled.",
     };
   } catch (e) {

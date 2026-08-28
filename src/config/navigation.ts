@@ -39,6 +39,12 @@ export const navigation: NavigationItem[] = [
     // No permission needed - always visible
   },
   {
+    label: "Capabilities",
+    href: "/settings/capabilities",
+    icon: Wrench,
+    // Always visible so owners can enable batch/serial/pharmacy features
+  },
+  {
     label: "Sales",
     icon: ShoppingCart,
     module: "sales", // Module name for grouping
@@ -326,7 +332,6 @@ export const navigation: NavigationItem[] = [
         label: "Capabilities",
         href: "/settings/capabilities",
         icon: Wrench,
-        permission: "business.view",
       },
       {
         label: "Roles & Permissions",

@@ -16,6 +16,7 @@ type Cap = {
   module: string;
   category: string;
   enabled: boolean;
+  dependencies?: string[];
 };
 
 export function CapabilitiesClient({ initial }: { initial: Cap[] }) {
@@ -98,6 +99,11 @@ export function CapabilitiesClient({ initial }: { initial: Cap[] }) {
                   {c.description ? (
                     <p className="mt-1 text-sm text-muted-foreground">
                       {c.description}
+                    </p>
+                  ) : null}
+                  {c.dependencies && c.dependencies.length > 0 ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Needs: {c.dependencies.join(", ")}
                     </p>
                   ) : null}
                 </div>
