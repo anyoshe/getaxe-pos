@@ -311,6 +311,12 @@ export const navigation: NavigationItem[] = [
     module: "settings",
     children: [
       {
+        label: "Overview",
+        href: "/settings",
+        icon: Settings,
+        permission: "business.view",
+      },
+      {
         label: "Business Profile",
         href: "/settings/business",
         icon: Building2,
@@ -339,6 +345,12 @@ export const navigation: NavigationItem[] = [
         href: "/settings/numbering",
         icon: Hash,
         permission: "numbering_sequences.view",
+      },
+      {
+        label: "Payment methods",
+        href: "/settings/payment-methods",
+        icon: CreditCard,
+        permission: "business.view",
       },
     ],
   },
