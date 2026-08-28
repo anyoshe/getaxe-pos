@@ -1,76 +1,72 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { navigation } from "@/config/navigation";
 import { usePermission } from "@/providers/permissions-provider";
-import { Logo } from "./logo";
-
 import type { CurrentUser } from "@/lib/auth/current-user";
 import type { NavigationItem } from "@/config/navigation.types";
+import { cn } from "@/lib/utils";
 
-import {
-  SidebarExpandable,
-  SidebarItem,
-} from "./sidebar/index";
+import { Logo } from "./logo";
+import { SidebarExpandable, SidebarItem } from "./sidebar/index";
 
 interface SidebarProps {
   user: CurrentUser;
 }
 
+/** Visual sections for a standard ERP sidebar order */
+const SECTION_BREAKS: Record<string, string> = {
+  Dashboard: "",
+  Capabilities: "",
+  Sales: "Commerce",
+  Inventory: "Commerce",
+  Purchasing: "Commerce",
+  CRM: "Commerce",
+  Finance: "Finance & insight",
+  Reports: "Finance & insight",
+  Operations: "Administration",
+  Settings: "Administration",
+};
+
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const { hasPermission } = usePermission();
-
   const [openMenus, setOpenMenus] = useState<string[]>([]);
 
-  // Smart filtering: Show parent if ANY child is accessible
   const filteredNavigation = useMemo(() => {
     return navigation
       .map((item) => {
-        // If item has no children, just check its own permission
         if (!item.children || item.children.length === 0) {
-          // If no permission required, show it
           if (!item.permission) return item;
-          // Otherwise check permission
           return hasPermission(item.permission) ? item : null;
         }
 
-        // For items with children, filter children first
         const visibleChildren = item.children.filter((child) => {
-          // If child has no permission, show it
           if (!child.permission) return true;
-          // Check if user has this specific permission OR module-level access
           return hasPermission(child.permission);
         });
 
-        // If no children are visible, hide the parent
-        if (visibleChildren.length === 0) {
-          return null;
-        }
+        if (visibleChildren.length === 0) return null;
 
-        // Return the item with only visible children
-        return {
-          ...item,
-          children: visibleChildren,
-        };
+        return { ...item, children: visibleChildren };
       })
       .filter((item): item is NavigationItem => item !== null);
   }, [hasPermission]);
 
   useEffect(() => {
     filteredNavigation.forEach((item) => {
-     if (
-  pathname === item.href ||
-  item.children?.some(
-    (child) =>
-      pathname === child.href ||
-      pathname.startsWith(child.href! + "/")
-  )
-) {
+      if (
+        pathname === item.href ||
+        item.children?.some(
+          (child) =>
+            child.href &&
+            (pathname === child.href || pathname.startsWith(child.href + "/")),
+        )
+      ) {
         setOpenMenus((prev) =>
-          prev.includes(item.label) ? prev : [...prev, item.label]
+          prev.includes(item.label) ? prev : [...prev, item.label],
         );
       }
     });
@@ -80,70 +76,66 @@ export function Sidebar({ user }: SidebarProps) {
     setOpenMenus((prev) =>
       prev.includes(label)
         ? prev.filter((x) => x !== label)
-        : [...prev, label]
+        : [...prev, label],
     );
   }
 
+  let lastSection = "";
+
   return (
     <aside
-      className="
-        fixed
-        inset-y-0
-        left-0
-        hidden
-        w-72
-        overflow-y-auto
-        border-r
-        border-slate-200
-        bg-gradient-to-b
-        from-slate-50
-        via-white
-        to-indigo-50/40
-        lg:flex
-        lg:flex-col
-      "
+      className={cn(
+        "flex h-screen w-[260px] shrink-0 flex-col border-r border-slate-200/80",
+        "bg-slate-50/90 text-slate-800 backdrop-blur-sm",
+        "dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-100",
+      )}
     >
-      {/* Header */}
-      <div
-        className="
-          sticky
-          top-0
-          z-20
-          border-b
-          border-slate-200
-          bg-white/95
-          backdrop-blur-xl
-        "
-      >
-        <div className="p-6">
-          <Logo />
-        </div>
+      <div className="border-b border-slate-200/80 px-5 py-4 dark:border-slate-800">
+        <Logo />
+        <p className="mt-1 truncate text-[11px] font-medium tracking-wide text-slate-400">
+          {user.business?.name ?? user.name ?? "Workspace"}
+        </p>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-2 p-5">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3 scrollbar-thin">
         {filteredNavigation.map((item) => {
-          if (item.children) {
-            return (
-              <SidebarExpandable
-                key={item.label}
-                item={item}
-                pathname={pathname}
-                openMenus={openMenus}
-                toggleMenu={toggleMenu}
-              />
-            );
-          }
+          const section = SECTION_BREAKS[item.label] ?? "";
+          const showSection = section && section !== lastSection;
+          if (section) lastSection = section;
 
           return (
-            <SidebarItem
-              key={item.label}
-              item={item}
-              pathname={pathname}
-            />
+            <div key={item.label}>
+              {showSection ? (
+                <div className="mb-1.5 mt-4 px-2.5 first:mt-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    {section}
+                  </p>
+                </div>
+              ) : null}
+
+              {item.children && item.children.length > 0 ? (
+                <SidebarExpandable
+                  item={item}
+                  pathname={pathname}
+                  openMenus={openMenus}
+                  toggleMenu={toggleMenu}
+                />
+              ) : (
+                <SidebarItem item={item} pathname={pathname} />
+              )}
+            </div>
           );
         })}
       </nav>
+
+      <div className="border-t border-slate-200/80 px-4 py-3 dark:border-slate-800">
+        <p className="truncate text-[11px] text-slate-400">
+          Signed in as{" "}
+          <span className="font-medium text-slate-600 dark:text-slate-300">
+            {user.name ?? user.email}
+          </span>
+        </p>
+      </div>
     </aside>
   );
 }
