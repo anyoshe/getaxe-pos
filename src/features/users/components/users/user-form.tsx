@@ -6,14 +6,6 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
   createUserAction,
   updateUserAction,
   getRolesAction,
@@ -189,19 +181,28 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
         ) : null}
 
         <div className="space-y-2">
-          <Label>Role</Label>
-          <Select value={roleId} onValueChange={setRoleId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              {roles.map((role) => (
-                <SelectItem key={role.id} value={role.id}>
-                  {role.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="roleId">Role</Label>
+          <select
+            id="roleId"
+            className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            value={roleId}
+            onChange={(e) => setRoleId(e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              {roles.length === 0 ? "Loading roles…" : "Select role"}
+            </option>
+            {roles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+          {roleId && roles.length > 0 ? (
+            <p className="text-xs font-medium text-primary">
+              Selected: {roles.find((r) => r.id === roleId)?.name ?? roleId}
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground">
             Base access comes from the role. Below you can give this person extra
             rights or block some role rights without changing other users on the
