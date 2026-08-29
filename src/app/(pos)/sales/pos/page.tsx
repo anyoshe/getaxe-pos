@@ -241,11 +241,14 @@ export default async function FullScreenPosPage() {
             ? wholesale
             : retailPrice;
 
+        const cat = (p as { category?: { id?: string; name?: string } | null }).category;
         return {
           id: p.id,
           name: p.name,
           sku: p.sku ?? null,
           barcode: p.barcode ?? null,
+          categoryId: (p as { categoryId?: string | null }).categoryId ?? cat?.id ?? null,
+          categoryName: cat?.name ?? null,
           productType: p.productType,
           trackInventory: Boolean(
             (p as { trackInventory?: boolean }).trackInventory ?? true,

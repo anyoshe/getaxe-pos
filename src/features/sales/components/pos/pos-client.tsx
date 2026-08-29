@@ -34,6 +34,8 @@ export type PosProduct = {
   name: string;
   sku: string | null;
   barcode: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
   productType: string;
   trackInventory: boolean;
   serialized: boolean;
@@ -141,6 +143,11 @@ export function PosClient({
   }, [sellable]);
 
   const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [catalogLayout, setCatalogLayout] = useState<"grid" | "list" | "compact">(
+    "grid",
+  );
+  const [visibleCount, setVisibleCount] = useState(48);
   const [priceMode, setPriceMode] = useState<PriceMode>("retail");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [branchId, setBranchId] = useState(
@@ -232,18 +239,38 @@ export function PosClient({
     );
   }, [priceMode, priceFor, sellable]);
 
+
+  const categories = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of sellable) {
+      if (p.categoryId && p.categoryName) {
+        map.set(p.categoryId, p.categoryName);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [sellable]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = sellable;
+
+    if (categoryFilter !== "all") {
+      list = list.filter((p) => p.categoryId === categoryFilter);
+    }
+
     if (q) {
-      list = sellable.filter(
+      list = list.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          (p.sku && p.sku.toLowerCase().includes(q)) ||
-          (p.barcode && p.barcode.toLowerCase().includes(q)),
+          p.sku?.toLowerCase().includes(q) ||
+          p.barcode?.toLowerCase().includes(q) ||
+          p.categoryName?.toLowerCase().includes(q),
       );
     }
-    // Prefer products with stock in the selected warehouse (inventory_balances)
+
+    // Prefer in-stock first for quick picks
     list = [...list].sort((a, b) => {
       const sa = stockOnHand(a.id);
       const sb = stockOnHand(b.id);
@@ -251,8 +278,30 @@ export function PosClient({
       if (sb > 0 && sa <= 0) return 1;
       return a.name.localeCompare(b.name);
     });
-    return list.slice(0, 50);
-  }, [query, sellable, warehouseId, stockByProductWarehouse]);
+
+    // Scan-first supermarket mode: without search/category, only surface a
+    // limited "quick pick" set so 1000+ SKUs never dump onto the till.
+    const browsing = Boolean(q) || categoryFilter !== "all";
+    if (!browsing) {
+      list = list.filter((p) => {
+        if (p.productType === "service" || p.trackInventory === false) return true;
+        return stockOnHand(p.id) > 0;
+      });
+    }
+
+    return list;
+  }, [query, sellable, categoryFilter, warehouseId, stockByProductWarehouse]);
+
+  const visibleProducts = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
+  );
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setVisibleCount(48);
+  }, [query, categoryFilter]);
+
 
   function freeSerials(productId: string): string[] {
     const pool =
@@ -582,14 +631,19 @@ export function PosClient({
 
 
 
+
   const shell = fullScreen
-    ? "fixed inset-0 z-50 flex flex-col bg-background"
-    : "flex min-h-[min(100dvh,56rem)] flex-col overflow-hidden rounded-2xl border shadow-sm";
+    ? "fixed inset-0 z-50 flex flex-col overflow-hidden bg-background"
+    : "flex h-[min(100dvh,56rem)] max-h-[100dvh] flex-col overflow-hidden rounded-2xl border shadow-sm";
 
   const changeDue =
     paymentMethod === "CASH" && amountTendered
       ? Math.max(0, Number(amountTendered) - total)
       : null;
+
+  const browsing =
+    Boolean(query.trim()) || categoryFilter !== "all";
+  const hasMore = visibleProducts.length < filtered.length;
 
   const payMethods: {
     id: typeof paymentMethod;
@@ -636,8 +690,8 @@ export function PosClient({
     <div className={shell}>
       <div className="brand-stripe h-1.5 w-full shrink-0" />
 
-      <header className="brand-gradient relative shrink-0 text-primary-foreground shadow-md">
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+      <header className="brand-gradient relative z-10 shrink-0 text-primary-foreground shadow-md">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xs font-black backdrop-blur sm:h-10 sm:w-10 sm:text-sm">
               GA
@@ -656,7 +710,7 @@ export function PosClient({
           </div>
 
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-            <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold sm:text-xs">
+            <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
               {(["retail", "wholesale"] as const).map((m) => (
                 <button
                   key={m}
@@ -664,17 +718,16 @@ export function PosClient({
                   onClick={() => setPriceMode(m)}
                   className={
                     priceMode === m
-                      ? "rounded-full bg-[oklch(0.70_0.14_85)] px-2.5 py-1.5 text-[oklch(0.25_0.05_55)] shadow-sm sm:px-3"
-                      : "rounded-full px-2.5 py-1.5 text-white/85 hover:text-white sm:px-3"
+                      ? "rounded-full bg-[oklch(0.70_0.14_85)] px-2.5 py-1.5 text-[oklch(0.25_0.05_55)] shadow-sm"
+                      : "rounded-full px-2.5 py-1.5 text-white/85"
                   }
                 >
                   {m === "retail" ? "Retail" : "Wholesale"}
                 </button>
               ))}
             </div>
-
             <select
-              className="h-9 max-w-[9rem] flex-1 rounded-lg border-0 bg-white/15 px-2 text-xs text-white outline-none backdrop-blur sm:max-w-[10rem] sm:flex-none"
+              className="h-9 max-w-[9rem] flex-1 rounded-lg border-0 bg-white/15 px-2 text-xs text-white outline-none sm:flex-none"
               value={warehouseId}
               onChange={(e) => {
                 const id = e.target.value;
@@ -689,18 +742,17 @@ export function PosClient({
                 </option>
               ))}
             </select>
-
             {fullScreen ? (
               <Link
                 href="/sales"
-                className="rounded-lg bg-white/15 px-3 py-2 text-xs font-medium hover:bg-white/25"
+                className="rounded-lg bg-white/15 px-3 py-2 text-xs font-medium"
               >
                 Exit
               </Link>
             ) : (
               <Link
                 href="/sales/pos"
-                className="rounded-lg bg-[oklch(0.70_0.14_85)]/90 px-3 py-2 text-xs font-semibold text-[oklch(0.25_0.05_55)] hover:opacity-90"
+                className="rounded-lg bg-[oklch(0.70_0.14_85)]/90 px-3 py-2 text-xs font-semibold text-[oklch(0.25_0.05_55)]"
               >
                 Full screen
               </Link>
@@ -709,18 +761,18 @@ export function PosClient({
         </div>
       </header>
 
-      {/* Mobile: column. Desktop: side-by-side */}
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Products */}
-        <section className="flex min-h-0 flex-1 flex-col border-border/60 bg-gradient-to-b from-secondary/80 via-background to-background lg:border-r">
-          <div className="shrink-0 space-y-2 border-b border-border/50 bg-background/90 p-2.5 backdrop-blur sm:space-y-3 sm:p-4">
+      {/* Body: on mobile products scroll; cart is a bottom sheet that also scrolls */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+        {/* CATALOGUE */}
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-secondary/70 to-background">
+          <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3">
             <div className="flex gap-2">
               <div className="relative min-w-0 flex-1">
                 <Input
                   ref={scanRef}
                   autoFocus
-                  className="h-12 rounded-xl border-primary/25 bg-card pr-11 text-base shadow-sm focus-visible:ring-primary/30 sm:h-14 sm:pr-12"
-                  placeholder="Scan or type name / SKU…"
+                  className="h-12 rounded-xl border-primary/25 bg-card pr-11 text-base shadow-sm sm:h-12"
+                  placeholder="Scan barcode or search name / SKU…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={onScanKeyDown}
@@ -728,7 +780,6 @@ export function PosClient({
                 <button
                   type="button"
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-primary hover:bg-primary/10"
-                  title="Camera scan"
                   onClick={() => setShowCamera((v) => !v)}
                 >
                   <ScanBarcode className="h-5 w-5" />
@@ -736,7 +787,7 @@ export function PosClient({
               </div>
               <Button
                 type="button"
-                className="h-12 shrink-0 rounded-xl bg-chart-2 px-4 font-semibold text-accent-foreground hover:bg-chart-2/90 sm:h-14 sm:px-6"
+                className="h-12 shrink-0 rounded-xl bg-chart-2 px-4 font-semibold text-accent-foreground hover:bg-chart-2/90"
                 onClick={() => resolveCode(query)}
               >
                 Add
@@ -744,9 +795,9 @@ export function PosClient({
             </div>
 
             {showCamera && (
-              <div className="rounded-xl border border-chart-3/30 bg-card p-3 shadow-sm">
+              <div className="rounded-xl border border-chart-3/30 bg-card p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-medium text-chart-3">Camera scanner</p>
+                  <p className="text-sm font-medium text-chart-3">Camera</p>
                   <button type="button" onClick={() => setShowCamera(false)}>
                     <X className="h-4 w-4" />
                   </button>
@@ -759,23 +810,147 @@ export function PosClient({
               </div>
             )}
 
-            <p className="text-[11px] text-muted-foreground sm:text-xs">
-              <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary">
-                {priceMode === "retail" ? "Retail" : "Wholesale"}
-              </span>{" "}
-              · {filtered.length} products
+            {/* Categories + layout (supermarket aisles) */}
+            <div className="flex items-center gap-2">
+              <div className="-mx-0.5 flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter("all")}
+                  className={
+                    categoryFilter === "all"
+                      ? "shrink-0 rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
+                      : "shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-medium text-muted-foreground"
+                  }
+                >
+                  Quick picks
+                </button>
+                {categories.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setCategoryFilter(c.id)}
+                    className={
+                      categoryFilter === c.id
+                        ? "shrink-0 rounded-full bg-chart-3 px-3 py-1.5 text-[11px] font-semibold text-white"
+                        : "shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-medium text-muted-foreground"
+                    }
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+              <div className="flex shrink-0 rounded-lg border border-border bg-card p-0.5">
+                {(
+                  [
+                    ["grid", "Grid"],
+                    ["list", "List"],
+                    ["compact", "Dense"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    title={label}
+                    onClick={() => setCatalogLayout(id)}
+                    className={
+                      catalogLayout === id
+                        ? "rounded-md bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground"
+                        : "rounded-md px-2 py-1 text-[10px] font-medium text-muted-foreground"
+                    }
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground">
+              {!browsing ? (
+                <>
+                  Showing{" "}
+                  <span className="font-semibold text-primary">
+                    in-stock quick picks
+                  </span>{" "}
+                  · scan or pick a category for full catalogue ({sellable.length}{" "}
+                  SKUs)
+                </>
+              ) : (
+                <>
+                  {filtered.length} match
+                  {categoryFilter !== "all"
+                    ? ` in ${categories.find((c) => c.id === categoryFilter)?.name ?? "category"}`
+                    : ""}
+                  {query.trim() ? ` for “${query.trim()}”` : ""}
+                </>
+              )}
             </p>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 sm:p-4">
-            {filtered.length === 0 ? (
-              <div className="flex min-h-[10rem] flex-col items-center justify-center rounded-2xl border border-dashed border-primary/20 bg-primary/5 p-6 text-center">
+          {/* THIS is the only product scroll region */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3">
+            {visibleProducts.length === 0 ? (
+              <div className="flex min-h-[8rem] flex-col items-center justify-center rounded-2xl border border-dashed border-primary/25 bg-primary/5 p-6 text-center">
                 <ShoppingCart className="mb-2 h-8 w-8 text-primary/40" />
-                <p className="text-sm text-muted-foreground">No products match</p>
+                <p className="text-sm font-medium text-foreground">
+                  {browsing ? "No products match" : "No in-stock quick picks"}
+                </p>
+                <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                  {browsing
+                    ? "Try another search or category."
+                    : "Scan a barcode or choose a category aisle above."}
+                </p>
+              </div>
+            ) : catalogLayout === "list" || catalogLayout === "compact" ? (
+              <div className="space-y-1">
+                {visibleProducts.map((p) => {
+                  const price =
+                    priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice;
+                  const onHand = stockOnHand(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => addProduct(p)}
+                      className={
+                        catalogLayout === "compact"
+                          ? "flex w-full items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left hover:border-primary/30 hover:bg-primary/5"
+                          : "flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card px-3 py-2.5 text-left shadow-sm hover:border-primary/40"
+                      }
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">
+                          {p.name}
+                        </span>
+                        <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                          {[p.sku, p.barcode, p.categoryName]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-sm font-bold tabular-nums text-primary">
+                        {Number(price).toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                      {p.trackInventory !== false &&
+                      p.productType !== "service" ? (
+                        <span
+                          className={
+                            onHand <= 0
+                              ? "shrink-0 rounded-full bg-destructive/15 px-1.5 text-[10px] font-semibold text-destructive"
+                              : "shrink-0 rounded-full bg-chart-4/20 px-1.5 text-[10px] font-semibold text-chart-4"
+                          }
+                        >
+                          {onHand}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4">
-                {filtered.map((p) => {
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+                {visibleProducts.map((p) => {
                   const price =
                     priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice;
                   const onHand = stockOnHand(p.id);
@@ -786,13 +961,13 @@ export function PosClient({
                       onClick={() => addProduct(p)}
                       className="group flex flex-col rounded-2xl border border-border/70 bg-card p-2.5 text-left shadow-sm transition hover:border-primary/50 hover:shadow-md active:scale-[0.98] sm:p-3"
                     >
-                      <span className="line-clamp-2 min-h-[2.25rem] text-xs font-semibold leading-snug sm:min-h-[2.5rem] sm:text-sm">
+                      <span className="line-clamp-2 min-h-[2.25rem] text-xs font-semibold leading-snug sm:text-sm">
                         {p.name}
                       </span>
                       <span className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
-                        {p.sku || p.barcode || "—"}
+                        {p.sku || p.barcode || p.categoryName || "—"}
                       </span>
-                      <div className="mt-auto flex items-end justify-between gap-1 pt-2 sm:pt-3">
+                      <div className="mt-auto flex items-end justify-between gap-1 pt-2">
                         <span className="text-sm font-bold tabular-nums text-primary sm:text-base">
                           {Number(price).toLocaleString(undefined, {
                             maximumFractionDigits: 2,
@@ -820,12 +995,25 @@ export function PosClient({
                 })}
               </div>
             )}
+
+            {hasMore ? (
+              <div className="flex justify-center py-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full border-primary/30"
+                  onClick={() => setVisibleCount((n) => n + 48)}
+                >
+                  Show more ({filtered.length - visibleProducts.length} left)
+                </Button>
+              </div>
+            ) : null}
           </div>
         </section>
 
-        {/* Cart + pay — full width on mobile, sidebar on desktop */}
-        <section className="flex max-h-[52dvh] min-h-0 w-full shrink-0 flex-col border-t border-border/60 bg-card shadow-[0_-6px_24px_rgba(15,40,80,0.08)] lg:max-h-none lg:w-[min(100%,24rem)] lg:shrink-0 lg:border-t-0 lg:shadow-none xl:w-[26rem]">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2.5 sm:px-4">
+        {/* CART — fixed height share on mobile so both panes can scroll */}
+        <section className="flex max-h-[46dvh] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem]">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <ShoppingCart className="h-4 w-4" />
@@ -840,7 +1028,7 @@ export function PosClient({
             {cart.length > 0 ? (
               <button
                 type="button"
-                className="text-xs font-semibold text-destructive hover:underline"
+                className="text-xs font-semibold text-destructive"
                 onClick={() => setCart([])}
               >
                 Clear
@@ -848,12 +1036,10 @@ export function PosClient({
             ) : null}
           </div>
 
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-2 sm:p-3">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3">
             {cart.length === 0 ? (
-              <div className="flex min-h-[4.5rem] flex-col items-center justify-center rounded-xl border border-dashed border-chart-2/40 bg-chart-2/10 p-4 text-center lg:min-h-[8rem]">
-                <p className="text-xs text-muted-foreground sm:text-sm">
-                  Scan or tap products to start
-                </p>
+              <div className="flex min-h-[3.5rem] items-center justify-center rounded-xl border border-dashed border-chart-2/40 bg-chart-2/10 p-3 text-center text-xs text-muted-foreground">
+                Scan or tap products to start
               </div>
             ) : (
               cart.map((line) => {
@@ -863,7 +1049,7 @@ export function PosClient({
                 return (
                   <div
                     key={line.productId}
-                    className="rounded-xl border border-border/70 bg-background p-2.5 shadow-sm sm:rounded-2xl sm:p-3"
+                    className="rounded-xl border border-border/70 bg-background p-2.5 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -886,12 +1072,11 @@ export function PosClient({
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <div className="flex items-center rounded-xl border border-primary/20 bg-primary/5">
                         <button
                           type="button"
-                          className="flex h-8 w-8 items-center justify-center text-primary sm:h-9 sm:w-9"
+                          className="flex h-8 w-8 items-center justify-center text-primary"
                           onClick={() => {
                             const q = Math.max(0, line.quantity - 1);
                             const factor =
@@ -917,7 +1102,7 @@ export function PosClient({
                           <Minus className="h-3.5 w-3.5" />
                         </button>
                         <input
-                          className="h-8 w-12 border-x border-primary/15 bg-transparent text-center text-sm font-semibold tabular-nums outline-none sm:h-9 sm:w-14"
+                          className="h-8 w-12 border-x border-primary/15 bg-transparent text-center text-sm font-semibold tabular-nums outline-none"
                           type="number"
                           min={0.000001}
                           step="any"
@@ -944,25 +1129,23 @@ export function PosClient({
                         />
                         <button
                           type="button"
-                          className="flex h-8 w-8 items-center justify-center text-primary sm:h-9 sm:w-9"
-                          onClick={() => {
-                            const q = line.quantity + 1;
+                          className="flex h-8 w-8 items-center justify-center text-primary"
+                          onClick={() =>
                             setCart((c) =>
                               c.map((x) =>
                                 x.productId === line.productId
-                                  ? { ...x, quantity: q }
+                                  ? { ...x, quantity: x.quantity + 1 }
                                   : x,
                               ),
-                            );
-                          }}
+                            )
+                          }
                         >
                           <Plus className="h-3.5 w-3.5" />
                         </button>
                       </div>
-
                       {units.length > 1 ? (
                         <select
-                          className="h-8 rounded-lg border bg-background px-2 text-[11px] sm:h-9 sm:text-xs"
+                          className="h-8 rounded-lg border bg-background px-2 text-[11px]"
                           value={line.unitId ?? ""}
                           onChange={(e) => {
                             const unitId = e.target.value;
@@ -976,15 +1159,13 @@ export function PosClient({
                           ))}
                         </select>
                       ) : null}
-
-                      <div className="ml-auto text-sm font-bold tabular-nums text-primary sm:text-base">
+                      <div className="ml-auto text-sm font-bold tabular-nums text-primary">
                         {lineTotal.toLocaleString(undefined, {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
                       </div>
                     </div>
-
                     {(line.trackBatch || line.trackExpiry) &&
                       batchesFor(line.productId).length > 0 && (
                         <select
@@ -1013,7 +1194,6 @@ export function PosClient({
                           ))}
                         </select>
                       )}
-
                     {line.serialized && (
                       <div className="mt-2 max-h-20 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
                         <p className="text-[10px] font-semibold text-chart-5">
@@ -1022,27 +1202,21 @@ export function PosClient({
                             line.quantity * (line.factorToStock || 1),
                           )}
                         </p>
-                        {options.length === 0 ? (
-                          <p className="text-[11px] text-destructive">
-                            No serials
-                          </p>
-                        ) : (
-                          options.map((serial) => (
-                            <label
-                              key={serial}
-                              className="flex cursor-pointer items-center gap-2 text-xs"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={line.selectedSerials.includes(serial)}
-                                onChange={() =>
-                                  toggleSerial(line.productId, serial)
-                                }
-                              />
-                              <span className="font-mono">{serial}</span>
-                            </label>
-                          ))
-                        )}
+                        {options.map((serial) => (
+                          <label
+                            key={serial}
+                            className="flex cursor-pointer items-center gap-2 text-xs"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={line.selectedSerials.includes(serial)}
+                              onChange={() =>
+                                toggleSerial(line.productId, serial)
+                              }
+                            />
+                            <span className="font-mono">{serial}</span>
+                          </label>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -1051,13 +1225,10 @@ export function PosClient({
             )}
           </div>
 
-          {/* Pay dock only — no recent sales */}
-          <div className="shrink-0 space-y-2.5 border-t border-border/60 bg-gradient-to-t from-secondary/50 to-card p-2.5 sm:space-y-3 sm:p-4">
-            <div className="flex items-end justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground sm:text-sm">
-                Total
-              </span>
-              <span className="text-2xl font-black tabular-nums tracking-tight text-primary sm:text-3xl">
+          <div className="shrink-0 space-y-2 border-t border-border/60 bg-gradient-to-t from-secondary/50 to-card p-2.5 sm:p-3">
+            <div className="flex items-end justify-between">
+              <span className="text-xs text-muted-foreground">Total</span>
+              <span className="text-2xl font-black tabular-nums text-primary sm:text-3xl">
                 {total.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -1065,7 +1236,7 @@ export function PosClient({
               </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {payMethods.map((m) => {
                 const Icon = m.icon;
                 const active = paymentMethod === m.id;
@@ -1075,14 +1246,12 @@ export function PosClient({
                     type="button"
                     onClick={() => setPaymentMethod(m.id)}
                     className={
-                      "flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-center transition sm:py-2.5 " +
+                      "flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 " +
                       (active ? m.activeClass : m.idleClass)
                     }
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="text-[10px] font-bold sm:text-[11px]">
-                      {m.label}
-                    </span>
+                    <span className="text-[10px] font-bold">{m.label}</span>
                   </button>
                 );
               })}
@@ -1095,7 +1264,7 @@ export function PosClient({
                     Tendered
                   </Label>
                   <Input
-                    className="h-10 rounded-xl border-chart-4/30"
+                    className="h-9 rounded-xl border-chart-4/30"
                     type="number"
                     min={0}
                     step="0.01"
@@ -1108,7 +1277,7 @@ export function PosClient({
                   <Label className="text-[11px] text-muted-foreground">
                     Change
                   </Label>
-                  <div className="flex h-10 items-center rounded-xl border border-chart-4/30 bg-chart-4/15 px-3 text-sm font-bold tabular-nums text-chart-4">
+                  <div className="flex h-9 items-center rounded-xl border border-chart-4/30 bg-chart-4/15 px-3 text-sm font-bold tabular-nums text-chart-4">
                     {changeDue != null
                       ? changeDue.toLocaleString(undefined, {
                           minimumFractionDigits: 2,
@@ -1120,8 +1289,7 @@ export function PosClient({
               </div>
             ) : null}
 
-            {/* Customer: phone + name for receipt / loyalty */}
-            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.06] p-2.5 sm:p-3">
+            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.06] p-2.5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                 <UserRound className="h-3.5 w-3.5" />
                 Customer
@@ -1131,7 +1299,7 @@ export function PosClient({
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Input
-                  className="h-10 rounded-xl"
+                  className="h-9 rounded-xl"
                   inputMode="tel"
                   placeholder="Phone (loyalty)"
                   value={customerPhone}
@@ -1149,7 +1317,7 @@ export function PosClient({
                   }}
                 />
                 <Input
-                  className="h-10 rounded-xl"
+                  className="h-9 rounded-xl"
                   placeholder="Name (receipt)"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
@@ -1159,7 +1327,7 @@ export function PosClient({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-9 rounded-xl border-primary/30"
+                  className="h-8 rounded-xl border-primary/30 text-xs"
                   disabled={lookingUp || !customerPhone.trim()}
                   onClick={() => void lookupCustomer()}
                 >
@@ -1169,7 +1337,7 @@ export function PosClient({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-9 rounded-xl"
+                    className="h-8 rounded-xl text-xs"
                     onClick={clearCustomer}
                   >
                     Clear
@@ -1191,7 +1359,7 @@ export function PosClient({
             </div>
 
             <Button
-              className="h-12 w-full rounded-xl bg-primary text-base font-bold shadow-md hover:bg-primary/90 sm:h-14"
+              className="h-11 w-full rounded-xl text-base font-bold shadow-md sm:h-12"
               size="lg"
               disabled={pending || cart.length === 0}
               onClick={checkout}
