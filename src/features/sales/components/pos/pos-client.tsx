@@ -1063,15 +1063,8 @@ export function PosClient({
                 {total.toFixed(2)}
               </span>
             </div>
-            <Button
-              className="h-14 w-full text-base font-semibold"
-              size="lg"
-              disabled={pending || cart.length === 0}
-              onClick={checkout}
-            >
-
             {/* Supermarket-style loyalty: phone optional before pay */}
-            <div className="mb-3 space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
+            <div className="space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
               <div className="text-xs font-semibold uppercase tracking-wide text-primary">
                 Member phone (optional)
               </div>
@@ -1141,6 +1134,12 @@ export function PosClient({
               )}
             </div>
 
+            <Button
+              className="h-14 w-full text-base font-semibold"
+              size="lg"
+              disabled={pending || cart.length === 0}
+              onClick={checkout}
+            >
               {pending ? "Processing…" : "Complete sale"}
             </Button>
           </div>
