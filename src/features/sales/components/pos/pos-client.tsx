@@ -419,29 +419,70 @@ export function PosClient({
     );
   }
 
-  function resolveCode(code: string) {
-    const key = code.trim().toLowerCase();
-    if (!key) return;
-    const product =
+  function searchHits(term: string, limit = 12): PosProduct[] {
+    const key = term.trim().toLowerCase();
+    if (!key) return [];
+    const exact =
       productByCode.get(key) ??
       sellable.find(
         (p) =>
           p.barcode?.toLowerCase() === key ||
-          p.sku?.toLowerCase() === key,
+          (p.sku?.toLowerCase() === key),
       );
-    if (!product) {
-      toast.error(`No product for code: ${code}`);
+    if (exact) return [exact];
+
+    const scored = sellable
+      .map((p) => {
+        const name = p.name.toLowerCase();
+        const sku = p.sku?.toLowerCase() ?? "";
+        const bc = p.barcode?.toLowerCase() ?? "";
+        let score = 0;
+        if (name === key || sku === key || bc === key) score = 100;
+        else if (name.startsWith(key) || sku.startsWith(key)) score = 80;
+        else if (name.includes(key) || sku.includes(key) || bc.includes(key))
+          score = 50;
+        else return null;
+        return { p, score };
+      })
+      .filter(Boolean) as { p: PosProduct; score: number }[];
+
+    scored.sort((a, b) => b.score - a.score || a.p.name.localeCompare(b.p.name));
+    return scored.slice(0, limit).map((x) => x.p);
+  }
+
+  function resolveCode(code: string) {
+    const key = code.trim();
+    if (!key) return;
+    const hits = searchHits(key, 8);
+    if (hits.length === 0) {
+      toast.error(`No product matches “${code.trim()}”`);
       return;
     }
-    addProduct(product);
-    setQuery("");
-    scanRef.current?.focus();
+    // Exact barcode/SKU or single hit → add immediately
+    const lower = key.toLowerCase();
+    const exact = hits.find(
+      (p) =>
+        p.barcode?.toLowerCase() === lower ||
+        p.sku?.toLowerCase() === lower ||
+        p.name.toLowerCase() === lower,
+    );
+    if (exact || hits.length === 1) {
+      addProduct(exact ?? hits[0]);
+      setQuery("");
+      scanRef.current?.focus();
+      return;
+    }
+    // Multiple name matches — keep query so dropdown shows; toast guides
+    toast.message(`${hits.length} matches — tap one below to add`);
   }
 
   function onScanKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
       resolveCode(query);
+    }
+    if (e.key === "Escape") {
+      setQuery("");
     }
   }
 
@@ -644,6 +685,9 @@ export function PosClient({
   const browsing =
     Boolean(query.trim()) || categoryFilter !== "all";
   const hasMore = visibleProducts.length < filtered.length;
+  const searchSuggestions =
+    query.trim().length >= 1 ? searchHits(query, 15) : [];
+
 
   const payMethods: {
     id: typeof paymentMethod;
@@ -766,32 +810,95 @@ export function PosClient({
         {/* CATALOGUE */}
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-secondary/70 to-background">
           <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3">
-            <div className="flex gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Input
-                  ref={scanRef}
-                  autoFocus
-                  className="h-12 rounded-xl border-primary/25 bg-card pr-11 text-base shadow-sm sm:h-12"
-                  placeholder="Scan barcode or search name / SKU…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={onScanKeyDown}
-                />
-                <button
+            <div className="relative">
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Input
+                    ref={scanRef}
+                    autoFocus
+                    className="h-12 rounded-xl border-primary/25 bg-card pr-11 text-base shadow-sm sm:h-12"
+                    placeholder="Type name, SKU or scan barcode…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={onScanKeyDown}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-primary hover:bg-primary/10"
+                    onClick={() => setShowCamera((v) => !v)}
+                  >
+                    <ScanBarcode className="h-5 w-5" />
+                  </button>
+                </div>
+                <Button
                   type="button"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-primary hover:bg-primary/10"
-                  onClick={() => setShowCamera((v) => !v)}
+                  className="h-12 shrink-0 rounded-xl bg-chart-2 px-4 font-semibold text-accent-foreground hover:bg-chart-2/90"
+                  onClick={() => resolveCode(query)}
                 >
-                  <ScanBarcode className="h-5 w-5" />
-                </button>
+                  Add
+                </Button>
               </div>
-              <Button
-                type="button"
-                className="h-12 shrink-0 rounded-xl bg-chart-2 px-4 font-semibold text-accent-foreground hover:bg-chart-2/90"
-                onClick={() => resolveCode(query)}
-              >
-                Add
-              </Button>
+
+              {/* Live name / SKU search results — primary mobile path */}
+              {searchSuggestions.length > 0 ? (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[min(50dvh,22rem)] overflow-y-auto rounded-xl border border-primary/25 bg-card shadow-xl">
+                  {searchSuggestions.map((p) => {
+                    const price =
+                      priceMode === "wholesale"
+                        ? p.wholesalePrice
+                        : p.retailPrice;
+                    const onHand = stockOnHand(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 border-b border-border/50 px-3 py-3 text-left last:border-0 hover:bg-primary/10 active:bg-primary/15"
+                        onClick={() => {
+                          addProduct(p);
+                          setQuery("");
+                          scanRef.current?.focus();
+                        }}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">
+                            {p.name}
+                          </span>
+                          <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                            {[p.sku, p.barcode, p.categoryName]
+                              .filter(Boolean)
+                              .join(" · ") || "—"}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-sm font-bold tabular-nums text-primary">
+                          {Number(price).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                        {p.trackInventory !== false &&
+                        p.productType !== "service" ? (
+                          <span
+                            className={
+                              onHand <= 0
+                                ? "shrink-0 rounded-full bg-destructive/15 px-1.5 text-[10px] font-semibold text-destructive"
+                                : "shrink-0 rounded-full bg-chart-4/20 px-1.5 text-[10px] font-semibold text-chart-4"
+                            }
+                          >
+                            {onHand}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                  <p className="bg-muted/50 px-3 py-1.5 text-[10px] text-muted-foreground">
+                    Tap a row to add · Enter adds exact / single match
+                  </p>
+                </div>
+              ) : query.trim().length >= 2 ? (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-xl border border-border bg-card px-3 py-3 text-sm text-muted-foreground shadow-xl">
+                  No products match “{query.trim()}”
+                </div>
+              ) : null}
             </div>
 
             {showCamera && (
@@ -887,7 +994,19 @@ export function PosClient({
           </div>
 
           {/* THIS is the only product scroll region */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3">
+
+          {query.trim().length >= 1 ? (
+            <div className="flex min-h-0 flex-1 items-start justify-center p-4 text-center text-xs text-muted-foreground lg:hidden">
+              <p>Results appear under the search box — tap a product to add it.</p>
+            </div>
+          ) : null}
+
+          <div
+            className={
+              "min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3 " +
+              (query.trim().length >= 1 ? "max-lg:hidden" : "")
+            }
+          >
             {visibleProducts.length === 0 ? (
               <div className="flex min-h-[8rem] flex-col items-center justify-center rounded-2xl border border-dashed border-primary/25 bg-primary/5 p-6 text-center">
                 <ShoppingCart className="mb-2 h-8 w-8 text-primary/40" />
@@ -1013,7 +1132,12 @@ export function PosClient({
 
 
         {/* CART + PAY — sticky Complete sale always visible on mobile */}
-        <section className="flex max-h-[50dvh] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem]">
+        <section className={
+          "flex min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem] " +
+          (cart.length === 0
+            ? "max-h-[7.5rem] lg:max-h-none"
+            : "max-h-[42dvh] lg:max-h-none")
+        }>
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
