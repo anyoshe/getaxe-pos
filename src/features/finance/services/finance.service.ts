@@ -117,6 +117,8 @@ export async function ensureFinanceDefaults(businessId: string) {
     { code: "1000", name: "Cash on Hand", cat: "CA" },
     { code: "1100", name: "Bank", cat: "CA" },
     { code: "1200", name: "Inventory Asset", cat: "INV" },
+    { code: "1300", name: "Accounts Receivable", cat: "CA" },
+    { code: "2000", name: "Accounts Payable", cat: "CA" },
     { code: "4000", name: "Sales Revenue", cat: "REV" },
     { code: "5000", name: "Cost of Goods Sold", cat: "COGS" },
     { code: "6000", name: "Operating Expense", cat: "OPEX" },

@@ -5,6 +5,7 @@ import {
   boolean,
   timestamp,
   numeric,
+  integer,
   date,
   index,
   uniqueIndex,
@@ -66,6 +67,10 @@ export const customers = pgTable(
       scale: 2,
     })
       .default("0")
+      .notNull(),
+
+    loyaltyPoints: integer("loyalty_points")
+      .default(0)
       .notNull(),
 
     // Pharmacy / Clinical

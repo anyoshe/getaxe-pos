@@ -247,6 +247,18 @@ export const navigation: NavigationItem[] = [
         icon: CircleDollarSign,
         permission: "accounts.view",
       },
+      {
+        label: "Journals",
+        href: "/finance/journals",
+        icon: FileText,
+        permission: "accounts.view",
+      },
+      {
+        label: "AP aging",
+        href: "/finance/ap-aging",
+        icon: ReceiptText,
+        permission: "accounts.view",
+      },
     ],
   },
   {
@@ -362,6 +374,12 @@ export const navigation: NavigationItem[] = [
         label: "Payment methods",
         href: "/settings/payment-methods",
         icon: CreditCard,
+        permission: "business.view",
+      },
+      {
+        label: "Currencies",
+        href: "/settings/currencies",
+        icon: CircleDollarSign,
         permission: "business.view",
       },
     ],

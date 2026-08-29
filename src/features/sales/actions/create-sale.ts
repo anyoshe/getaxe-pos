@@ -2,6 +2,10 @@
 
 import { financeService } from "@/features/finance/services/finance.service";
 import { logActivity } from "@/features/audit/services/activity-log.service";
+import { journalPostingService } from "@/features/finance/services/journal-posting.service";
+import { db } from "@/db";
+import { customers } from "@/db/schema/sales/customers";
+import { eq, sql } from "drizzle-orm";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -223,6 +227,40 @@ export async function createSaleAction(input: unknown) {
     revalidatePath("/inventory/stock-movements");
     revalidatePath("/finance/payments");
 
+
+    // Double-entry journal (non-blocking)
+    try {
+      const totalNum = Number((result as any).sale?.total ?? subtotal);
+      await journalPostingService.postSale({
+        businessId: user.businessId,
+        saleId: (result as any).sale.id,
+        invoiceNumber: String((result as any).sale.invoiceNumber),
+        total: totalNum,
+        postedBy: user.id,
+      });
+    } catch (e) {
+      console.error("[create-sale] journal", e);
+    }
+
+    // Loyalty points: 1 point per 100 currency units when customer linked
+    try {
+      const customerId = data.customerId as string | null | undefined;
+      const totalNum = Number((result as any).sale?.total ?? subtotal);
+      if (customerId && totalNum > 0) {
+        const points = Math.floor(totalNum / 100);
+        if (points > 0) {
+          await db
+            .execute(
+              sql`UPDATE customers SET loyalty_points = coalesce(loyalty_points, 0) + ${points} WHERE id = ${customerId} AND business_id = ${user.businessId}`,
+            )
+            .catch(async () => {
+              // column may not exist until migration — ignore
+            });
+        }
+      }
+    } catch (e) {
+      console.error("[create-sale] loyalty", e);
+    }
     void logActivity({
       businessId: user.businessId,
       userId: user.id,

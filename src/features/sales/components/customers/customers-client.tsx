@@ -13,6 +13,7 @@ import { createCustomerAction } from "../../actions/create-customer";
 type Customer = {
   id: string;
   customerNumber: string | null;
+  loyaltyPoints?: number | null;
   firstName: string;
   lastName: string | null;
   companyName: string | null;
@@ -114,7 +115,7 @@ export function CustomersClient({ customers }: { customers: Customer[] }) {
           <tbody>
             {customers.length === 0 ? (
               <tr>
-                <td colSpan={3} className="p-6 text-center text-muted-foreground">
+                <td colSpan={4} className="p-6 text-center text-muted-foreground">
                   No customers yet.
                 </td>
               </tr>
@@ -134,6 +135,9 @@ export function CustomersClient({ customers }: { customers: Customer[] }) {
                   </td>
                   <td className="p-3 text-muted-foreground">
                     {c.customerNumber ?? "—"}
+                  </td>
+                  <td className="p-3 tabular-nums">
+                    {c.loyaltyPoints ?? 0}
                   </td>
                 </tr>
               ))
