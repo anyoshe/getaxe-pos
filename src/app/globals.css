@@ -187,8 +187,19 @@ select:-webkit-autofill {
   background: linear-gradient(
     135deg,
     oklch(0.48 0.16 250) 0%,
-    oklch(0.52 0.14 230) 45%,
-    oklch(0.55 0.12 210) 100%
+    oklch(0.50 0.14 220) 35%,
+    oklch(0.55 0.12 200) 65%,
+    oklch(0.62 0.14 85) 100%
+  );
+}
+
+.brand-stripe {
+  background: linear-gradient(
+    90deg,
+    oklch(0.48 0.16 250) 0%,
+    oklch(0.55 0.14 200) 33%,
+    oklch(0.70 0.14 85) 66%,
+    oklch(0.62 0.15 145) 100%
   );
 }
 
