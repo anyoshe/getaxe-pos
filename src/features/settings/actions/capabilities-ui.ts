@@ -3,29 +3,64 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { hasPermission } from "@/lib/auth/permissions";
 import { logActivity } from "@/features/audit/services/activity-log.service";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { CapabilityRegistry } from "@/features/capabilities/services/capability-registry";
 import { capabilitySyncService } from "@/features/capabilities/services/capability-sync.service";
 
-async function requireUserLoose() {
-  // Prefer business.view; fall back to any authenticated dashboard user
-  try {
-    return await requireAuthorizedUser("business.view");
-  } catch {
-    return await requireAuthorizedUser("products.view");
+/**
+ * Capabilities are business configuration — owner/admin with business.view.
+ * Accountants and cashiers should not manage feature packs.
+ */
+async function requireCapabilitiesManager() {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("Unauthenticated");
   }
+
+  const allowed =
+    (await hasPermission("business.view")) ||
+    (await hasPermission("business.update")) ||
+    (await hasPermission("roles.view"));
+
+  if (!allowed) {
+    return {
+      user: null as null,
+      denied: true as const,
+      message:
+        "You do not have permission to manage business capabilities. Ask an administrator.",
+    };
+  }
+
+  return { user, denied: false as const, message: null };
 }
 
 export async function listCapabilitiesStateAction() {
-  const user = await requireUserLoose();
+  const auth = await requireCapabilitiesManager();
+  if (auth.denied || !auth.user) {
+    return {
+      success: false as const,
+      message: auth.message ?? "Access denied.",
+      capabilities: [] as Array<{
+        id: string;
+        name: string;
+        description: string;
+        module: string;
+        category: string;
+        enabled: boolean;
+        dependencies: string[];
+      }>,
+    };
+  }
+
   await capabilitySyncService.sync().catch(() => undefined);
 
   const registry = new CapabilityRegistry();
   const all = registry.all();
   const enabled = await new BusinessCapabilityRepository().listEnabled(
-    user.businessId,
+    auth.user.businessId,
   );
   const enabledSet = new Set(enabled);
 
@@ -44,7 +79,14 @@ export async function listCapabilitiesStateAction() {
 }
 
 export async function setCapabilityEnabledAction(input: unknown) {
-  const user = await requireUserLoose();
+  const auth = await requireCapabilitiesManager();
+  if (auth.denied || !auth.user) {
+    return {
+      success: false as const,
+      message: auth.message ?? "Access denied.",
+    };
+  }
+
   const parsed = z
     .object({
       capabilityId: z.string().min(1),
@@ -62,7 +104,6 @@ export async function setCapabilityEnabledAction(input: unknown) {
     const registry = new CapabilityRegistry();
 
     if (parsed.data.enabled) {
-      // Enable dependency chain first (catalogue dependencies)
       const toEnable: string[] = [];
       const visit = (id: string) => {
         if (toEnable.includes(id)) return;
@@ -75,15 +116,15 @@ export async function setCapabilityEnabledAction(input: unknown) {
       visit(parsed.data.capabilityId);
 
       for (const id of toEnable) {
-        await repo.enable(user.businessId, id);
+        await repo.enable(auth.user.businessId, id);
       }
     } else {
-      await repo.disable(user.businessId, parsed.data.capabilityId);
+      await repo.disable(auth.user.businessId, parsed.data.capabilityId);
     }
 
     void logActivity({
-      businessId: user.businessId,
-      userId: user.id,
+      businessId: auth.user.businessId,
+      userId: auth.user.id,
       action: "UPDATE",
       entity: "SETTING",
       description: `Capability ${parsed.data.capabilityId} ${
@@ -91,7 +132,6 @@ export async function setCapabilityEnabledAction(input: unknown) {
       }`,
     });
 
-    // Refresh every surface that resolves product rules / POS behaviour
     for (const path of [
       "/settings/capabilities",
       "/inventory/products",

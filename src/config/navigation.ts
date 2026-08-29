@@ -42,7 +42,7 @@ export const navigation: NavigationItem[] = [
     label: "Capabilities",
     href: "/settings/capabilities",
     icon: Wrench,
-    // Always visible so owners can enable batch/serial/pharmacy features
+    permission: "business.view",
   },
   {
     label: "Sales",
@@ -332,6 +332,7 @@ export const navigation: NavigationItem[] = [
         label: "Capabilities",
         href: "/settings/capabilities",
         icon: Wrench,
+        permission: "business.view",
       },
       {
         label: "Roles & Permissions",
