@@ -10,6 +10,7 @@ import {
   FINANCE_CAPABILITIES,
   PHARMACY_CAPABILITIES,
   REPORTING_CAPABILITIES,
+  INDUSTRY_PACK_CAPABILITIES,
 } from "./catalogue";
 
 export function validateCapabilityCatalogue(
@@ -112,6 +113,7 @@ export const CAPABILITIES = [
   ...FINANCE_CAPABILITIES,
   ...PHARMACY_CAPABILITIES,
   ...REPORTING_CAPABILITIES,
+  ...INDUSTRY_PACK_CAPABILITIES,
 ];
 
 const capabilityCatalogueErrors = validateCapabilityCatalogue(CAPABILITIES);

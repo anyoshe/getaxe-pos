@@ -1,15 +1,12 @@
-import type {
-  CapabilityProfile,
-} from "../types";
+import type { CapabilityProfile } from "../types";
+import { CORE_ERP, pack } from "./shared-sets";
 
 export const DEFAULT_PROFILE: CapabilityProfile = {
   id: "default",
   name: "Default Business",
-  description: "Generic ERP profile suitable for most businesses.",
+  description:
+    "Full retail ERP baseline for general shops and any unlisted business type.",
   businessType: "DEFAULT",
-  enabled: [
-    "inventory.product-types",
-    "sales.pos",
-  ],
+  enabled: pack(CORE_ERP),
   disabled: [],
 };

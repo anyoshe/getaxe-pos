@@ -1,27 +1,11 @@
-import type {
-  CapabilityProfile,
-} from "../types";
+import type { CapabilityProfile } from "../types";
+import { CORE_ERP, PHARMA_PACK, pack } from "./shared-sets";
 
 export const PHARMACY_PROFILE: CapabilityProfile = {
   id: "pharmacy",
   name: "Retail Pharmacy",
-  description: "Retail pharmacy with dispensing and prescription support.",
+  description: "Pharmacy / chemist with dispensing and catalogue.",
   businessType: "PHARMACY",
-  enabled: [
-    "inventory.product-types",
-    "inventory.batch-control",
-    "inventory.expiry-control",
-    "inventory.reorder-level",
-    "sales.pos",
-    "sales.customer-credit",
-    "pharmacy.core",
-    "pharmacy.medicine-catalogue",
-    "reporting.standard-reports",
-    "reporting.dashboard-engine",
-    "reporting.inventory-analytics",
-    "reporting.sales-analytics",
-  ],
-  disabled: [
-    "inventory.serial-numbers",
-  ],
+  enabled: pack(CORE_ERP, PHARMA_PACK),
+  disabled: ["inventory.serial-numbers"],
 };
