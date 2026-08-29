@@ -12,3 +12,4 @@ export * from "./infrastructure";
 export * from "./insurance";
 export * from "./platform";
 export * from "./capabilities";
+export * from "./crm";

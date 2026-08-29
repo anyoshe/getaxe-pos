@@ -13,7 +13,8 @@ export default async function ApAgingPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const { buckets, detail } = await getApAging(user.businessId);
+  const aging = await getApAging(user.businessId);
+  const { buckets, detail } = aging;
 
   return (
     <div className="space-y-6">
@@ -22,8 +23,8 @@ export default async function ApAgingPage() {
           Accounts payable aging
         </h1>
         <p className="text-sm text-muted-foreground">
-          Open purchase orders by age. Use with supplier returns and GRNs for a
-          full AP cycle.
+          Based on supplier invoices when available, otherwise open purchase
+          orders. Manage bills under Purchasing → Supplier invoices.
         </p>
       </div>
 

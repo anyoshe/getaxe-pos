@@ -1,14 +1,35 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { purchaseOrders } from "@/db/schema/purchasing/purchase_orders";
 import { suppliers } from "@/db/schema/inventory/suppliers";
+import { journalEntries } from "@/db/schema/finance/journal_entries";
+import { supplierInvoiceService } from "@/features/purchases/services/supplier-invoice.service";
 
-/**
- * Simple AP aging from open purchase orders (APPROVED / PARTIAL / ORDERED)
- * that still have unreceived or unpaid value — operational view until full AP invoices.
- */
 export async function getApAging(businessId: string) {
+  // Prefer true AP invoices when present
+  try {
+    const fromInvoices = await supplierInvoiceService.aging(businessId);
+    if (fromInvoices.detail.length > 0) {
+      return {
+        source: "supplier_invoices" as const,
+        buckets: fromInvoices.buckets,
+        detail: fromInvoices.detail.map((d) => ({
+          id: d.id,
+          orderNumber: d.invoiceNumber,
+          supplierName: d.supplierName,
+          status: d.status,
+          total: d.balanceDue,
+          days: d.days,
+          bucket: "current" as string,
+          orderDate: null as Date | null,
+        })),
+      };
+    }
+  } catch {
+    // fall through to PO-based aging
+  }
+
   const rows = await db
     .select({
       id: purchaseOrders.id,
@@ -62,14 +83,10 @@ export async function getApAging(businessId: string) {
     };
   });
 
-  return { buckets, detail };
+  return { source: "purchase_orders" as const, buckets, detail };
 }
 
 export async function listJournals(businessId: string, limit = 50) {
-  const { journalEntries } = await import(
-    "@/db/schema/finance/journal_entries"
-  );
-  const { desc } = await import("drizzle-orm");
   return db
     .select()
     .from(journalEntries)

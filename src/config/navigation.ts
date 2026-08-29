@@ -180,6 +180,12 @@ export const navigation: NavigationItem[] = [
         permission: "goods_receipts.view",
       },
       {
+        label: "Supplier invoices",
+        href: "/purchases/supplier-invoices",
+        icon: FileText,
+        permission: "purchase_orders.view",
+      },
+      {
         label: "Supplier Returns",
         href: "/purchases/returns",
         icon: PackageCheck,
@@ -197,6 +203,12 @@ export const navigation: NavigationItem[] = [
         href: "/customers",
         icon: UsersRound,
         permission: "customers.view",
+      },
+      {
+        label: "Loyalty",
+        href: "/customers/loyalty",
+        icon: UsersRound,
+        permission: "loyalty.manage",
       },
     ],
   },

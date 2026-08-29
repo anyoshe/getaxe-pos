@@ -7,3 +7,4 @@ export * from "./business_settings";
 export * from "./fiscal_years";
 export * from "./numbering_sequences";
 export * from "./countries";
+export * from "./exchange_rates";
