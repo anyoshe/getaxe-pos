@@ -4,7 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ScanBarcode, X } from "lucide-react";
+import {
+  ScanBarcode,
+  X,
+  Banknote,
+  CreditCard,
+  Smartphone,
+  ShoppingCart,
+  Trash2,
+  Minus,
+  Plus,
+  UserRound,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,6 +160,7 @@ export function PosClient({
   const [paymentMethod, setPaymentMethod] = useState<
     "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY"
   >("CASH");
+  const [amountTendered, setAmountTendered] = useState("");
   const [showCustomer, setShowCustomer] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -545,6 +557,7 @@ export function PosClient({
         toast.success(result.message);
       }
       setCart([]);
+      setAmountTendered("");
       // Keep member phone for next sale (supermarket style); clear if walk-in only
       if (!resolvedCustomerId) {
         setCustomerName("");
@@ -567,385 +580,328 @@ export function PosClient({
     });
   }
 
+
   const shell = fullScreen
     ? "fixed inset-0 z-50 flex flex-col bg-background"
-    : "flex flex-col gap-4";
+    : "flex min-h-[70vh] flex-col overflow-hidden rounded-2xl border shadow-sm";
+
+  const changeDue =
+    paymentMethod === "CASH" && amountTendered
+      ? Math.max(0, Number(amountTendered) - total)
+      : null;
+
+  const payMethods: {
+    id: typeof paymentMethod;
+    label: string;
+    icon: typeof Banknote;
+  }[] = [
+    { id: "CASH", label: "Cash", icon: Banknote },
+    { id: "MPESA", label: "M-Pesa", icon: Smartphone },
+    { id: "CARD", label: "Card", icon: CreditCard },
+    { id: "MOBILE_MONEY", label: "Mobile", icon: Smartphone },
+  ];
 
   return (
     <div className={shell}>
-      {/* Top bar */}
-      <header className="flex flex-wrap items-center gap-3 border-b border-border/60 bg-primary px-4 py-3 text-primary-foreground">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold tracking-tight">GetAxe POS</span>
-          {cashierName ? (
-            <span className="hidden text-sm opacity-90 sm:inline">
-              · {cashierName}
-            </span>
-          ) : null}
-        </div>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="flex rounded-lg bg-primary-foreground/15 p-0.5 text-sm">
-            <button
-              type="button"
-              className={`rounded-md px-3 py-1.5 font-medium transition ${
-                priceMode === "retail"
-                  ? "bg-primary-foreground text-primary shadow-sm"
-                  : "opacity-90 hover:opacity-100"
-              }`}
-              onClick={() => setPriceMode("retail")}
-            >
-              Retail
-            </button>
-            <button
-              type="button"
-              className={`rounded-md px-3 py-1.5 font-medium transition ${
-                priceMode === "wholesale"
-                  ? "bg-primary-foreground text-primary shadow-sm"
-                  : "opacity-90 hover:opacity-100"
-              }`}
-              onClick={() => setPriceMode("wholesale")}
-            >
-              Wholesale
-            </button>
+      {/* Brand top bar */}
+      <header className="brand-gradient relative shrink-0 text-primary-foreground shadow-md">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-black tracking-tight backdrop-blur">
+              GA
+            </div>
+            <div className="min-w-0">
+              <div className="text-lg font-bold tracking-tight">GetAxe POS</div>
+              <div className="truncate text-xs text-white/75">
+                {cashierName ? `Cashier · ${cashierName}` : "Point of sale"}
+                {branchId
+                  ? ` · ${branches.find((b) => b.id === branchId)?.name ?? ""}`
+                  : ""}
+              </div>
+            </div>
           </div>
 
-          <select
-            className="h-9 rounded-md border-0 bg-primary-foreground/15 px-2 text-sm text-primary-foreground"
-            value={warehouseId}
-            onChange={(e) => {
-              setWarehouseId(e.target.value);
-              const w = warehouses.find((x) => x.id === e.target.value);
-              if (w?.branchId) setBranchId(w.branchId);
-            }}
-          >
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id} className="text-foreground">
-                {w.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-full bg-black/20 p-0.5 text-xs font-medium">
+              {(["retail", "wholesale"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPriceMode(m)}
+                  className={
+                    priceMode === m
+                      ? "rounded-full bg-white px-3 py-1.5 text-primary shadow-sm"
+                      : "rounded-full px-3 py-1.5 text-white/80 hover:text-white"
+                  }
+                >
+                  {m === "retail" ? "Retail" : "Wholesale"}
+                </button>
+              ))}
+            </div>
 
-          <select
-            className="h-9 rounded-md border-0 bg-primary-foreground/15 px-2 text-sm text-primary-foreground"
-            value={paymentMethod}
-            onChange={(e) =>
-              setPaymentMethod(e.target.value as typeof paymentMethod)
-            }
-          >
-            <option value="CASH" className="text-foreground">
-              Cash
-            </option>
-            <option value="MPESA" className="text-foreground">
-              M-Pesa
-            </option>
-            <option value="CARD" className="text-foreground">
-              Card
-            </option>
-            <option value="MOBILE_MONEY" className="text-foreground">
-              Mobile money
-            </option>
-          </select>
+            <select
+              className="h-9 max-w-[10rem] rounded-lg border-0 bg-white/15 px-2 text-xs text-white outline-none backdrop-blur"
+              value={warehouseId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setWarehouseId(id);
+                const wh = warehouses.find((w) => w.id === id);
+                if (wh?.branchId) setBranchId(wh.branchId);
+              }}
+            >
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id} className="text-foreground">
+                  {w.name}
+                </option>
+              ))}
+            </select>
 
-          {fullScreen ? (
-            <Link
-              href="/inventory/stock"
-              className="rounded-md bg-primary-foreground/15 px-3 py-1.5 text-sm hover:bg-primary-foreground/25"
-            >
-              Exit
-            </Link>
-          ) : (
-            <Link
-              href="/sales/pos"
-              className="rounded-md bg-primary-foreground/15 px-3 py-1.5 text-sm hover:bg-primary-foreground/25"
-            >
-              Full screen
-            </Link>
-          )}
+            {fullScreen ? (
+              <Link
+                href="/sales"
+                className="rounded-lg bg-white/15 px-3 py-2 text-xs font-medium hover:bg-white/25"
+              >
+                Exit
+              </Link>
+            ) : (
+              <Link
+                href="/sales/pos"
+                className="rounded-lg bg-white/15 px-3 py-2 text-xs font-medium hover:bg-white/25"
+              >
+                Full screen
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Optional customer — lookup by phone (loyalty) or capture for receipt */}
-      <div className="border-b border-border/50 bg-card/50 px-3 py-2 sm:px-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="text-sm font-medium text-primary hover:underline"
-            onClick={() => setShowCustomer((v) => !v)}
-          >
-            {showCustomer ? "Hide customer" : "Customer (optional)"}
-          </button>
-          {customerLabel ? (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-              {customerLabel}
-              {customerPhone ? ` · ${customerPhone}` : ""}
-              <button
-                type="button"
-                className="ml-1 opacity-70 hover:opacity-100"
-                onClick={clearCustomer}
-              >
-                ×
-              </button>
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">
-              Walk-in · phone lookup for rewards · capture name for receipt
-            </span>
-          )}
-        </div>
-        {showCustomer && (
-          <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
-            <Input
-              className="h-9"
-              placeholder="Phone (lookup / rewards)"
-              value={customerPhone}
-              onChange={(e) => {
-                setCustomerPhone(e.target.value);
-                setCustomerId(null);
-                setCustomerLabel(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void lookupCustomer();
-                }
-              }}
-            />
-            <Input
-              className="h-9"
-              placeholder="Name (receipt — optional)"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9"
-              disabled={lookingUp}
-              onClick={() => void lookupCustomer()}
-            >
-              {lookingUp ? "…" : "Lookup"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-9"
-              onClick={clearCustomer}
-            >
-              Clear
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
-        {/* Products / scan */}
-        <section className="flex min-h-0 flex-col border-r border-border/50 p-3 sm:p-4">
-          <div className="mb-3 flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                ref={scanRef}
-                autoFocus
-                className="h-12 pr-12 text-base"
-                placeholder="Scan barcode / QR or type SKU, then Enter…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={onScanKeyDown}
-              />
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Camera scan"
-                onClick={() => setShowCamera((v) => !v)}
-              >
-                <ScanBarcode className="h-5 w-5" />
-              </button>
-            </div>
-            <Button
-              type="button"
-              className="h-12 px-5"
-              onClick={() => resolveCode(query)}
-            >
-              Add
-            </Button>
-          </div>
-
-          {showCamera && (
-            <div className="mb-3 rounded-xl border border-primary/20 bg-card p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-medium">Camera scanner</p>
-                <button type="button" onClick={() => setShowCamera(false)}>
-                  <X className="h-4 w-4" />
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+        {/* LEFT — catalogue */}
+        <section className="flex min-h-0 flex-col border-r border-border/60 bg-muted/20">
+          <div className="shrink-0 space-y-3 border-b border-border/50 bg-background/80 p-3 backdrop-blur sm:p-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  ref={scanRef}
+                  autoFocus
+                  className="h-14 rounded-xl border-primary/25 bg-background pr-12 text-base shadow-sm focus-visible:ring-primary/30"
+                  placeholder="Scan barcode or type name / SKU…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={onScanKeyDown}
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-primary hover:bg-primary/10"
+                  title="Camera scan"
+                  onClick={() => setShowCamera((v) => !v)}
+                >
+                  <ScanBarcode className="h-5 w-5" />
                 </button>
               </div>
-              <BarcodeScanner
-                continuous
-                onScan={(code) => {
-                  resolveCode(code);
-                }}
-                onClose={() => setShowCamera(false)}
-              />
+              <Button
+                type="button"
+                className="h-14 rounded-xl px-6 text-base font-semibold shadow-sm"
+                onClick={() => resolveCode(query)}
+              >
+                Add
+              </Button>
             </div>
-          )}
 
-          <p className="mb-2 text-xs text-muted-foreground">
-            Showing {priceMode} prices · tap product or scan to add
-          </p>
+            {showCamera && (
+              <div className="rounded-xl border border-primary/20 bg-card p-3 shadow-sm">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-medium">Camera scanner</p>
+                  <button type="button" onClick={() => setShowCamera(false)}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <BarcodeScanner
+                  continuous
+                  onScan={(code) => resolveCode(code)}
+                  onClose={() => setShowCamera(false)}
+                />
+              </div>
+            )}
 
-          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border bg-card/40 p-2">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-primary">
+                {priceMode === "retail" ? "Retail" : "Wholesale"}
+              </span>{" "}
+              prices · {filtered.length} products · tap or scan to add
+            </p>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
             {filtered.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                No products match.
-              </p>
+              <div className="flex h-full min-h-[12rem] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+                <ShoppingCart className="mb-2 h-8 w-8 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">No products match</p>
+              </div>
             ) : (
-              filtered.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => addProduct(p)}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-primary/8"
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">{p.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {[p.sku, p.barcode].filter(Boolean).join(" · ") || "—"}
-                      {p.serialized ? " · serial" : ""}
-                      {p.productType !== "service" && p.trackInventory !== false
-                        ? ` · stock ${stockOnHand(p.id)}`
-                        : ""}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block tabular-nums font-semibold text-primary">
-                      {(() => {
-                        const u = defaultUnitFor(p.id);
-                        return priceFor(
-                          p,
-                          u?.unitId ?? null,
-                          u?.factorToStock ?? 1,
-                        ).toFixed(2);
-                      })()}
-                    </span>
-                    {p.productType !== "service" && p.trackInventory !== false && (
-                      <span
-                        className={
-                          stockOnHand(p.id) > 0
-                            ? "text-[10px] text-muted-foreground"
-                            : "text-[10px] text-destructive"
-                        }
-                      >
-                        {stockOnHand(p.id) > 0
-                          ? `${stockOnHand(p.id)} on hand`
-                          : "Out of stock"}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+                {filtered.map((p) => {
+                  const price =
+                    priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice;
+                  const onHand = stockOnHand(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => addProduct(p)}
+                      className="group flex flex-col rounded-2xl border border-border/80 bg-card p-3 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md active:scale-[0.98]"
+                    >
+                      <span className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-foreground group-hover:text-primary">
+                        {p.name}
                       </span>
-                    )}
-                  </span>
-                </button>
-              ))
+                      <span className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+                        {p.sku || p.barcode || "—"}
+                      </span>
+                      <div className="mt-auto flex items-end justify-between gap-1 pt-3">
+                        <span className="text-base font-bold tabular-nums text-primary">
+                          {Number(price).toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                        {p.trackInventory !== false &&
+                        p.productType !== "service" ? (
+                          <span
+                            className={
+                              onHand <= 0
+                                ? "rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                                : "rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                            }
+                          >
+                            {onHand}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">
+                            svc
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         </section>
 
-        {/* Cart */}
-        <section className="flex min-h-0 flex-col bg-muted/30 p-3 sm:p-4">
-          <h2 className="mb-2 text-lg font-semibold">Cart</h2>
+        {/* RIGHT — cart + pay */}
+        <section className="flex min-h-0 flex-col bg-background">
+          <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ShoppingCart className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold">Current sale</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {cart.length} line{cart.length === 1 ? "" : "s"}
+                </div>
+              </div>
+            </div>
+            {cart.length > 0 ? (
+              <button
+                type="button"
+                className="text-xs font-medium text-destructive hover:underline"
+                onClick={() => setCart([])}
+              >
+                Clear cart
+              </button>
+            ) : null}
+          </div>
 
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {cart.length === 0 ? (
-              <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-                Scan or search to start a sale
-              </p>
+              <div className="flex h-full min-h-[10rem] flex-col items-center justify-center rounded-2xl border border-dashed border-border p-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Cart is empty — scan or tap a product
+                </p>
+              </div>
             ) : (
               cart.map((line) => {
                 const options = freeSerials(line.productId);
+                const units = productUnitsByProduct[line.productId] ?? [];
+                const lineTotal = line.quantity * line.unitPrice;
                 return (
                   <div
-                    key={`${line.productId}-${line.unitId ?? "stock"}`}
-                    className="space-y-2 rounded-xl border bg-card p-3 shadow-sm"
+                    key={line.productId}
+                    className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium">{line.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          <strong>{line.unitPrice.toFixed(2)}</strong> per{" "}
-                          {line.unitLabel || "unit"}
-                          {line.factorToStock !== 1
-                            ? ` (${(line.unitPrice / line.factorToStock).toFixed(2)} per stock unit)`
-                            : ""}{" "}
-                          · {priceMode}
-                        </p>
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold leading-tight">
+                          {line.name}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {line.unitPrice.toLocaleString()} / {line.unitLabel}
+                        </div>
                       </div>
                       <button
                         type="button"
-                        className="text-xs text-destructive"
+                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                         onClick={() =>
                           setCart((c) =>
                             c.filter((x) => x.productId !== line.productId),
                           )
                         }
+                        title="Remove"
                       >
-                        Remove
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Sell unit</Label>
-                        {(productUnitsByProduct[line.productId]?.length ?? 0) >=
-                        1 ? (
-                          <select
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                            value={line.unitId ?? ""}
-                            onChange={(e) =>
-                              setLineUnit(line.productId, e.target.value)
-                            }
-                          >
-                            {(productUnitsByProduct[line.productId] ?? []).map(
-                              (u) => (
-                                <option key={u.unitId} value={u.unitId}>
-                                  {u.label}
-                                  {u.factorToStock !== 1
-                                    ? ` (= ${u.factorToStock} stock)`
-                                    : " (stock unit)"}
-                                </option>
-                              ),
-                            )}
-                          </select>
-                        ) : (
-                          <div className="flex h-9 items-center rounded-md border bg-muted/40 px-2 text-sm">
-                            {line.unitLabel || "unit"}
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Qty ({line.unitLabel || "unit"})
-                        </Label>
-                        <Input
-                          className="h-9 w-24"
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className="flex items-center rounded-xl border bg-background">
+                        <button
+                          type="button"
+                          className="flex h-9 w-9 items-center justify-center text-primary hover:bg-primary/10"
+                          onClick={() => {
+                            const q = Math.max(0, line.quantity - 1);
+                            const factor =
+                              line.factorToStock > 0 ? line.factorToStock : 1;
+                            setCart((c) =>
+                              c
+                                .map((x) =>
+                                  x.productId === line.productId
+                                    ? {
+                                        ...x,
+                                        quantity: q,
+                                        selectedSerials: x.selectedSerials.slice(
+                                          0,
+                                          Math.round(q * factor) || 0,
+                                        ),
+                                      }
+                                    : x,
+                                )
+                                .filter((x) => x.quantity > 0),
+                            );
+                          }}
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <input
+                          className="h-9 w-14 border-x bg-transparent text-center text-sm font-semibold tabular-nums outline-none"
                           type="number"
                           min={0.000001}
                           step="any"
                           value={line.quantity}
                           onChange={(e) => {
-                            const q = Math.max(
-                              0,
-                              Number(e.target.value) || 0,
-                            );
+                            const q = Math.max(0, Number(e.target.value) || 0);
                             const factor =
                               line.factorToStock > 0 ? line.factorToStock : 1;
-                            const stockNeed = q * factor;
                             setCart((c) =>
                               c.map((x) =>
                                 x.productId === line.productId
                                   ? {
                                       ...x,
                                       quantity: q,
-                                      // Serials still count in stock units
                                       selectedSerials: x.selectedSerials.slice(
                                         0,
-                                        Math.round(stockNeed) || 0,
+                                        Math.round(q * factor) || 0,
                                       ),
                                     }
                                   : x,
@@ -953,100 +909,108 @@ export function PosClient({
                             );
                           }}
                         />
+                        <button
+                          type="button"
+                          className="flex h-9 w-9 items-center justify-center text-primary hover:bg-primary/10"
+                          onClick={() => {
+                            const q = line.quantity + 1;
+                            setCart((c) =>
+                              c.map((x) =>
+                                x.productId === line.productId
+                                  ? { ...x, quantity: q }
+                                  : x,
+                              ),
+                            );
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      <div className="space-y-1 text-right">
-                        <Label className="text-xs">Line total</Label>
-                        <div className="flex h-9 items-center justify-end text-base font-semibold tabular-nums">
-                          {(line.quantity * line.unitPrice).toFixed(2)}
-                        </div>
+
+                      {units.length > 1 ? (
+                        <select
+                          className="h-9 rounded-xl border bg-background px-2 text-xs"
+                          value={line.unitId ?? ""}
+                          onChange={(e) => {
+                            const unitId = e.target.value;
+                            if (unitId) setLineUnit(line.productId, unitId);
+                          }}
+                        >
+                          {units.map((u) => (
+                            <option key={u.unitId} value={u.unitId}>
+                              {u.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
+
+                      <div className="ml-auto text-base font-bold tabular-nums text-foreground">
+                        {lineTotal.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </div>
                     </div>
-                    {line.factorToStock !== 1 && (
-                      <p className="text-xs text-muted-foreground">
-                        {line.quantity} {line.unitLabel} × {line.factorToStock} ={" "}
-                        <strong>
-                          {(line.quantity * line.factorToStock).toLocaleString()}
-                        </strong>{" "}
-                        stock units deducted from inventory
-                      </p>
-                    )}
 
                     {(line.trackBatch || line.trackExpiry) &&
                       batchesFor(line.productId).length > 0 && (
-                        <div className="space-y-1 rounded-lg border border-primary/20 bg-primary/5 p-2">
-                          <Label className="text-xs">
-                            Batch / lot{" "}
-                            <span className="text-muted-foreground">
-                              (FEFO — earliest expiry first)
-                            </span>
-                          </Label>
+                        <div className="mt-2">
                           <select
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            className="h-8 w-full rounded-lg border border-primary/20 bg-primary/5 px-2 text-[11px]"
                             value={line.selectedBatchId ?? ""}
-                            onChange={(e) => {
-                              const id = e.target.value || null;
+                            onChange={(e) =>
                               setCart((c) =>
                                 c.map((x) =>
-                                  x.productId === line.productId &&
-                                  x.unitId === line.unitId
-                                    ? { ...x, selectedBatchId: id }
+                                  x.productId === line.productId
+                                    ? {
+                                        ...x,
+                                        selectedBatchId: e.target.value || null,
+                                      }
                                     : x,
                                 ),
-                              );
-                            }}
+                              )
+                            }
                           >
-                            <option value="">Auto FEFO (earliest expiry)</option>
+                            <option value="">Batch · FEFO default</option>
                             {batchesFor(line.productId).map((b) => (
                               <option key={b.batchId} value={b.batchId}>
                                 {b.batchNumber}
                                 {b.expiryDate ? ` · exp ${b.expiryDate}` : ""}
-                                {b.manufactureDate
-                                  ? ` · mfg ${b.manufactureDate}`
-                                  : ""}
-                                {` · ${b.quantity} avail`}
+                                {` · ${b.quantity}`}
                               </option>
                             ))}
                           </select>
-                          {line.selectedBatchId && (
-                            <p className="text-[11px] text-muted-foreground">
-                              Selling from selected lot first; remainder uses next
-                              expiry (FEFO).
-                            </p>
-                          )}
                         </div>
                       )}
+
                     {line.serialized && (
-                      <div className="space-y-1">
-                        <Label className="text-xs">
-                          Serials ({line.selectedSerials.length}/
-                          {Math.round(line.quantity * (line.factorToStock || 1))})
-                        </Label>
+                      <div className="mt-2 max-h-24 space-y-1 overflow-y-auto rounded-lg border border-primary/20 bg-primary/5 p-2">
+                        <p className="text-[10px] font-medium text-primary">
+                          Serials {line.selectedSerials.length}/
+                          {Math.round(
+                            line.quantity * (line.factorToStock || 1),
+                          )}
+                        </p>
                         {options.length === 0 ? (
-                          <p className="text-xs text-destructive">
+                          <p className="text-[11px] text-destructive">
                             No available serials
                           </p>
                         ) : (
-                          <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border border-primary/20 bg-primary/5 p-2">
-                            {options.map((serial) => (
-                              <label
-                                key={serial}
-                                className="flex cursor-pointer items-center gap-2 text-sm"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={line.selectedSerials.includes(
-                                    serial,
-                                  )}
-                                  onChange={() =>
-                                    toggleSerial(line.productId, serial)
-                                  }
-                                />
-                                <span className="font-mono text-xs">
-                                  {serial}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
+                          options.map((serial) => (
+                            <label
+                              key={serial}
+                              className="flex cursor-pointer items-center gap-2 text-xs"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={line.selectedSerials.includes(serial)}
+                                onChange={() =>
+                                  toggleSerial(line.productId, serial)
+                                }
+                              />
+                              <span className="font-mono">{serial}</span>
+                            </label>
+                          ))
                         )}
                       </div>
                     )}
@@ -1056,26 +1020,86 @@ export function PosClient({
             )}
           </div>
 
-          <div className="mt-3 space-y-3 border-t pt-3">
+          {/* Checkout dock */}
+          <div className="shrink-0 space-y-3 border-t border-border/60 bg-card p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] sm:p-4">
             <div className="flex items-end justify-between">
-              <span className="text-muted-foreground">Total</span>
-              <span className="text-3xl font-bold tabular-nums text-primary">
-                {total.toFixed(2)}
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="text-3xl font-black tabular-nums tracking-tight text-primary">
+                {total.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </span>
             </div>
-            {/* Supermarket-style loyalty: phone optional before pay */}
-            <div className="space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-primary">
-                Member phone (optional)
+
+            <div className="grid grid-cols-4 gap-1.5">
+              {payMethods.map((m) => {
+                const Icon = m.icon;
+                const active = paymentMethod === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setPaymentMethod(m.id)}
+                    className={
+                      active
+                        ? "flex flex-col items-center gap-1 rounded-xl bg-primary px-1 py-2.5 text-primary-foreground shadow-sm"
+                        : "flex flex-col items-center gap-1 rounded-xl border border-border bg-background px-1 py-2.5 text-muted-foreground hover:border-primary/40 hover:text-primary"
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] font-semibold">{m.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {paymentMethod === "CASH" ? (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    Amount tendered
+                  </Label>
+                  <Input
+                    className="h-10 rounded-xl"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder={total.toFixed(2)}
+                    value={amountTendered}
+                    onChange={(e) => setAmountTendered(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    Change
+                  </Label>
+                  <div className="flex h-10 items-center rounded-xl border bg-primary/5 px-3 text-sm font-bold tabular-nums text-primary">
+                    {changeDue != null
+                      ? changeDue.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      : "—"}
+                  </div>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Ask for phone to award loyalty points. Leave empty to complete as walk-in.
-              </p>
-              <div className="flex flex-wrap gap-2">
+            ) : null}
+
+            {/* Member phone */}
+            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                <UserRound className="h-3.5 w-3.5" />
+                Member phone
+                <span className="font-normal text-muted-foreground">
+                  · optional
+                </span>
+              </div>
+              <div className="flex gap-2">
                 <Input
-                  className="h-10 min-w-[10rem] flex-1"
+                  className="h-10 flex-1 rounded-xl"
                   inputMode="tel"
-                  placeholder="Phone number"
+                  placeholder="07… for loyalty points"
                   value={customerPhone}
                   onChange={(e) => {
                     setCustomerPhone(e.target.value);
@@ -1093,68 +1117,60 @@ export function PosClient({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-10"
+                  className="h-10 rounded-xl"
                   disabled={lookingUp || !customerPhone.trim()}
                   onClick={() => void lookupCustomer()}
                 >
-                  {lookingUp ? "…" : "Find member"}
+                  {lookingUp ? "…" : "Find"}
                 </Button>
-                {(customerId || customerPhone) && (
-                  <Button
+              </div>
+              {customerId && customerLabel ? (
+                <div className="flex items-center justify-between text-xs">
+                  <span>
+                    <span className="font-medium text-primary">
+                      {customerLabel}
+                    </span>
+                    {customerPoints != null ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · {customerPoints} pts
+                        {estimatedEarn > 0
+                          ? ` · +~${estimatedEarn}`
+                          : ""}
+                      </span>
+                    ) : null}
+                  </span>
+                  <button
                     type="button"
-                    variant="ghost"
-                    className="h-10"
+                    className="text-muted-foreground hover:text-foreground"
                     onClick={clearCustomer}
                   >
                     Clear
-                  </Button>
-                )}
-              </div>
-              {customerId && customerLabel ? (
-                <div className="rounded-lg bg-background/80 px-2 py-1.5 text-sm">
-                  <span className="font-medium text-primary">{customerLabel}</span>
-                  {customerPoints != null ? (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · {customerPoints} pts
-                      {estimatedEarn > 0
-                        ? ` · this sale ~${estimatedEarn} pts`
-                        : ""}
-                    </span>
-                  ) : null}
+                  </button>
                 </div>
-              ) : customerPhone.trim().length >= 7 ? (
-                <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                  Press Find member — if not registered, sale still completes without points.
-                </p>
-              ) : (
-                <p className="text-[11px] text-muted-foreground">
-                  No phone → no points · sale proceeds normally.
-                </p>
-              )}
+              ) : null}
             </div>
 
             <Button
-              className="h-14 w-full text-base font-semibold"
+              className="h-14 w-full rounded-xl text-base font-bold shadow-md"
               size="lg"
               disabled={pending || cart.length === 0}
               onClick={checkout}
             >
               {pending ? "Processing…" : "Complete sale"}
             </Button>
-          </div>
 
-          {recentSales.length > 0 && (
-            <div className="mt-3 max-h-28 overflow-y-auto text-xs text-muted-foreground">
-              <p className="mb-1 font-medium text-foreground">Recent</p>
-              {recentSales.map((s) => (
-                <div key={s.id} className="flex justify-between py-0.5">
-                  <span>{s.invoiceNumber}</span>
-                  <span className="tabular-nums">{s.total.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+            {recentSales.length > 0 ? (
+              <div className="max-h-16 overflow-y-auto text-[11px] text-muted-foreground">
+                {recentSales.slice(0, 4).map((s) => (
+                  <div key={s.id} className="flex justify-between py-0.5">
+                    <span>{s.invoiceNumber}</span>
+                    <span className="tabular-nums">{s.total.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </section>
       </div>
     </div>
