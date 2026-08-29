@@ -10,9 +10,11 @@ import {
 
 export async function getPermissionsAction() {
     try {
-        await requireAuthorizedUser(
-            "permissions.view"
-        );
+        try {
+            await requireAuthorizedUser("permissions.view");
+        } catch {
+            await requireAuthorizedUser("roles.view");
+        }
         return {
             success: true,
             data: await permissionService.getPermissions(),

@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 "use server";
 
 import { roleService } from "../services";
@@ -108,6 +109,8 @@ export async function updateRolePermissionsAction(
     await requireAuthorizedUser("roles.update");
 
     await roleService.replacePermissions(roleId, permissionIds);
+    revalidatePath("/settings/roles");
+    revalidatePath("/settings/users");
 
     return {
       success: true,

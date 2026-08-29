@@ -32,6 +32,9 @@ import {
     Checkbox,
 } from "@/components/ui/checkbox";
 import {
+    RolePermissionsPicker,
+} from "./role-permissions-picker";
+import {
     Textarea,
 } from "@/components/ui/textarea";
 
@@ -412,8 +415,9 @@ export function RoleForm({
 
                     <p className="mt-1 text-sm text-muted-foreground">
 
-                        This is a built-in role. Permissions can be managed,
-                        but the role itself should not be deleted.
+                        Built-in role — you can freely add or remove permissions
+                        for cashiers and other staff without creating a new role.
+                        Prefer not to delete this role.
 
                     </p>
 
@@ -449,185 +453,18 @@ export function RoleForm({
                     </h4>
 
                     <p className="text-sm text-muted-foreground">
-                        Select the permissions assigned to this role.
+                        Tick extra permissions for this role (e.g. give a cashier
+                        stock view) or untick to reduce access — no new role required.
+                        System roles can be customized the same way.
                     </p>
 
                 </div>
 
-
-                <div className="space-y-4">
-
-
-                    {
-                        Object.entries(
-                            permissions.reduce(
-                                (
-                                    groups,
-                                    permission,
-                                ) => {
-
-                                    if (
-                                        !groups[permission.module]
-                                    ) {
-
-                                        groups[permission.module] = [];
-
-                                    }
-
-                                    groups[permission.module].push(
-                                        permission,
-                                    );
-
-                                    return groups;
-
-                                },
-                                {} as Record<
-                                    string,
-                                    Permission[]
-                                >,
-                            ),
-                        )
-                            .map(
-                                (
-                                    [
-                                        module,
-                                        modulePermissions,
-                                    ],
-                                ) => (
-
-                                    <div
-                                        key={module}
-                                        className="
-                        rounded-lg
-                        border
-                        bg-white/60
-                        p-4
-                        dark:bg-background/40
-                    "
-                                    >
-
-                                        <h5
-                                            className="
-                            mb-3
-                            font-medium
-                            capitalize
-                            text-indigo-600
-                            dark:text-indigo-300
-                        "
-                                        >
-                                            {module}
-                                        </h5>
-
-
-                                        <div
-                                            className="
-                            grid
-                            gap-3
-                            md:grid-cols-2
-                        "
-                                        >
-
-                                            {
-                                                modulePermissions.map(
-                                                    (
-                                                        permission,
-                                                    ) => (
-
-                                                        <label
-                                                            key={permission.id}
-                                                            className="
-                                    flex
-                                    cursor-pointer
-                                    items-start
-                                    gap-3
-                                    rounded-lg
-                                    border
-                                    p-3
-                                    transition
-                                    hover:border-indigo-400
-                                    hover:bg-indigo-50
-                                    dark:hover:bg-indigo-950/30
-                                "
-                                                        >
-
-                                                            <Checkbox
-
-                                                                checked={
-                                                                    selectedPermissions.includes(
-                                                                        permission.id,
-                                                                    )
-                                                                }
-
-                                                                onCheckedChange={
-                                                                    (checked) => {
-
-                                                                        if (checked) {
-
-                                                                            setSelectedPermissions(
-                                                                                previous => [
-                                                                                    ...previous,
-                                                                                    permission.id,
-                                                                                ],
-                                                                            );
-
-                                                                        } else {
-
-                                                                            setSelectedPermissions(
-                                                                                previous =>
-                                                                                    previous.filter(
-                                                                                        id =>
-                                                                                            id !== permission.id,
-                                                                                    ),
-                                                                            );
-
-                                                                        }
-
-                                                                    }
-                                                                }
-
-                                                            />
-
-
-                                                            <div>
-
-                                                                <p
-                                                                    className="
-                                            text-sm
-                                            font-medium
-                                        "
-                                                                >
-                                                                    {permission.name}
-                                                                </p>
-
-                                                                <p
-                                                                    className="
-                                            text-xs
-                                            text-muted-foreground
-                                        "
-                                                                >
-                                                                    {permission.code}
-                                                                </p>
-
-                                                            </div>
-
-
-                                                        </label>
-
-                                                    ))
-                                            }
-
-
-                                        </div>
-
-
-                                    </div>
-
-                                ))
-                    }
-
-
-                </div>
-
+                <RolePermissionsPicker
+                    permissions={permissions}
+                    selectedIds={selectedPermissions}
+                    onChange={setSelectedPermissions}
+                />
 
             </div>
 
