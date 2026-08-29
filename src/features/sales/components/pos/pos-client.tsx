@@ -744,8 +744,8 @@ export function PosClient({
             </select>
             {fullScreen ? (
               <Link
-                href="/sales"
-                className="rounded-lg bg-white/15 px-3 py-2 text-xs font-medium"
+                href="/dashboard"
+                className="rounded-lg bg-white/15 px-3 py-2 text-xs font-medium hover:bg-white/25"
               >
                 Exit
               </Link>
@@ -1011,8 +1011,9 @@ export function PosClient({
           </div>
         </section>
 
-        {/* CART — fixed height share on mobile so both panes can scroll */}
-        <section className="flex max-h-[46dvh] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem]">
+
+        {/* CART + PAY — sticky Complete sale always visible on mobile */}
+        <section className="flex max-h-[50dvh] min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem]">
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -1036,9 +1037,10 @@ export function PosClient({
             ) : null}
           </div>
 
+          {/* Scrollable: lines + payment options + customer */}
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3">
             {cart.length === 0 ? (
-              <div className="flex min-h-[3.5rem] items-center justify-center rounded-xl border border-dashed border-chart-2/40 bg-chart-2/10 p-3 text-center text-xs text-muted-foreground">
+              <div className="flex min-h-[3rem] items-center justify-center rounded-xl border border-dashed border-chart-2/40 bg-chart-2/10 p-3 text-center text-xs text-muted-foreground">
                 Scan or tap products to start
               </div>
             ) : (
@@ -1195,7 +1197,7 @@ export function PosClient({
                         </select>
                       )}
                     {line.serialized && (
-                      <div className="mt-2 max-h-20 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
+                      <div className="mt-2 max-h-16 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
                         <p className="text-[10px] font-semibold text-chart-5">
                           Serials {line.selectedSerials.length}/
                           {Math.round(
@@ -1223,20 +1225,8 @@ export function PosClient({
                 );
               })
             )}
-          </div>
 
-          <div className="shrink-0 space-y-2 border-t border-border/60 bg-gradient-to-t from-secondary/50 to-card p-2.5 sm:p-3">
-            <div className="flex items-end justify-between">
-              <span className="text-xs text-muted-foreground">Total</span>
-              <span className="text-2xl font-black tabular-nums text-primary sm:text-3xl">
-                {total.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5 pt-1">
               {payMethods.map((m) => {
                 const Icon = m.icon;
                 const active = paymentMethod === m.id;
@@ -1357,9 +1347,21 @@ export function PosClient({
                 </p>
               ) : null}
             </div>
+          </div>
 
+          {/* Always visible on mobile — total + complete */}
+          <div className="shrink-0 space-y-2 border-t border-border/60 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:p-3">
+            <div className="flex items-end justify-between">
+              <span className="text-xs text-muted-foreground">Total</span>
+              <span className="text-2xl font-black tabular-nums text-primary">
+                {total.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
             <Button
-              className="h-11 w-full rounded-xl text-base font-bold shadow-md sm:h-12"
+              className="h-12 w-full rounded-xl text-base font-bold shadow-md"
               size="lg"
               disabled={pending || cart.length === 0}
               onClick={checkout}
@@ -1368,6 +1370,7 @@ export function PosClient({
             </Button>
           </div>
         </section>
+
       </div>
     </div>
   );
