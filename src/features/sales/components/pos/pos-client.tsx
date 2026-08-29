@@ -15,6 +15,7 @@ import { createSaleAction } from "../../actions/create-sale";
 import {
   ensurePosCustomerAction,
   lookupCustomerByPhoneAction,
+  previewLoyaltyEarnAction,
 } from "../../actions/pos-customer";
 
 export type PosProduct = {
@@ -153,6 +154,8 @@ export function PosClient({
   const [customerName, setCustomerName] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerLabel, setCustomerLabel] = useState<string | null>(null);
+  const [customerPoints, setCustomerPoints] = useState<number | null>(null);
+  const [earnPreview, setEarnPreview] = useState<number | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [serialPool, setSerialPool] =
@@ -418,10 +421,14 @@ export function PosClient({
         setCustomerLabel(result.customer.displayName);
         setCustomerName(result.customer.displayName);
         setCustomerPhone(result.customer.phone ?? customerPhone);
-        toast.success(`Customer found: ${result.customer.displayName}`);
+        setCustomerPoints(result.customer.loyaltyPoints ?? 0);
+        toast.success(
+          `Member: ${result.customer.displayName} · ${result.customer.loyaltyPoints ?? 0} pts`,
+        );
       } else {
         setCustomerId(null);
         setCustomerLabel(null);
+        setCustomerPoints(null);
         toast.message(result.message);
       }
     } finally {
@@ -434,9 +441,16 @@ export function PosClient({
     setCustomerLabel(null);
     setCustomerPhone("");
     setCustomerName("");
+    setCustomerPoints(null);
+    setEarnPreview(null);
   }
 
   const total = cart.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
+
+  // Client-side estimate: 1 pt per 100 (server program may differ; refreshed on lookup)
+  const estimatedEarn =
+    customerId && total > 0 ? Math.floor(total / 100) : 0;
+
 
   function checkout() {
     startTransition(async () => {
@@ -519,11 +533,23 @@ export function PosClient({
         return;
       }
 
-      toast.success(result.message);
+      if (resolvedCustomerId) {
+        const preview = await previewLoyaltyEarnAction(total).catch(() => null);
+        const pts = preview?.success ? preview.points : estimatedEarn;
+        toast.success(
+          pts > 0
+            ? `${result.message} · ~${pts} loyalty point(s) awarded`
+            : result.message,
+        );
+      } else {
+        toast.success(result.message);
+      }
       setCart([]);
-      // keep phone for rapid repeat sales to same loyalty customer; clear name-only walk-in
+      // Keep member phone for next sale (supermarket style); clear if walk-in only
       if (!resolvedCustomerId) {
         setCustomerName("");
+        setCustomerPhone("");
+        setCustomerPoints(null);
       }
       setSerialPool((prev) => {
         const next = { ...prev };
@@ -1043,6 +1069,78 @@ export function PosClient({
               disabled={pending || cart.length === 0}
               onClick={checkout}
             >
+
+            {/* Supermarket-style loyalty: phone optional before pay */}
+            <div className="mb-3 space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+                Member phone (optional)
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Ask for phone to award loyalty points. Leave empty to complete as walk-in.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  className="h-10 min-w-[10rem] flex-1"
+                  inputMode="tel"
+                  placeholder="Phone number"
+                  value={customerPhone}
+                  onChange={(e) => {
+                    setCustomerPhone(e.target.value);
+                    setCustomerId(null);
+                    setCustomerLabel(null);
+                    setCustomerPoints(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void lookupCustomer();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10"
+                  disabled={lookingUp || !customerPhone.trim()}
+                  onClick={() => void lookupCustomer()}
+                >
+                  {lookingUp ? "…" : "Find member"}
+                </Button>
+                {(customerId || customerPhone) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10"
+                    onClick={clearCustomer}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              {customerId && customerLabel ? (
+                <div className="rounded-lg bg-background/80 px-2 py-1.5 text-sm">
+                  <span className="font-medium text-primary">{customerLabel}</span>
+                  {customerPoints != null ? (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {customerPoints} pts
+                      {estimatedEarn > 0
+                        ? ` · this sale ~${estimatedEarn} pts`
+                        : ""}
+                    </span>
+                  ) : null}
+                </div>
+              ) : customerPhone.trim().length >= 7 ? (
+                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                  Press Find member — if not registered, sale still completes without points.
+                </p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  No phone → no points · sale proceeds normally.
+                </p>
+              )}
+            </div>
+
               {pending ? "Processing…" : "Complete sale"}
             </Button>
           </div>
