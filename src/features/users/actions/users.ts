@@ -166,3 +166,54 @@ export async function deleteUserAction(
   return userService.deleteUser(id);
 
 }
+import { revalidatePath } from "next/cache";
+import { userPermissionRepository } from "@/repositories/users/user-permission.repository";
+import { rolePermissionRepository } from "@/repositories/users/role-permission.repository";
+import { userRepository } from "@/repositories/users/user.repository";
+
+export async function getUserPermissionOverridesAction(userId: string) {
+  try {
+    await requireAuthorizedUser("users.update");
+    const overrides = await userPermissionRepository.listOverrides(userId);
+    const { requireCurrentUser } = await import("@/lib/auth/current-user");
+    const current = await requireCurrentUser();
+    const user = await userRepository.findById(userId, current.businessId);
+    let rolePermissionIds: string[] = [];
+    if (user?.roleId) {
+      const rolePerms = await rolePermissionRepository.findByRole(user.roleId);
+      rolePermissionIds = rolePerms.map((p) => p.id);
+    }
+    return {
+      success: true as const,
+      data: {
+        grants: overrides.filter((o) => o.effect === "grant").map((o) => o.id),
+        denies: overrides.filter((o) => o.effect === "deny").map((o) => o.id),
+        rolePermissionIds,
+        overrides,
+      },
+    };
+  } catch {
+    return { success: false as const, message: "Failed to load user permissions" };
+  }
+}
+
+export async function updateUserPermissionOverridesAction(
+  userId: string,
+  grants: string[],
+  denies: string[],
+) {
+  try {
+    await requireAuthorizedUser("users.update");
+    await userPermissionRepository.replaceOverrides(userId, grants, denies);
+    revalidatePath("/settings/users");
+    return {
+      success: true as const,
+      message: "User permissions updated",
+    };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to update permissions",
+    };
+  }
+}

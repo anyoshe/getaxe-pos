@@ -2,6 +2,7 @@ import {
     pgTable,
     uuid,
     timestamp,
+    text,
     primaryKey,
     index,
 } from "drizzle-orm/pg-core";
@@ -32,6 +33,11 @@ export const userPermissions = pgTable(
             .references(() => permissions.id, {
                 onDelete: "cascade",
             }),
+
+        /** grant = add beyond role; deny = block even if role has it */
+        effect: text("effect")
+            .notNull()
+            .default("grant"),
 
         createdAt: timestamp("created_at")
             .defaultNow()

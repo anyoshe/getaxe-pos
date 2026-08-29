@@ -43,6 +43,24 @@ export class UserPermissionRepository {
         userId: string,
         permissionCode: string,
     ) {
+        // Explicit deny always wins
+        const denied = await Repository.db
+            .select({ permissionId: permissions.id })
+            .from(userPermissions)
+            .innerJoin(
+                permissions,
+                eq(userPermissions.permissionId, permissions.id),
+            )
+            .where(
+                and(
+                    eq(userPermissions.userId, userId),
+                    eq(userPermissions.effect, "deny"),
+                    eq(permissions.code, permissionCode),
+                    eq(permissions.active, true),
+                ),
+            )
+            .limit(1);
+        if (denied.length > 0) return false;
 
         const rolePermission =
             await Repository.db
@@ -252,27 +270,30 @@ export class UserPermissionRepository {
                     ),
                 );
 
-        const combined = [
-            ...rolePermissionsResult,
-            ...directPermissionsResult,
-        ];
+        
+        const overrides = await this.listOverrides(userId);
+        const denyIds = new Set(
+            overrides.filter((o) => o.effect === "deny").map((o) => o.id),
+        );
+        const grantPerms = overrides
+            .filter((o) => o.effect === "grant")
+            .map((o) => ({
+                id: o.id,
+                code: o.code,
+                module: o.module,
+                name: o.name,
+                description: o.description ?? null,
+            }));
 
         const uniquePermissions = new Map(
-            combined.map(
-                (permission) => [
-                    permission.id,
-                    permission,
-                ],
-            ),
+            [
+                ...rolePermissionsResult.filter((p) => !denyIds.has(p.id)),
+                ...grantPerms,
+            ].map((permission) => [permission.id, permission]),
         );
 
-        return Array.from(
-            uniquePermissions.values(),
-        ).sort(
-            (a, b) =>
-                a.module.localeCompare(b.module) ||
-                a.code.localeCompare(b.code),
-        );
+        return Array.from(uniquePermissions.values());
+
     }
 
 
@@ -326,60 +347,46 @@ export class UserPermissionRepository {
     }
 
 
+
     /**
-     * Assign a permission directly to a user.
-     *
-     * The composite primary key on user_permissions
-     * prevents duplicate assignments.
+     * Assign a permission directly to a user (grant or deny).
      */
     async assignDirectPermission(
         userId: string,
         permissionId: string,
+        effect: "grant" | "deny" = "grant",
     ) {
-
         return Repository.db
             .insert(userPermissions)
             .values({
                 userId,
                 permissionId,
+                effect,
             })
             .onConflictDoNothing();
     }
 
-
     /**
-     * Remove a direct permission from a user.
+     * Remove a direct permission override from a user.
      */
     async removeDirectPermission(
         userId: string,
         permissionId: string,
     ) {
-
         return Repository.db
             .delete(userPermissions)
             .where(
                 and(
-                    eq(
-                        userPermissions.userId,
-                        userId,
-                    ),
-                    eq(
-                        userPermissions.permissionId,
-                        permissionId,
-                    ),
+                    eq(userPermissions.userId, userId),
+                    eq(userPermissions.permissionId, permissionId),
                 ),
             );
     }
 
-
     /**
-     * Return only permissions directly assigned
-     * to the user.
+     * Direct overrides only (grants and denies).
      */
-    async getDirectPermissions(
-        userId: string,
-    ) {
-
+    async getDirectPermissions(userId: string) {
         return Repository.db
             .select({
                 id: permissions.id,
@@ -387,44 +394,49 @@ export class UserPermissionRepository {
                 module: permissions.module,
                 name: permissions.name,
                 description: permissions.description,
+                effect: userPermissions.effect,
             })
-            .from(users)
-            .innerJoin(
-                userPermissions,
-                eq(
-                    users.id,
-                    userPermissions.userId,
-                ),
-            )
+            .from(userPermissions)
             .innerJoin(
                 permissions,
-                eq(
-                    userPermissions.permissionId,
-                    permissions.id,
-                ),
+                eq(userPermissions.permissionId, permissions.id),
             )
-            .where(
-                and(
-                    eq(
-                        users.id,
-                        userId,
-                    ),
-                    eq(
-                        users.active,
-                        true,
-                    ),
-                    eq(
-                        permissions.active,
-                        true,
-                    ),
-                ),
-            )
-            .orderBy(
-                permissions.module,
-                permissions.code,
-            );
+            .where(eq(userPermissions.userId, userId))
+            .orderBy(permissions.module, permissions.code);
     }
 
+    async listOverrides(userId: string) {
+        return this.getDirectPermissions(userId);
+    }
+
+    /**
+     * Replace all direct overrides for a user.
+     * grants = extra permissions; denies = blocked even if role has them.
+     */
+    async replaceOverrides(
+        userId: string,
+        grants: string[],
+        denies: string[],
+    ) {
+        await Repository.db
+            .delete(userPermissions)
+            .where(eq(userPermissions.userId, userId));
+
+        const denySet = new Set(denies);
+        for (const id of grants) {
+            if (denySet.has(id)) continue;
+            await Repository.db
+                .insert(userPermissions)
+                .values({ userId, permissionId: id, effect: "grant" })
+                .onConflictDoNothing();
+        }
+        for (const id of denySet) {
+            await Repository.db
+                .insert(userPermissions)
+                .values({ userId, permissionId: id, effect: "deny" })
+                .onConflictDoNothing();
+        }
+    }
 }
 
 export const userPermissionRepository =
