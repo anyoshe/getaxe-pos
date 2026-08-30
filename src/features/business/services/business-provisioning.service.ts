@@ -11,6 +11,7 @@ import {
 import { businessCapabilityService } from "@/features/capabilities/services";
 import { ensureFinanceDefaults } from "@/features/finance/services/finance.service";
 import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/seed-pharmacy-catalogues.service";
+import { seedDefaultProductCategories } from "@/features/inventory/services/seed-default-product-categories.service";
 
 import type { BusinessType } from "../constants/business-types";
 
@@ -195,6 +196,9 @@ export class BusinessProvisioningService {
     // Pharmacy / clinic default catalogues (dosage forms, categories, strengths, Rx types)
     //
     await seedPharmacyCataloguesForBusiness(business.id, input.businessType);
+
+    // Product Category dropdown (inventory.categories) — separate from drug categories
+    await seedDefaultProductCategories(business.id, input.businessType);
 
     //
     // Step 7c — Chart of accounts, cash accounts, tax defaults

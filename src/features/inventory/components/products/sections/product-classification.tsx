@@ -35,6 +35,11 @@ export function ProductClassification({
     const isRequired = (field: string) => requiredSet.has(field);
     const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
 
+    const codeLabel = (option: { id: string; name?: string; code?: string | null }) =>
+        option.code
+            ? `${option.code} — ${option.name ?? option.code}`
+            : (option.name ?? option.id);
+
     return (
 
         <FormSection
@@ -87,7 +92,7 @@ export function ProductClassification({
                         options={context.drugCategories}
                         label="Drug category"
                         placeholder="Select drug category"
-                    
+                        getLabel={codeLabel}
                         required={isRequired("drugCategoryId")}
                     />
                 )}
@@ -99,7 +104,7 @@ export function ProductClassification({
                         options={context.dosageForms}
                         label="Dosage form"
                         placeholder="Select dosage form"
-                    
+                        getLabel={codeLabel}
                         required={isRequired("dosageFormId")}
                     />
                 )}
@@ -111,7 +116,7 @@ export function ProductClassification({
                         options={context.drugStrengths}
                         label="Drug strength"
                         placeholder="Select drug strength"
-                    
+                        getLabel={codeLabel}
                         required={isRequired("drugStrengthId")}
                     />
                 )}
@@ -123,7 +128,7 @@ export function ProductClassification({
                         options={context.prescriptionTypes}
                         label="Prescription type"
                         placeholder="Select prescription type"
-                    
+                        getLabel={codeLabel}
                         required={isRequired("prescriptionTypeId")}
                     />
                 )}
