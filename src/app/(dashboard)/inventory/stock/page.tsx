@@ -1,9 +1,6 @@
-import Link from "next/link";
-
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getStockOnHand } from "@/features/inventory/queries/stock-on-hand.query";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { StockOnHandActions } from "@/features/inventory/components/stock/stock-on-hand-actions";
 
 export default async function StockOnHandPage() {
   const user = await getCurrentUser();
@@ -25,38 +22,7 @@ export default async function StockOnHandPage() {
             Quantities by product and warehouse after receive movements.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/inventory/stock/receive"
-            className={cn(buttonVariants({ variant: "default" }))}
-          >
-            Receive stock
-          </Link>
-          <Link
-            href="/inventory/adjustments"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Adjust
-          </Link>
-          <Link
-            href="/inventory/transfers"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Transfer
-          </Link>
-          <Link
-            href="/inventory/batches"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Batches
-          </Link>
-          <Link
-            href="/inventory/stock-movements"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Movements
-          </Link>
-        </div>
+        <StockOnHandActions />
       </div>
 
       <div className="overflow-x-auto rounded-xl border">
