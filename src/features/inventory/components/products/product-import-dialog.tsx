@@ -1,0 +1,254 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Download, Upload, FileSpreadsheet } from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  PRODUCT_IMPORT_TEMPLATE_CSV,
+  parseCsv,
+} from "../../import/product-import-columns";
+import {
+  validateProductImportAction,
+  type ImportRowResult,
+} from "../../actions/validate-product-import";
+import { createProductsBatchAction } from "../../actions/create-products-batch";
+
+type Props = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImported?: () => void;
+};
+
+export function ProductImportDialog({ open, onOpenChange, onImported }: Props) {
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [results, setResults] = useState<ImportRowResult[]>([]);
+  const [validating, setValidating] = useState(false);
+  const [importing, setImporting] = useState(false);
+
+  const okRows = useMemo(() => results.filter((r) => r.ok), [results]);
+  const badRows = useMemo(() => results.filter((r) => !r.ok), [results]);
+
+  function downloadTemplate() {
+    const blob = new Blob([PRODUCT_IMPORT_TEMPLATE_CSV], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "getaxe-product-import-template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function onFile(file: File | null) {
+    if (!file) return;
+    setFileName(file.name);
+    setResults([]);
+    const text = await file.text();
+    const { rows } = parseCsv(text);
+    if (rows.length === 0) {
+      toast.error("No data rows found in the CSV.");
+      return;
+    }
+    setValidating(true);
+    const res = await validateProductImportAction(rows);
+    setValidating(false);
+    if (!res.success) {
+      toast.error(res.message);
+      return;
+    }
+    setResults(res.results);
+    toast.message(res.message);
+  }
+
+  async function commitImport() {
+    const payloads = okRows
+      .map((r) => r.payload)
+      .filter(Boolean) as Record<string, unknown>[];
+    if (payloads.length === 0) {
+      toast.error("No valid rows to import.");
+      return;
+    }
+    setImporting(true);
+    const res = await createProductsBatchAction(payloads);
+    setImporting(false);
+    if (!res.success && !res.results?.some((r) => r.success)) {
+      toast.error(res.message);
+      return;
+    }
+    toast.success(res.message);
+    // Mark failed commit rows back onto results by index in payloads
+    if (res.results?.length) {
+      const next = [...results];
+      let payloadIdx = 0;
+      for (let i = 0; i < next.length; i++) {
+        if (!next[i].ok) continue;
+        const commit = res.results[payloadIdx];
+        payloadIdx += 1;
+        if (commit && !commit.success) {
+          next[i] = {
+            ...next[i],
+            ok: false,
+            errors: [commit.message],
+            payload: undefined,
+          };
+        } else if (commit?.success) {
+          next[i] = {
+            ...next[i],
+            errors: [],
+            preview: {
+              ...next[i].preview!,
+              name: `${next[i].preview?.name ?? ""} ✓`,
+            },
+          };
+        }
+      }
+      setResults(next);
+    }
+    onImported?.();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[92vh] w-[95vw] max-w-4xl flex-col gap-4 overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-primary" />
+            Import products
+          </DialogTitle>
+          <DialogDescription>
+            Upload a CSV of your catalogue. Rows are validated with the same
+            rules as the product wizard. Fix errors, then import valid rows.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl"
+            onClick={downloadTemplate}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download template
+          </Button>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted">
+            <Upload className="h-4 w-4" />
+            {validating ? "Validating…" : "Choose CSV"}
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              disabled={validating || importing}
+              onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          {fileName ? (
+            <span className="self-center text-xs text-muted-foreground">
+              {fileName}
+            </span>
+          ) : null}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Tip: create <strong>Categories</strong> (and pharmacy catalogues if
+          medicine) before import. Match category by name; dosage form by code
+          (e.g. CAP, TAB) or name.
+        </p>
+
+        {results.length > 0 ? (
+          <div className="min-h-0 flex-1 space-y-3 overflow-hidden">
+            <div className="flex flex-wrap gap-3 text-sm">
+              <span className="rounded-full bg-chart-4/15 px-2.5 py-0.5 font-medium text-chart-4">
+                {okRows.length} ready
+              </span>
+              <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 font-medium text-destructive">
+                {badRows.length} with errors
+              </span>
+            </div>
+
+            <div className="max-h-[45vh] overflow-auto rounded-xl border">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 border-b bg-muted/80 backdrop-blur">
+                  <tr>
+                    <th className="p-2 font-semibold">#</th>
+                    <th className="p-2 font-semibold">Name</th>
+                    <th className="p-2 font-semibold">Type</th>
+                    <th className="p-2 font-semibold">SKU</th>
+                    <th className="p-2 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((r) => (
+                    <tr
+                      key={r.index}
+                      className={
+                        r.ok
+                          ? "border-b border-border/60"
+                          : "border-b border-border/60 bg-destructive/5"
+                      }
+                    >
+                      <td className="p-2 tabular-nums text-muted-foreground">
+                        {r.index + 1}
+                      </td>
+                      <td className="p-2 font-medium">
+                        {r.preview?.name}
+                      </td>
+                      <td className="p-2 text-xs">{r.preview?.productType}</td>
+                      <td className="p-2 font-mono text-xs">
+                        {r.preview?.sku}
+                      </td>
+                      <td className="p-2 text-xs">
+                        {r.ok ? (
+                          <span className="text-chart-4">Ready</span>
+                        ) : (
+                          <span className="text-destructive">
+                            {r.errors.join(" · ")}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                className="rounded-xl"
+                disabled={okRows.length === 0 || importing}
+                onClick={() => void commitImport()}
+              >
+                {importing
+                  ? "Importing…"
+                  : `Import ${okRows.length} valid product${okRows.length === 1 ? "" : "s"}`}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            Download the template, fill your product list, then upload the CSV.
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

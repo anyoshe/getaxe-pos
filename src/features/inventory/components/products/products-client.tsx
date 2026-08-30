@@ -16,6 +16,7 @@ import {
     ProductTable,
     ProductDialog,
 } from ".";
+import { ProductImportDialog } from "./product-import-dialog";
 
 import {
     useRouter,
@@ -53,6 +54,9 @@ export function ProductsClient({
         useState<"wizard" | "quick" | "batch">("wizard");
 
     const [deleteOpen, setDeleteOpen] =
+        useState(false);
+
+    const [importOpen, setImportOpen] =
         useState(false);
 
     const [deleting, setDeleting] =
@@ -96,6 +100,7 @@ export function ProductsClient({
                 <ProductToolbar
                     search={search}
                     onSearchChange={setSearch}
+                    onImport={() => setImportOpen(true)}
                     onCreate={() => {
                         setSelectedProduct(null);
                         setEntryMode("wizard");
@@ -174,6 +179,12 @@ export function ProductsClient({
                         }
 
                     }}
+                />
+
+                <ProductImportDialog
+                    open={importOpen}
+                    onOpenChange={setImportOpen}
+                    onImported={() => router.refresh()}
                 />
 
             </div>

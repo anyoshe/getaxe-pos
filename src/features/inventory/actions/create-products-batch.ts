@@ -18,10 +18,10 @@ export async function createProductsBatchAction(items: unknown[]) {
       results: [] as Array<{ index: number; success: boolean; message: string }>,
     };
   }
-  if (items.length > 100) {
+  if (items.length > 200) {
     return {
       success: false as const,
-      message: "Maximum 100 products per batch.",
+      message: "Maximum 200 products per batch.",
       results: [],
     };
   }
@@ -48,7 +48,15 @@ export async function createProductsBatchAction(items: unknown[]) {
 
     const parsed = createProductSchema.safeParse(items[index]);
     if (!parsed.success) {
-      results.push({ index, success: false, message: "Validation failed." });
+      const msg = parsed.error.issues
+        .map((i) => i.message)
+        .slice(0, 3)
+        .join("; ");
+      results.push({
+        index,
+        success: false,
+        message: msg || "Validation failed.",
+      });
       continue;
     }
 

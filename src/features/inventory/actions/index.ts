@@ -37,3 +37,4 @@ export * from "./create-products-batch";
 export * from "./receive-stock";
 export * from "./adjust-stock";
 export * from "./transfer-stock";
+export * from "./validate-product-import";
