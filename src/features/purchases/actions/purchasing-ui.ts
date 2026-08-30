@@ -1,6 +1,6 @@
-import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 "use server";
 
+import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 import { logActivity } from "@/features/audit/services/activity-log.service";
 
 import { revalidatePath } from "next/cache";
