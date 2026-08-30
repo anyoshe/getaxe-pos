@@ -231,7 +231,7 @@ export function CrudTable<T>({
                 rounded-3xl
                 border
                 border-border
-                bg-white
+                bg-card
                 p-5
                 shadow-sm
               "

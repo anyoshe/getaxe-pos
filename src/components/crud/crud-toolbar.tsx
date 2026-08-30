@@ -50,10 +50,10 @@ export function CrudToolbar({
                 pl-12
                 shadow-none
                 transition-all
-                focus:border-indigo-500
-                focus:bg-white
+                focus:border-primary
+                focus:bg-card
                 focus:ring-2
-                focus:ring-indigo-200
+                focus:ring-primary/30
               "
             />
 
@@ -70,7 +70,7 @@ export function CrudToolbar({
               className="
                 rounded-2xl
                 border-border
-                bg-white
+                bg-card
                 hover:bg-primary/10
               "
             >
@@ -86,7 +86,7 @@ export function CrudToolbar({
                   rounded-2xl
                   border-border
                   bg-muted/50
-                  hover:border-indigo-300
+                  hover:border-primary/40
                   hover:bg-primary/10
                 "
               >

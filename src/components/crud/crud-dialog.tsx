@@ -30,7 +30,7 @@ export function CrudDialog({
           max-w-3xl
           rounded-3xl
           border-0
-          bg-white
+          bg-card
           p-0
           shadow-2xl
           overflow-hidden

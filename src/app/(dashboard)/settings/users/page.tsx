@@ -62,7 +62,7 @@ export default function UsersPage() {
                         justify-start
                         rounded-xl
                         border
-                        bg-white
+                        bg-card
                         p-1
                         dark:bg-card
                     "
