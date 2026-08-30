@@ -63,8 +63,9 @@ export class ProductContextService {
     const hasPharmacyCap = capabilities.some((c) => c.startsWith("pharmacy."));
     if (
       hasPharmacyCap &&
-      dosageForms.length === 0 &&
-      drugCategories.length === 0
+      (dosageForms.length === 0 ||
+        drugCategories.length === 0 ||
+        categories.length === 0)
     ) {
       await seedPharmacyCataloguesForBusiness(businessId, "PHARMACY");
       const refreshed = await Promise.all([
@@ -72,11 +73,13 @@ export class ProductContextService {
         pharmacyReferenceRepository.listDrugCategories(businessId),
         pharmacyReferenceRepository.listDrugStrengths(businessId),
         pharmacyReferenceRepository.listPrescriptionTypes(businessId),
+        categoryRepository.findAll(businessId),
       ]);
       dosageForms = refreshed[0];
       drugCategories = refreshed[1];
       drugStrengths = refreshed[2];
       prescriptionTypes = refreshed[3];
+      categories = refreshed[4];
     }
 
 

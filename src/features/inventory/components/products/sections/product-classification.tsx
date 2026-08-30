@@ -34,6 +34,8 @@ export function ProductClassification({
     const requiredSet = new Set(requiredFields ?? []);
     const isRequired = (field: string) => requiredSet.has(field);
     const showField = (field: string) => visibleFields === undefined || visibleSet.has(field);
+    const codeLabel = (option: { id: string; name?: string; code?: string | null }) =>
+      option.code ? `${option.code} — ${option.name ?? option.code}` : (option.name ?? option.id);
 
     return (
 

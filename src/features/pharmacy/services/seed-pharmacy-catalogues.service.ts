@@ -7,6 +7,7 @@ import {
   drugStrengths,
   prescriptionTypes,
 } from "@/db/schema/pharmacy";
+import { categories as productCategories } from "@/db/schema/inventory/categories";
 
 import {
   DEFAULT_DOSAGE_FORMS,
@@ -127,6 +128,28 @@ export async function seedPharmacyCataloguesForBusiness(
       active: true,
     });
     rxTypes++;
+  }
+
+  // Mirror drug categories into inventory product categories so wizard step
+  // "Category" (categoryId) has the same selectable list as drug classification.
+  for (const row of DEFAULT_DRUG_CATEGORIES) {
+    const existing = await db
+      .select({ id: productCategories.id })
+      .from(productCategories)
+      .where(
+        and(
+          eq(productCategories.businessId, businessId),
+          eq(productCategories.name, row.name),
+        ),
+      )
+      .limit(1);
+    if (existing.length > 0) continue;
+    await db.insert(productCategories).values({
+      businessId,
+      name: row.name,
+      description: row.code,
+      active: true,
+    });
   }
 
   return {
