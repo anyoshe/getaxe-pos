@@ -23,6 +23,14 @@ import { Label } from "@/components/ui/label";
 import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
 
 import { createSaleAction } from "../../actions/create-sale";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { ConnectionStatus } from "@/components/layout/connection-status";
+import { useOffline } from "@/providers/offline-provider";
+import {
+  newOutboxId,
+  outboxEnqueue,
+  type OutboxSalePayload,
+} from "@/lib/offline/outbox";
 import {
   ensurePosCustomerAction,
   lookupCustomerByPhoneAction,
@@ -124,6 +132,7 @@ export function PosClient({
   recentSales = [],
 }: PosClientProps) {
   const router = useRouter();
+  const { online, refreshOutbox } = useOffline();
   const [pending, startTransition] = useTransition();
   const scanRef = useRef<HTMLInputElement>(null);
 
@@ -594,27 +603,35 @@ export function PosClient({
 
       let resolvedCustomerId = customerId;
       let receiptNote: string | null = null;
+      const isOffline =
+        typeof navigator !== "undefined" && !navigator.onLine;
 
-      // Optional: link or create customer when phone was entered
+      // Optional: link or create customer when phone was entered (online only)
       if (customerPhone.trim().length >= 7) {
-        const ensured = await ensurePosCustomerAction({
-          phone: customerPhone,
-          firstName: customerName.trim() || null,
-        });
-        if (!ensured.success) {
-          toast.error(ensured.message);
-          return;
+        if (isOffline) {
+          receiptNote = customerName.trim()
+            ? `Customer: ${customerName.trim()} (${customerPhone.trim()})`
+            : `Customer phone: ${customerPhone.trim()}`;
+        } else {
+          const ensured = await ensurePosCustomerAction({
+            phone: customerPhone,
+            firstName: customerName.trim() || null,
+          });
+          if (!ensured.success) {
+            toast.error(ensured.message);
+            return;
+          }
+          resolvedCustomerId = ensured.customerId;
+          setCustomerId(ensured.customerId);
+          setCustomerLabel(ensured.displayName);
+          receiptNote = `Customer: ${ensured.displayName} (${ensured.phone})`;
         }
-        resolvedCustomerId = ensured.customerId;
-        setCustomerId(ensured.customerId);
-        setCustomerLabel(ensured.displayName);
-        receiptNote = `Customer: ${ensured.displayName} (${ensured.phone})`;
       } else if (customerName.trim()) {
         // Name only on receipt — no CRM record without phone
         receiptNote = `Walk-in: ${customerName.trim()}`;
       }
 
-      const result = await createSaleAction({
+      const salePayload: OutboxSalePayload = {
         warehouseId,
         branchId,
         customerId: resolvedCustomerId,
@@ -628,7 +645,59 @@ export function PosClient({
           unitPrice: l.unitPrice,
           serialNumbers: l.serialized ? l.selectedSerials : [],
         })),
-      });
+        pendingCustomer:
+          !resolvedCustomerId && customerPhone.trim().length >= 7
+            ? {
+                phone: customerPhone.trim(),
+                firstName: customerName.trim() || null,
+              }
+            : null,
+        totalHint: total,
+      };
+
+      // Offline or network failure → queue, never drop the sale
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        await outboxEnqueue({
+          id: newOutboxId(),
+          type: "create_sale",
+          createdAt: new Date().toISOString(),
+          payload: salePayload,
+          attempts: 0,
+        });
+        await refreshOutbox();
+        toast.success("Sale saved offline — will sync when online");
+        setCart([]);
+        setAmountTendered("");
+        scanRef.current?.focus();
+        return;
+      }
+
+      let result: { success: boolean; message: string };
+      try {
+        result = await createSaleAction({
+          warehouseId: salePayload.warehouseId,
+          branchId: salePayload.branchId,
+          customerId: salePayload.customerId,
+          notes: salePayload.notes,
+          paymentMethod: salePayload.paymentMethod,
+          items: salePayload.items,
+        });
+      } catch (e) {
+        await outboxEnqueue({
+          id: newOutboxId(),
+          type: "create_sale",
+          createdAt: new Date().toISOString(),
+          payload: salePayload,
+          attempts: 0,
+          lastError: e instanceof Error ? e.message : String(e),
+        });
+        await refreshOutbox();
+        toast.success("Network issue — sale queued offline for sync");
+        setCart([]);
+        setAmountTendered("");
+        scanRef.current?.focus();
+        return;
+      }
 
       if (!result.success) {
         toast.error(result.message);
@@ -786,6 +855,8 @@ export function PosClient({
                 </option>
               ))}
             </select>
+            <ConnectionStatus />
+            <ThemeToggle className="rounded-lg bg-white/15 text-white hover:bg-white/25 hover:text-white" />
             {fullScreen ? (
               <Link
                 href="/dashboard"

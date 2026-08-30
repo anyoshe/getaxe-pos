@@ -3,11 +3,12 @@
 import {
   Bell,
   Search,
-  Sun,
   User,
   Settings,
   LogOut,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { ConnectionStatus } from "@/components/layout/connection-status";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,7 +39,7 @@ interface TopbarProps {
 
 export function Topbar({ user }: TopbarProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
 
       <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:gap-4 sm:px-4 lg:px-6">
 
@@ -58,7 +59,7 @@ export function Topbar({ user }: TopbarProps) {
                       overflow-hidden
                       rounded-xl
                       border
-                      border-slate-200
+                      border-border
                       bg-white
                       shadow-sm
                     "
@@ -118,7 +119,7 @@ export function Topbar({ user }: TopbarProps) {
                     </h1>
 
 
-                    <p className="text-xs font-medium text-slate-500">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Dashboard
                     </p>
 
@@ -134,11 +135,11 @@ export function Topbar({ user }: TopbarProps) {
 
           <div className="relative">
 
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
 
             <Input
               placeholder="Search anything..."
-              className="rounded-xl border-slate-200 pl-10"
+              className="rounded-xl border-border pl-10"
             />
 
           </div>
@@ -149,13 +150,8 @@ export function Topbar({ user }: TopbarProps) {
 
         <div className="flex items-center gap-2">
 
-          <Button
-            size="icon"
-            variant="ghost"
-            className="rounded-xl"
-          >
-            <Sun className="h-5 w-5" />
-          </Button>
+          <ConnectionStatus />
+          <ThemeToggle />
 
           <Button
             size="icon"
@@ -167,7 +163,7 @@ export function Topbar({ user }: TopbarProps) {
 
           <DropdownMenu>
 
-            <DropdownMenuTrigger className="flex items-center gap-3 rounded-xl px-2 py-1 hover:bg-slate-100">
+            <DropdownMenuTrigger className="flex items-center gap-3 rounded-xl px-2 py-1 hover:bg-muted">
 
               <Avatar className="h-10 w-10 cursor-pointer">
                 <AvatarFallback className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
@@ -180,7 +176,7 @@ export function Topbar({ user }: TopbarProps) {
                   {user.name}
                 </p>
 
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   {user.role.name}
                 </p>
               </div>

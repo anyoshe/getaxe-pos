@@ -1,0 +1,9 @@
+{
+  "name": "GetAxe POS",
+  "short_name": "GetAxe",
+  "start_url": "/sales/pos",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "description": "GetAxe POS — works online and queues sales offline"
+}
