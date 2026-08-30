@@ -53,7 +53,7 @@ export function SidebarExpandable({
           "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors",
           active
             ? "bg-primary/10 text-primary"
-            : "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800/80",
+            : "text-foreground hover:bg-muted dark:text-slate-200 dark:hover:bg-slate-800/80",
         )}
       >
         <div className="flex min-w-0 items-center gap-2.5">
@@ -72,7 +72,7 @@ export function SidebarExpandable({
         </div>
         <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200",
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
             active && "text-primary/70",
           )}
@@ -87,7 +87,7 @@ export function SidebarExpandable({
         )}
       >
         <div className="overflow-hidden">
-          <div className="ml-3 space-y-0.5 border-l border-slate-200 py-1 pl-2.5 dark:border-slate-700">
+          <div className="ml-3 space-y-0.5 border-l border-border py-1 pl-2.5 dark:border-slate-700">
             {item.children?.map((child) => (
               <SidebarItem
                 key={child.href ?? child.label}

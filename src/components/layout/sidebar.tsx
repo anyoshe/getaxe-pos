@@ -108,14 +108,14 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-full w-[240px] shrink-0 flex-col border-r border-slate-200/80 xl:w-[260px]",
-        "bg-slate-50/95 text-slate-800",
+        "flex h-full w-[240px] shrink-0 flex-col border-r border-border/80 xl:w-[260px]",
+        "bg-muted/50/95 text-foreground",
         "dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100",
       )}
     >
-      <div className="shrink-0 border-b border-slate-200/80 px-5 py-4 dark:border-slate-800">
+      <div className="shrink-0 border-b border-border/80 px-5 py-4 dark:border-slate-800">
         <Logo />
-        <p className="mt-1 truncate text-[11px] font-medium tracking-wide text-slate-400">
+        <p className="mt-1 truncate text-[11px] font-medium tracking-wide text-muted-foreground">
           {businessLabel}
         </p>
       </div>
@@ -125,7 +125,7 @@ export function Sidebar({ user }: SidebarProps) {
           if (row.type === "section") {
             return (
               <div key={`section-${row.label}`} className="mb-1.5 mt-4 px-2.5 first:mt-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   {row.label}
                 </p>
               </div>
@@ -147,10 +147,10 @@ export function Sidebar({ user }: SidebarProps) {
         })}
       </nav>
 
-      <div className="shrink-0 border-t border-slate-200/80 px-4 py-3 dark:border-slate-800">
-        <p className="truncate text-[11px] text-slate-400">
+      <div className="shrink-0 border-t border-border/80 px-4 py-3 dark:border-slate-800">
+        <p className="truncate text-[11px] text-muted-foreground">
           Signed in as{" "}
-          <span className="font-medium text-slate-600 dark:text-slate-300">
+          <span className="font-medium text-muted-foreground dark:text-muted-foreground">
             {user.name ?? user.email}
           </span>
         </p>

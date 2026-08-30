@@ -30,7 +30,7 @@ export function SidebarItem({
         nested ? "py-1.5" : "py-2",
         active
           ? "bg-primary/12 text-primary font-medium"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white",
+          : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-muted-foreground dark:hover:bg-slate-800/80 dark:hover:text-white",
       )}
     >
       {Icon ? (

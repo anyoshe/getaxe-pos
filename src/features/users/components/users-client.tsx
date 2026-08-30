@@ -350,7 +350,7 @@ export function UsersClient() {
                             variant="outline"
                             className="
                             border-indigo-200
-                            hover:bg-indigo-50
+                            hover:bg-primary/10
                             hover:text-indigo-700
                             dark:border-indigo-900
                         "
@@ -387,7 +387,7 @@ export function UsersClient() {
                             variant="outline"
                             className="
                             border-indigo-200
-                            hover:bg-indigo-50
+                            hover:bg-primary/10
                             hover:text-indigo-700
                             dark:border-indigo-900
                         "
@@ -481,7 +481,7 @@ export function UsersClient() {
                         <AlertDialogCancel
                             className="
                                     border-indigo-200
-                                    hover:bg-indigo-50
+                                    hover:bg-primary/10
                                     hover:text-indigo-700
                                     dark:border-indigo-900
                                 "

@@ -178,7 +178,7 @@ export function UserTable({
                                 key={user.id}
                                 className="
                                     transition-colors
-                                    hover:bg-indigo-50/50
+                                    hover:bg-primary/10
                                     dark:hover:bg-indigo-950/20
                                 "
                             >

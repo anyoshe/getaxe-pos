@@ -66,7 +66,7 @@ export function SetupProgress({
                       ? "border-cyan-400 bg-cyan-400 text-slate-950"
                       : active
                         ? "border-indigo-500 bg-indigo-500 text-white"
-                        : "border-white/20 bg-white/10 text-white/60"
+                        : "border-white/20 bg-card/10 text-white/60"
                   }
                 `}
               >
@@ -111,7 +111,7 @@ export function SetupProgress({
                   ${
                     completed
                       ? "bg-cyan-400"
-                      : "bg-white/10"
+                      : "bg-card/10"
                   }
                 `}
               />

@@ -168,7 +168,7 @@ export function RoleTable({
 
                             <TableRow
                                 key={role.id}
-                                className="transition-colors hover:bg-indigo-50/40 dark:hover:bg-indigo-950/10"
+                                className="transition-colors hover:bg-primary/10 dark:hover:bg-primary/10"
                             >
 
                                 <TableCell className="font-semibold">

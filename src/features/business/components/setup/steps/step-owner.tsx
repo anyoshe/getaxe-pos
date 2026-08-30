@@ -54,7 +54,7 @@ export function StepOwner({
           rounded-2xl
           border
           border-white/20
-          bg-white/10
+          bg-card/10
           p-6
         "
       >

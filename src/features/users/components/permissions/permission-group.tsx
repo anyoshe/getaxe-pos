@@ -99,7 +99,7 @@ export function PermissionGroup({
                                 p-3
                                 transition-all
                                 hover:border-indigo-300
-                                hover:bg-indigo-50/40
+                                hover:bg-primary/10
                                 dark:hover:bg-indigo-950/20
                             "
                         >

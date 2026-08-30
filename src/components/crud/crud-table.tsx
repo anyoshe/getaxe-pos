@@ -28,13 +28,13 @@ export function CrudTable<T>({
       {/* Desktop Table */}
       {/* ========================= */}
 
-      <div className="hidden lg:block overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="hidden lg:block overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
 
         <div className="overflow-x-auto">
 
           <Table>
 
-            <TableHeader className="sticky top-0 z-10 bg-slate-50">
+            <TableHeader className="sticky top-0 z-10 bg-muted/50">
 
               <TableRow>
 
@@ -49,7 +49,7 @@ export function CrudTable<T>({
                       font-semibold
                       uppercase
                       tracking-wider
-                      text-slate-500
+                      text-muted-foreground
 
                       ${
                         column.align === "center"
@@ -111,8 +111,8 @@ export function CrudTable<T>({
                     className="
                       transition-all
                       odd:bg-white
-                      even:bg-slate-50/40
-                      hover:bg-indigo-50
+                      even:bg-muted/50/40
+                      hover:bg-primary/10
                     "
                   >
 
@@ -167,9 +167,9 @@ export function CrudTable<T>({
                               }
                               className="
                                 rounded-xl
-                                border-slate-200
+                                border-border
                                 hover:border-indigo-300
-                                hover:bg-indigo-50
+                                hover:bg-primary/10
                               "
                             >
                               {action.icon}
@@ -207,7 +207,7 @@ export function CrudTable<T>({
 
         {loading && (
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
             Loading...
           </div>
 
@@ -215,7 +215,7 @@ export function CrudTable<T>({
 
         {!loading && data.length === 0 && (
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
             {emptyMessage}
           </div>
 
@@ -229,7 +229,7 @@ export function CrudTable<T>({
               className="
                 rounded-3xl
                 border
-                border-slate-200
+                border-border
                 bg-white
                 p-5
                 shadow-sm
@@ -242,14 +242,14 @@ export function CrudTable<T>({
 
                   <div
                     key={String(column.key)}
-                    className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-0 last:pb-0"
+                    className="flex items-start justify-between gap-4 border-b border-border pb-3 last:border-0 last:pb-0"
                   >
 
-                    <span className="text-sm font-semibold text-slate-500">
+                    <span className="text-sm font-semibold text-muted-foreground">
                       {column.title}
                     </span>
 
-                    <div className="text-right font-medium text-slate-800">
+                    <div className="text-right font-medium text-foreground">
 
                       {column.render
                         ? column.render(row)
@@ -269,7 +269,7 @@ export function CrudTable<T>({
 
               {actions && (
 
-                <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
 
                   {actions.map((action) => (
 
@@ -284,9 +284,9 @@ export function CrudTable<T>({
                       className="
                         flex-1
                         rounded-xl
-                        border-slate-200
+                        border-border
                         hover:border-indigo-300
-                        hover:bg-indigo-50
+                        hover:bg-primary/10
                       "
                     >
                       {action.icon}

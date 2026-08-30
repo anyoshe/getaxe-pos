@@ -50,7 +50,7 @@ export function SetupNavigation({
           transition-all
           duration-200
 
-          hover:bg-white/10
+          hover:bg-card/10
 
           disabled:cursor-not-allowed
           disabled:opacity-40

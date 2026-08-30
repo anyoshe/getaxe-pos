@@ -17,7 +17,7 @@ interface AppShellProps {
  */
 export function AppShell({ children, user }: AppShellProps) {
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-[100dvh] overflow-hidden bg-muted/50 dark:bg-slate-950">
       {/* Desktop / large tablet sidebar */}
       <div className="hidden h-full shrink-0 lg:flex">
         <Sidebar user={user} />

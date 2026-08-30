@@ -39,7 +39,7 @@ export function StatCard({
 
         </div>
 
-        <div className="rounded-2xl bg-white/20 p-4">
+        <div className="rounded-2xl bg-card/20 p-4">
 
           <Icon size={28} />
 

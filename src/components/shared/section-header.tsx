@@ -9,12 +9,12 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className="mb-5">
-      <h2 className="text-xl font-bold tracking-tight text-slate-900">
+      <h2 className="text-xl font-bold tracking-tight text-foreground">
         {title}
       </h2>
 
       {description && (
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           {description}
         </p>
       )}

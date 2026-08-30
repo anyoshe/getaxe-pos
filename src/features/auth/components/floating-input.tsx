@@ -42,7 +42,7 @@
 //             peer
 //             w-full
 //             rounded-2xl
-//             bg-white/10
+//             bg-card/10
 //             backdrop-blur-md
 
 //             px-4
@@ -186,7 +186,7 @@ export function FloatingInput({
             peer
             w-full
             rounded-2xl
-            bg-white/10
+            bg-card/10
             backdrop-blur-md
 
             px-4

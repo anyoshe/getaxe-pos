@@ -15,7 +15,7 @@ export function CrudToolbar({
   createButton,
 }: CrudToolbarProps) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur">
+    <div className="rounded-3xl border border-border bg-background/90 p-5 shadow-sm backdrop-blur">
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
@@ -32,7 +32,7 @@ export function CrudToolbar({
                 h-5
                 w-5
                 -translate-y-1/2
-                text-slate-400
+                text-muted-foreground
               "
             />
 
@@ -45,8 +45,8 @@ export function CrudToolbar({
               className="
                 h-12
                 rounded-2xl
-                border-slate-200
-                bg-slate-50
+                border-border
+                bg-muted/50
                 pl-12
                 shadow-none
                 transition-all
@@ -69,9 +69,9 @@ export function CrudToolbar({
               variant="outline"
               className="
                 rounded-2xl
-                border-slate-200
+                border-border
                 bg-white
-                hover:bg-indigo-50
+                hover:bg-primary/10
               "
             >
               <SlidersHorizontal className="mr-2 h-4 w-4" />
@@ -84,10 +84,10 @@ export function CrudToolbar({
                 variant="outline"
                 className="
                   rounded-2xl
-                  border-slate-200
-                  bg-slate-50
+                  border-border
+                  bg-muted/50
                   hover:border-indigo-300
-                  hover:bg-indigo-50
+                  hover:bg-primary/10
                 "
               >
                 {filter.label}

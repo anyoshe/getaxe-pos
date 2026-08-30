@@ -56,7 +56,7 @@ export function LoginSidePanel() {
                 rounded-full
                 border
                 border-white/20
-                bg-white/10
+                bg-card/10
                 px-5
                 py-3
                 backdrop-blur-xl

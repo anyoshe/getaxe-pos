@@ -60,7 +60,7 @@ export function Topbar({ user }: TopbarProps) {
                       rounded-xl
                       border
                       border-border
-                      bg-white
+                      bg-background
                       shadow-sm
                     "
                   >

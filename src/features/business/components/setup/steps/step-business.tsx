@@ -73,7 +73,7 @@ export function StepBusiness({
               rounded-xl
               border
               border-white/20
-              bg-white/10
+              bg-card/10
               px-4
               py-3
               text-white
@@ -112,7 +112,7 @@ export function StepBusiness({
               rounded-xl
               border
               border-white/20
-              bg-white/10
+              bg-card/10
               px-4
               py-3
               text-white
@@ -151,7 +151,7 @@ export function StepBusiness({
               rounded-xl
               border
               border-white/20
-              bg-white/10
+              bg-card/10
               px-4
               py-3
               text-white
@@ -190,7 +190,7 @@ export function StepBusiness({
               rounded-xl
               border
               border-white/20
-              bg-white/10
+              bg-card/10
               px-4
               py-3
               text-white
@@ -230,7 +230,7 @@ export function StepBusiness({
               rounded-xl
               border
               border-white/20
-              bg-white/10
+              bg-card/10
               px-4
               py-3
               text-white

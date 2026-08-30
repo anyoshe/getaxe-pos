@@ -45,7 +45,7 @@ export function CrudDialog({
             </DialogTitle>
 
             {description && (
-              <DialogDescription className="mt-2 text-indigo-100">
+              <DialogDescription className="mt-2 text-white/85">
                 {description}
               </DialogDescription>
             )}

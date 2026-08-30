@@ -21,7 +21,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
       <header className="brand-gradient sticky top-0 z-40 text-primary-foreground shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-xs font-black">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-card/20 text-xs font-black">
               GA
             </div>
             <div>
@@ -34,10 +34,10 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle className="rounded-lg bg-white/15 text-white hover:bg-white/25 hover:text-white" />
+            <ThemeToggle className="rounded-lg bg-card/15 text-white hover:bg-card/25 hover:text-white" />
             <Link
               href="/platform/login"
-              className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-3 py-2 text-xs font-medium hover:bg-white/25"
+              className="inline-flex items-center gap-1 rounded-lg bg-card/15 px-3 py-2 text-xs font-medium hover:bg-card/25"
             >
               <LogOut className="h-3.5 w-3.5" />
               Exit

@@ -806,7 +806,7 @@ export function PosClient({
       <header className="brand-gradient relative z-10 shrink-0 text-primary-foreground shadow-md">
         <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xs font-black backdrop-blur sm:h-10 sm:w-10 sm:text-sm">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card/20 text-xs font-black backdrop-blur sm:h-10 sm:w-10 sm:text-sm">
               GA
             </div>
             <div className="min-w-0">
@@ -840,7 +840,7 @@ export function PosClient({
               ))}
             </div>
             <select
-              className="h-9 max-w-[9rem] flex-1 rounded-lg border-0 bg-white/15 px-2 text-xs text-white outline-none sm:flex-none"
+              className="h-9 max-w-[9rem] flex-1 rounded-lg border-0 bg-card/15 px-2 text-xs text-white outline-none sm:flex-none"
               value={warehouseId}
               onChange={(e) => {
                 const id = e.target.value;
@@ -856,11 +856,11 @@ export function PosClient({
               ))}
             </select>
             <ConnectionStatus />
-            <ThemeToggle className="rounded-lg bg-white/15 text-white hover:bg-white/25 hover:text-white" />
+            <ThemeToggle className="rounded-lg bg-card/15 text-white hover:bg-card/25 hover:text-white" />
             {fullScreen ? (
               <Link
                 href="/dashboard"
-                className="rounded-lg bg-white/15 px-3 py-2 text-xs font-medium hover:bg-white/25"
+                className="rounded-lg bg-card/15 px-3 py-2 text-xs font-medium hover:bg-card/25"
               >
                 Exit
               </Link>

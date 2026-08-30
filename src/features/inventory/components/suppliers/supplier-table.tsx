@@ -38,12 +38,12 @@ export function SupplierTable({
       title: "Supplier",
       render: (supplier) => (
         <div>
-          <p className="font-semibold text-slate-800">
+          <p className="font-semibold text-foreground">
             {supplier.name}
           </p>
 
           {supplier.contactPerson && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               {supplier.contactPerson}
             </p>
           )}

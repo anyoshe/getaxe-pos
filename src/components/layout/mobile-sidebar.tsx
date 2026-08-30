@@ -94,7 +94,7 @@ export function MobileSidebar() {
       <SheetTrigger
         type="button"
         aria-label="Open menu"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-background text-slate-700 shadow-xs transition-colors hover:bg-slate-100 lg:hidden dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground shadow-xs transition-colors hover:bg-muted lg:hidden dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
       >
         <Menu className="h-5 w-5" />
       </SheetTrigger>
@@ -103,7 +103,7 @@ export function MobileSidebar() {
         side="left"
         className="flex w-[min(100vw-3rem,20rem)] flex-col gap-0 p-0 sm:max-w-sm"
       >
-        <SheetHeader className="border-b border-slate-200 px-4 py-4 text-left dark:border-slate-800">
+        <SheetHeader className="border-b border-border px-4 py-4 text-left dark:border-slate-800">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <Logo />
         </SheetHeader>
@@ -132,7 +132,7 @@ export function MobileSidebar() {
               <div key={item.label}>
                 {showSection ? (
                   <div className="mb-1.5 mt-4 px-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                       {section}
                     </p>
                   </div>
@@ -147,7 +147,7 @@ export function MobileSidebar() {
                         "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium tracking-tight transition-colors",
                         parentActive
                           ? "bg-primary/10 text-primary"
-                          : "text-slate-700 hover:bg-slate-100 dark:text-slate-200",
+                          : "text-foreground hover:bg-muted dark:text-slate-200",
                       )}
                     >
                       <span className="flex min-w-0 items-center gap-2.5">
@@ -158,13 +158,13 @@ export function MobileSidebar() {
                       </span>
                       <ChevronDown
                         className={cn(
-                          "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                          "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
                           isOpen && "rotate-180",
                         )}
                       />
                     </button>
                     {isOpen ? (
-                      <div className="ml-3 space-y-0.5 border-l border-slate-200 py-1 pl-2.5 dark:border-slate-700">
+                      <div className="ml-3 space-y-0.5 border-l border-border py-1 pl-2.5 dark:border-slate-700">
                         {item.children!.map((child) => {
                           const ChildIcon = child.icon;
                           const href = child.href ?? "#";
@@ -180,7 +180,7 @@ export function MobileSidebar() {
                                 "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] tracking-tight transition-colors",
                                 active
                                   ? "bg-primary/12 font-medium text-primary"
-                                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300",
+                                  : "text-muted-foreground hover:bg-muted dark:text-muted-foreground",
                               )}
                             >
                               {ChildIcon ? (
@@ -202,7 +202,7 @@ export function MobileSidebar() {
                       pathname === item.href ||
                         pathname.startsWith(item.href + "/")
                         ? "bg-primary/12 text-primary"
-                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300",
+                        : "text-muted-foreground hover:bg-muted dark:text-muted-foreground",
                     )}
                   >
                     {Icon ? (

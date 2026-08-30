@@ -106,7 +106,7 @@ export function RoleUsers({
                                 justify-between
                                 rounded-lg
                                 border
-                                bg-white/70
+                                bg-card/70
                                 p-4
                                 dark:bg-background/50
                             "

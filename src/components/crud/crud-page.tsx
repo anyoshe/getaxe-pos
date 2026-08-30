@@ -19,7 +19,7 @@ export function CrudPage({
 
       {/* Hero */}
 
-      <div className="overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-sm">
 
         <div className="flex flex-col gap-1 p-2.5 sm:p-3 lg:flex-row lg:items-center lg:justify-between lg:gap-2">
 
@@ -47,7 +47,7 @@ export function CrudPage({
                 px-2.5
                 text-indigo-700
                 shadow-sm
-                hover:bg-indigo-50
+                hover:bg-primary/10
               "
             >
               <Plus className="mr-1 h-4 w-4" />
@@ -61,7 +61,7 @@ export function CrudPage({
 
       {/* Content */}
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         {children}
       </div>
 

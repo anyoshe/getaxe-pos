@@ -67,7 +67,7 @@ export function RememberCheckbox({
               `
               : `
                 border-white/30
-                bg-white/10
+                bg-card/10
               `
           }
         `}

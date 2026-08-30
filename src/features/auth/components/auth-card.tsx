@@ -24,7 +24,7 @@ export function AuthCard({
         rounded-3xl
         border
         border-white/20
-        bg-white/10
+        bg-card/10
         backdrop-blur-2xl
         shadow-2xl
         p-10

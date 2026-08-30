@@ -105,11 +105,11 @@ export default async function InventoryPage() {
             Inventory
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Inventory Overview
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm text-slate-500">
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Monitor stock levels, inventory value, warehouse activity, low-stock
             items, and upcoming expiries from one place.
           </p>
@@ -119,14 +119,14 @@ export default async function InventoryPage() {
       {/* KPI Cards */}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
+              <p className="text-sm font-medium text-muted-foreground">
                 Stock Quantity
               </p>
 
-              <p className="mt-2 text-2xl font-bold text-slate-900">
+              <p className="mt-2 text-2xl font-bold text-foreground">
                 {formatNumber(totalQuantity)}
               </p>
             </div>
@@ -136,19 +136,19 @@ export default async function InventoryPage() {
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-muted-foreground">
             Across {warehouseCount} warehouse{warehouseCount === 1 ? "" : "s"}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
+              <p className="text-sm font-medium text-muted-foreground">
                 Inventory Value
               </p>
 
-              <p className="mt-2 text-2xl font-bold text-slate-900">
+              <p className="mt-2 text-2xl font-bold text-foreground">
                 {formatCurrency(totalStockValue)}
               </p>
             </div>
@@ -158,17 +158,17 @@ export default async function InventoryPage() {
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-muted-foreground">
             Current estimated stock value
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Low Stock</p>
+              <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
 
-              <p className="mt-2 text-2xl font-bold text-slate-900">
+              <p className="mt-2 text-2xl font-bold text-foreground">
                 {lowStock.length}
               </p>
             </div>
@@ -178,19 +178,19 @@ export default async function InventoryPage() {
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-muted-foreground">
             Products requiring attention
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
+              <p className="text-sm font-medium text-muted-foreground">
                 Tracked Products
               </p>
 
-              <p className="mt-2 text-2xl font-bold text-slate-900">
+              <p className="mt-2 text-2xl font-bold text-foreground">
                 {productCount}
               </p>
             </div>
@@ -200,7 +200,7 @@ export default async function InventoryPage() {
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-muted-foreground">
             Products currently holding stock
           </p>
         </div>
@@ -211,27 +211,27 @@ export default async function InventoryPage() {
       <section className="grid gap-6 xl:grid-cols-3">
         {/* Stock Distribution */}
 
-        <div className="xl:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+        <div className="xl:col-span-2 rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-6 py-5">
             <div>
-              <h2 className="font-semibold text-slate-900">
+              <h2 className="font-semibold text-foreground">
                 Stock by Warehouse
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Current stock distribution across your warehouses.
               </p>
             </div>
 
-            <Warehouse className="h-5 w-5 text-slate-400" />
+            <Warehouse className="h-5 w-5 text-muted-foreground" />
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {stockOnHand.length === 0 ? (
               <div className="px-6 py-12 text-center">
-                <Boxes className="mx-auto h-8 w-8 text-slate-300" />
+                <Boxes className="mx-auto h-8 w-8 text-muted-foreground" />
 
-                <p className="mt-3 text-sm text-slate-500">
+                <p className="mt-3 text-sm text-muted-foreground">
                   No stock currently available.
                 </p>
               </div>
@@ -242,17 +242,17 @@ export default async function InventoryPage() {
                   className="flex items-center justify-between gap-4 px-6 py-4"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-semibold text-foreground">
                       {item.productName}
                     </p>
 
-                    <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                       <Warehouse className="h-3.5 w-3.5" />
                       {item.warehouseName}
                     </p>
                   </div>
 
-                  <p className="shrink-0 text-sm font-semibold text-slate-900">
+                  <p className="shrink-0 text-sm font-semibold text-foreground">
                     {formatNumber(Number(item.quantity))}
                   </p>
                 </div>
@@ -263,17 +263,17 @@ export default async function InventoryPage() {
 
         {/* Attention */}
 
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-6 py-5">
+        <div className="rounded-2xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border px-6 py-5">
             <div className="flex items-center gap-2">
               <TriangleAlert className="h-5 w-5 text-amber-500" />
 
-              <h2 className="font-semibold text-slate-900">
+              <h2 className="font-semibold text-foreground">
                 Attention Required
               </h2>
             </div>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Inventory items that need action.
             </p>
           </div>
@@ -282,11 +282,11 @@ export default async function InventoryPage() {
             <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-foreground">
                     Low Stock
                   </p>
 
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Below reorder level
                   </p>
                 </div>
@@ -300,11 +300,11 @@ export default async function InventoryPage() {
             <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-foreground">
                     Upcoming Expiry
                   </p>
 
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Batches approaching expiry
                   </p>
                 </div>
@@ -321,12 +321,12 @@ export default async function InventoryPage() {
       {/* Low Stock + Expiry */}
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+        <div className="rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-6 py-5">
             <div>
-              <h2 className="font-semibold text-slate-900">Low Stock</h2>
+              <h2 className="font-semibold text-foreground">Low Stock</h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Products at or below their reorder level.
               </p>
             </div>
@@ -334,9 +334,9 @@ export default async function InventoryPage() {
             <TriangleAlert className="h-5 w-5 text-amber-500" />
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {criticalLowStock.length === 0 ? (
-              <div className="px-6 py-10 text-center text-sm text-slate-500">
+              <div className="px-6 py-10 text-center text-sm text-muted-foreground">
                 No low-stock products.
               </div>
             ) : (
@@ -346,11 +346,11 @@ export default async function InventoryPage() {
                   className="flex items-center justify-between gap-4 px-6 py-4"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-semibold text-foreground">
                       {item.productName}
                     </p>
 
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {item.sku || "No SKU"} · {item.warehouseName}
                     </p>
                   </div>
@@ -360,7 +360,7 @@ export default async function InventoryPage() {
                       {formatNumber(Number(item.currentQuantity))}
                     </p>
 
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       reorder {formatNumber(Number(item.reorderLevel))}
                     </p>
                   </div>
@@ -370,12 +370,12 @@ export default async function InventoryPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+        <div className="rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-6 py-5">
             <div>
-              <h2 className="font-semibold text-slate-900">Upcoming Expiry</h2>
+              <h2 className="font-semibold text-foreground">Upcoming Expiry</h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Batches with upcoming expiry dates.
               </p>
             </div>
@@ -383,9 +383,9 @@ export default async function InventoryPage() {
             <CalendarClock className="h-5 w-5 text-orange-500" />
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {upcomingExpiry.length === 0 ? (
-              <div className="px-6 py-10 text-center text-sm text-slate-500">
+              <div className="px-6 py-10 text-center text-sm text-muted-foreground">
                 No upcoming expiries.
               </div>
             ) : (
@@ -395,11 +395,11 @@ export default async function InventoryPage() {
                   className="flex items-center justify-between gap-4 px-6 py-4"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-semibold text-foreground">
                       {item.productName}
                     </p>
 
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Batch {item.batchNumber}
                     </p>
                   </div>
@@ -409,7 +409,7 @@ export default async function InventoryPage() {
                       {item.expiryDate ? formatDate(item.expiryDate) : "—"}
                     </p>
 
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       {formatNumber(Number(item.quantityRemaining))} remaining
                     </p>
                   </div>
@@ -422,24 +422,24 @@ export default async function InventoryPage() {
 
       {/* Recent Activity */}
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+      <section className="rounded-2xl border border-border bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-border px-6 py-5">
           <div>
-            <h2 className="font-semibold text-slate-900">
+            <h2 className="font-semibold text-foreground">
               Recent Stock Activity
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Latest inventory movements across the business.
             </p>
           </div>
 
-          <ArrowRight className="h-5 w-5 text-slate-400" />
+          <ArrowRight className="h-5 w-5 text-muted-foreground" />
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-border">
           {recentMovements.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm text-slate-500">
+            <div className="px-6 py-12 text-center text-sm text-muted-foreground">
               No stock movements recorded yet.
             </div>
           ) : (
@@ -467,11 +467,11 @@ export default async function InventoryPage() {
                     </div>
 
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-900">
+                      <p className="truncate text-sm font-semibold text-foreground">
                         {movement.productName}
                       </p>
 
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {movement.movementType} · {movement.warehouseName}
                       </p>
                     </div>
@@ -487,7 +487,7 @@ export default async function InventoryPage() {
                       {formatNumber(Number(movement.quantity))}
                     </p>
 
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       {formatDate(movement.createdAt)}
                     </p>
                   </div>
