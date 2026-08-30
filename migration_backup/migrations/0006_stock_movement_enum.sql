@@ -1,4 +1,0 @@
-CREATE TYPE "public"."business_type" AS ENUM('PHARMACY', 'CHEMIST', 'CLINIC', 'HOSPITAL', 'RETAIL');--> statement-breakpoint
-CREATE TYPE "public"."stock_movement_type" AS ENUM('OPENING_STOCK', 'PURCHASE', 'SALE', 'SALE_RETURN', 'PURCHASE_RETURN', 'ADJUSTMENT', 'EXPIRED', 'DAMAGED', 'TRANSFER_IN', 'TRANSFER_OUT');--> statement-breakpoint
-CREATE TYPE "public"."user_role" AS ENUM('SUPER_ADMIN', 'ADMIN', 'MANAGER', 'PHARMACIST', 'CASHIER', 'STORE_KEEPER');--> statement-breakpoint
-ALTER TABLE "stock_movements" ALTER COLUMN "movement_type" SET DATA TYPE "public"."stock_movement_type" USING "movement_type"::"public"."stock_movement_type";

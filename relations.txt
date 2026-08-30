@@ -1,2 +1,0 @@
-src/db/schema/users/users.ts:export const usersRelations = relations(users, ({ one }) => ({
-src/db/schema/users/roles.ts:export const rolesRelations = relations(roles, ({ many }) => ({
