@@ -46,6 +46,7 @@ export class PlatformUserService {
 
     const passwordHash = await hashPassword(plainPassword);
 
+    // INVITED + temp hash → first login forces /create-password before setup
     const invitation = await userInvitationsRepository.create({
       name: input.name,
       email: input.email.trim().toLowerCase(),
@@ -53,7 +54,7 @@ export class PlatformUserService {
       roleId: role.id,
       createdBy,
       passwordHash,
-      status: "PASSWORD_CREATED",
+      status: "INVITED",
     });
 
     return {
@@ -79,7 +80,7 @@ export class PlatformUserService {
     const plainPassword = generateTempPassword(10);
     const passwordHash = await hashPassword(plainPassword);
     await userInvitationsRepository.updatePassword(invite.id, passwordHash);
-    await userInvitationsRepository.updateStatus(invite.id, "PASSWORD_CREATED");
+    await userInvitationsRepository.updateStatus(invite.id, "INVITED");
     return { temporaryPassword: plainPassword, email: invite.email };
   }
 }

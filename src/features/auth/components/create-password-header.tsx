@@ -17,11 +17,11 @@ export function CreatePasswordHeader() {
       <div>
 
         <h1 className="text-3xl font-bold text-white">
-          Create Password
+          Choose your password
         </h1>
 
         <p className="mt-2 text-white/70">
-          Create a secure password to activate your ERP account.
+          Replace the temporary password with one you will remember, then continue to business setup.
         </p>
 
       </div>

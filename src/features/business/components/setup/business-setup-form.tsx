@@ -150,38 +150,26 @@ export function BusinessSetupForm({
 
 
     try {
-
       setLoading(true);
-
-
-      const validatedData =
-        businessSetupSchema.parse(
-          state.data,
-        );
-
-      await createBusinessAction(
-        validatedData,
-      );
-
-      router.push("/dashboard");
-
-
+      const validatedData = businessSetupSchema.parse(state.data);
+      await createBusinessAction(validatedData);
+      // Server action redirects to /dashboard on success
     } catch (error) {
-
+      // Next.js redirect() throws a special error — let it through
+      const dig = (error as { digest?: string })?.digest ?? "";
+      if (
+        dig.startsWith("NEXT_REDIRECT") ||
+        (error instanceof Error && error.message === "NEXT_REDIRECT")
+      ) {
+        throw error;
+      }
       console.error(error);
-
-
       setError(
         error instanceof Error
           ? error.message
           : "Failed to create business.",
       );
-
-
-    } finally {
-
       setLoading(false);
-
     }
 
   };

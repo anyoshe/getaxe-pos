@@ -2,81 +2,64 @@
 
 import { redirect } from "next/navigation";
 
-import {
-  businessProvisioningService,
-} from "../services";
-
+import { businessProvisioningService } from "../services";
 import {
   businessSetupSchema,
   type BusinessSetupInput,
 } from "../schemas/business-setup-schema";
+import { requireOnboardingUser } from "@/lib/onboarding-auth/current-onboarding-user";
+import { destroyOnboardingSession } from "@/lib/onboarding-auth/session";
+import { createSession } from "@/lib/auth/session";
+import { userInvitationsRepository } from "@/repositories";
 
-import {
-  requireOnboardingUser,
-} from "@/lib/onboarding-auth/current-onboarding-user";
+export async function createBusinessAction(input: BusinessSetupInput) {
+  const data = businessSetupSchema.parse(input);
 
-import {
-  destroyOnboardingSession,
-} from "@/lib/onboarding-auth/session";
+  const onboardingUser = await requireOnboardingUser();
 
-import {
-  createSession,
-} from "@/lib/auth/session";
+  // Fresh invitation row (password may have been set on /create-password)
+  const invitation = await userInvitationsRepository.findById(
+    onboardingUser.id,
+  );
+  if (!invitation) {
+    throw new Error("Invitation not found. Sign in again.");
+  }
+  if (invitation.status === "COMPLETED") {
+    // Already provisioned — try to log them into ERP if user exists
+    redirect("/login");
+  }
+  if (!invitation.passwordHash) {
+    throw new Error("Set your password before creating a business.");
+  }
 
-export async function createBusinessAction(
-  input: BusinessSetupInput,
-) {
-  const data =
-    businessSetupSchema.parse(input);
+  const result = await businessProvisioningService.provision({
+    ...data,
+    ownerUserId: onboardingUser.createdBy,
+    ownerInvitationId: invitation.id,
+    ownerName: invitation.name,
+    ownerEmail: invitation.email,
+    ownerPhone: invitation.phone ?? undefined,
+    ownerPasswordHash: invitation.passwordHash,
+  });
 
-  // Must read session BEFORE destroying it
-  const onboardingUser =
-    await requireOnboardingUser();
+  const ownerId = result.owner?.id;
+  const adminRoleId = result.adminRoleId;
+  const businessId = result.business.id;
 
-  const roleId = onboardingUser.roleId;
-
-  const business =
-    await businessProvisioningService.provision({
-      ...data,
-      ownerUserId:
-        onboardingUser.createdBy,
-      ownerInvitationId:
-        onboardingUser.id,
-      ownerName:
-        onboardingUser.name,
-      ownerEmail:
-        onboardingUser.email,
-      ownerPhone:
-        onboardingUser.phone ?? undefined,
-      ownerPasswordHash:
-        onboardingUser.passwordHash!,
-    });
-
-  // Prefer the provisioned owner user id when available
-  const sessionUserId =
-    business.createdBy ??
-    onboardingUser.createdBy;
-
-  if (!sessionUserId) {
+  if (!ownerId || !adminRoleId) {
     throw new Error(
-      "Business provisioned but owner user id is missing.",
+      "Business was created but the administrator account is missing. Contact support.",
     );
   }
 
-  if (!roleId) {
-    throw new Error(
-      "Onboarding invitation is missing a role id.",
-    );
-  }
-
-  // End onboarding session only after we have everything we need
   await destroyOnboardingSession();
 
+  // ERP session must use the provisioned *users* row + ADMINISTRATOR role
   await createSession({
-    userId: sessionUserId,
-    businessId: business.id,
-    roleId,
-    email: onboardingUser.email,
+    userId: ownerId,
+    businessId,
+    roleId: adminRoleId,
+    email: invitation.email,
   });
 
   redirect("/dashboard");

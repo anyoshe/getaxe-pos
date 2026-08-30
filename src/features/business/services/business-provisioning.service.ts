@@ -270,10 +270,14 @@ export class BusinessProvisioningService {
     );
 
     //
-    // Done
+    // Done — return owner + admin role so session can be created correctly
     //
 
-    return business;
+    return {
+      business,
+      owner,
+      adminRoleId: adminRole.id,
+    };
   }
 }
 

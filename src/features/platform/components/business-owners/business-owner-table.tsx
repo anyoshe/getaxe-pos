@@ -147,8 +147,8 @@ function StatusBadge({ status }: { status: string }) {
     COMPLETED: "bg-chart-4/20 text-chart-4",
   };
   const label: Record<string, string> = {
-    INVITED: "Invited",
-    PASSWORD_CREATED: "Ready to login",
+    INVITED: "Must change password",
+    PASSWORD_CREATED: "Ready for business setup",
     COMPLETED: "Setup complete",
   };
   return (

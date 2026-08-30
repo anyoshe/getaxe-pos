@@ -24,27 +24,16 @@ export class CreatePasswordService {
       );
     }
 
-    switch (invitation.status) {
-
-      case "INVITED":
-        break;
-
-      case "PASSWORD_CREATED":
-        throw new Error(
-          "Password has already been created.",
-        );
-
-      case "COMPLETED":
-        throw new Error(
-          "Business has already been created.",
-        );
-
-      default:
-        throw new Error(
-          "Invitation is no longer valid.",
-        );
-
+    if (invitation.status === "COMPLETED") {
+      throw new Error("Business has already been created. Sign in with your account password.");
     }
+    if (
+      invitation.status !== "INVITED" &&
+      invitation.status !== "PASSWORD_CREATED"
+    ) {
+      throw new Error("Invitation is no longer valid.");
+    }
+    // INVITED or PASSWORD_CREATED: allow setting / replacing password before setup
 
     const passwordHash =
       await hashPassword(
@@ -61,10 +50,8 @@ export class CreatePasswordService {
       "PASSWORD_CREATED",
     );
 
-    return {
-      success: true,
-    };
-
+    const updated = await userInvitationsRepository.findById(invitation.id);
+    return updated ?? invitation;
   }
 
 }
