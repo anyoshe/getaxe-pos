@@ -9,6 +9,7 @@ import {
 } from "@/features/settings/services";
 
 import { businessCapabilityService } from "@/features/capabilities/services";
+import { ensureFinanceDefaults } from "@/features/finance/services/finance.service";
 import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/seed-pharmacy-catalogues.service";
 
 import type { BusinessType } from "../constants/business-types";
@@ -194,6 +195,11 @@ export class BusinessProvisioningService {
     // Pharmacy / clinic default catalogues (dosage forms, categories, strengths, Rx types)
     //
     await seedPharmacyCataloguesForBusiness(business.id, input.businessType);
+
+    //
+    // Step 7c — Chart of accounts, cash accounts, tax defaults
+    //
+    await ensureFinanceDefaults(business.id);
 
     //
     // Step 8

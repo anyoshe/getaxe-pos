@@ -1,18 +1,23 @@
 "use server";
 
-import {
-  businessOwnerService,
-} from "../services/business-owner.service";
-
+import { platformUserService } from "../services/platform-user.service";
+import { requirePlatformSession } from "@/lib/platform-auth/session";
 
 export async function getBusinessOwnersAction() {
-
-  const owners =
-    await businessOwnerService.getBusinessOwners();
-
+  await requirePlatformSession();
+  const rows = await platformUserService.listInvitations();
   return {
-    success: true,
-    data: owners,
+    success: true as const,
+    data: rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      status: r.status,
+      active: r.status !== "CANCELLED",
+      role: "BUSINESS_OWNER",
+      createdAt: r.createdAt,
+      hasPassword: Boolean(r.passwordHash),
+    })),
   };
-
 }

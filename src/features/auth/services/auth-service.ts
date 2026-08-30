@@ -97,6 +97,12 @@ export async function authenticateUser(
     };
   }
 
+  if (invitation.status === "COMPLETED") {
+    return {
+      type: "INVALID",
+    };
+  }
+
   //
   // No password created yet
   //

@@ -34,6 +34,12 @@ export class UserInvitationsRepository {
 
   }
 
+  async findAll() {
+    return Repository.db.query.userInvitations.findMany({
+      orderBy: (row, { desc }) => [desc(row.createdAt)],
+    });
+  }
+
   async create(
     values: typeof userInvitations.$inferInsert,
   ) {

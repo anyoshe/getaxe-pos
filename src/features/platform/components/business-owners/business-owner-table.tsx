@@ -1,229 +1,161 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import {
-  getBusinessOwnersAction,
-} from "../../actions";
+import { Button } from "@/components/ui/button";
+import { getBusinessOwnersAction } from "../../actions";
+import { resetOwnerPasswordAction } from "../../actions/reset-owner-password";
+import { BusinessOwnerDialog } from "./business-owner-dialog";
 
-import {
-  BusinessOwnerDialog,
-} from "./business-owner-dialog";
-
-type BusinessOwner = {
+type Owner = {
   id: string;
   name: string;
   email: string;
   phone: string | null;
-  active: boolean;
-  role: string;
+  status: string;
   createdAt: string | Date;
+  hasPassword: boolean;
 };
 
 export function BusinessOwnerTable() {
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [open, setOpen] = useState(false);
+  const [resetPw, setResetPw] = useState<{ email: string; password: string } | null>(null);
 
-  const [owners, setOwners] =
-    useState<BusinessOwner[]>([]);
-
-  const [open, setOpen] =
-    useState(false);
-
-  async function loadOwners() {
-
-    const result =
-      await getBusinessOwnersAction();
-
-    if (result.success) {
-      setOwners(result.data ?? []);
-    }
-
-  }
-
-  useEffect(() => {
-    loadOwners();
+  const load = useCallback(async () => {
+    const result = await getBusinessOwnersAction();
+    if (result.success) setOwners(result.data ?? []);
   }, []);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function onReset(id: string) {
+    const r = await resetOwnerPasswordAction(id);
+    if (!r.success) {
+      toast.error(r.message);
+      return;
+    }
+    setResetPw({ email: r.email, password: r.temporaryPassword });
+    toast.success("New temporary password generated");
+    void load();
+  }
+
   return (
-
-    <main className="mx-auto max-w-7xl space-y-6 p-8">
-
-      <div className="flex items-center justify-between">
-
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-
-          <h1 className="text-3xl font-bold">
-            Business Owners
-          </h1>
-
-          <p className="text-muted-foreground">
-            Platform managed business owners.
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            Platform
           </p>
-
+          <h1 className="text-2xl font-bold tracking-tight">Business owners</h1>
+          <p className="text-sm text-muted-foreground">
+            Invite clients and hand them first-login credentials for business
+            setup.
+          </p>
         </div>
+        <Button className="rounded-xl" onClick={() => setOpen(true)}>
+          Invite owner
+        </Button>
+      </div>
 
-        <button
-          onClick={() => setOpen(true)}
-          className="
-            rounded-md
-            bg-indigo-600
-            px-4
-            py-2
-            text-white
-            transition
-            hover:bg-indigo-700
-          "
-        >
-          Invite Owner
-        </button>
+      {resetPw ? (
+        <div className="rounded-xl border border-chart-4/30 bg-chart-4/10 p-4 text-sm">
+          <p className="font-semibold text-chart-4">New temporary password</p>
+          <p className="mt-1 font-mono">
+            {resetPw.email} · {resetPw.password}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2"
+            onClick={() => setResetPw(null)}
+          >
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
 
+      <div className="overflow-x-auto rounded-2xl border bg-card shadow-sm">
+        <table className="w-full text-sm">
+          <thead className="border-b bg-muted/40 text-left">
+            <tr>
+              <th className="p-3 font-semibold">Name</th>
+              <th className="p-3 font-semibold">Email</th>
+              <th className="p-3 font-semibold">Phone</th>
+              <th className="p-3 font-semibold">Status</th>
+              <th className="p-3 font-semibold">Invited</th>
+              <th className="p-3 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {owners.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-10 text-center text-muted-foreground">
+                  No owners invited yet. Click Invite owner to create the first
+                  client login.
+                </td>
+              </tr>
+            ) : (
+              owners.map((o) => (
+                <tr key={o.id} className="border-b last:border-0">
+                  <td className="p-3 font-medium">{o.name}</td>
+                  <td className="p-3 font-mono text-xs">{o.email}</td>
+                  <td className="p-3 text-muted-foreground">{o.phone ?? "—"}</td>
+                  <td className="p-3">
+                    <StatusBadge status={o.status} />
+                  </td>
+                  <td className="p-3 text-muted-foreground">
+                    {new Date(o.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="p-3 text-right">
+                    {o.status !== "COMPLETED" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg"
+                        onClick={() => void onReset(o.id)}
+                      >
+                        Reset temp password
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Live</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       <BusinessOwnerDialog
         open={open}
         onOpenChange={setOpen}
-        onSuccess={loadOwners}
+        onSuccess={() => void load()}
       />
-
-      <div className="overflow-hidden rounded-xl border">
-
-        <table className="w-full">
-
-          <thead className="border-b bg-muted/40">
-
-            <tr>
-
-              <th className="p-4 text-left">
-                Owner
-              </th>
-
-              <th className="p-4 text-left">
-                Email
-              </th>
-
-              <th className="p-4 text-left">
-                Phone
-              </th>
-
-              <th className="p-4 text-left">
-                Status
-              </th>
-
-              <th className="p-4 text-left">
-                Business
-              </th>
-
-              <th className="p-4 text-left">
-                Created
-              </th>
-
-              <th className="p-4 text-center">
-                Actions
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {owners.length === 0 ? (
-
-              <tr>
-
-                <td
-                  colSpan={7}
-                  className="
-                    p-12
-                    text-center
-                    text-muted-foreground
-                  "
-                >
-                  No business owners have been invited yet.
-                </td>
-
-              </tr>
-
-            ) : (
-
-              owners.map((owner) => (
-
-                <tr
-                  key={owner.id}
-                  className="border-b hover:bg-muted/20"
-                >
-
-                  <td className="p-4 font-medium">
-                    {owner.name}
-                  </td>
-
-                  <td className="p-4">
-                    {owner.email}
-                  </td>
-
-                  <td className="p-4">
-                    {owner.phone ?? "—"}
-                  </td>
-
-                  <td className="p-4">
-
-                    <span
-                      className={
-                        owner.active
-                          ? "rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700"
-                          : "rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700"
-                      }
-                    >
-                      {owner.active
-                        ? "Active"
-                        : "Inactive"}
-                    </span>
-
-                  </td>
-
-                  <td className="p-4 text-muted-foreground">
-                    —
-                  </td>
-
-                  <td className="p-4">
-                    {new Date(
-                      owner.createdAt,
-                    ).toLocaleDateString()}
-                  </td>
-
-                  <td className="p-4 text-center">
-
-                    <button
-                      className="
-                        rounded-md
-                        border
-                        px-3
-                        py-1
-                        text-sm
-                        hover:bg-muted
-                      "
-                    >
-                      View
-                    </button>
-
-                  </td>
-
-                </tr>
-
-              ))
-
-            )}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </main>
-
+    </div>
   );
+}
 
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    INVITED: "bg-muted text-muted-foreground",
+    PASSWORD_CREATED: "bg-chart-2/20 text-accent-foreground",
+    COMPLETED: "bg-chart-4/20 text-chart-4",
+  };
+  const label: Record<string, string> = {
+    INVITED: "Invited",
+    PASSWORD_CREATED: "Ready to login",
+    COMPLETED: "Setup complete",
+  };
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${map[status] ?? "bg-muted"}`}
+    >
+      {label[status] ?? status}
+    </span>
+  );
 }

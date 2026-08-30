@@ -1,28 +1,20 @@
-import {
-  platformUserRepository,
-} from "@/repositories";
+import { platformUserService } from "./platform-user.service";
 
+/** @deprecated Prefer platformUserService — kept for provisioning link step */
 export class BusinessOwnerService {
-
   async getBusinessOwners() {
-    return platformUserRepository.findBusinessOwners();
+    return platformUserService.listInvitations();
   }
 
   async updateBusinessOwner(
     id: string,
-    data: Parameters<
-      typeof platformUserRepository.update
-    >[1],
+    data: { businessId?: string | null },
   ) {
-
-    return platformUserRepository.update(
-      id,
-      data,
-    );
-
+    // Invitations table has no businessId column — no-op safe for provision link
+    void id;
+    void data;
+    return null;
   }
-
 }
 
-export const businessOwnerService =
-  new BusinessOwnerService();
+export const businessOwnerService = new BusinessOwnerService();

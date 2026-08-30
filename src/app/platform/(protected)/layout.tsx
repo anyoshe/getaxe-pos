@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
-import {
-  requirePlatformSession,
-} from "@/lib/platform-auth/session";
+import { requirePlatformSession } from "@/lib/platform-auth/session";
+import { PlatformShell } from "@/features/platform/components/platform-shell";
 
 export default async function PlatformLayout({
   children,
@@ -15,5 +14,5 @@ export default async function PlatformLayout({
     redirect("/platform/login");
   }
 
-  return children;
+  return <PlatformShell>{children}</PlatformShell>;
 }
