@@ -359,6 +359,12 @@ export const navigation: NavigationItem[] = [
         permission: "business.view",
       },
       {
+        label: "Security",
+        href: "/settings/security",
+        icon: Settings,
+        permission: "business.view",
+      },
+      {
         label: "Roles & Permissions",
         href: "/settings/roles",
         icon: ShieldCheck,
