@@ -1,5 +1,5 @@
 export * from "./units";
 export * from "./currencies";
-export * from "./payment-methods";
+export * from "./countries";
 export * from "./tax-rates";
-export * from "./countries"
+export * from "./payment-methods";
