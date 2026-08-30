@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getStockOnHand } from "@/features/inventory/queries/stock-on-hand.query";
 import { StockOnHandActions } from "@/features/inventory/components/stock/stock-on-hand-actions";
