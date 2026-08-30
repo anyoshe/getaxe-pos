@@ -270,9 +270,9 @@ export function RoleForm({
           rounded-xl
           border
           bg-gradient-to-r
-          from-indigo-50
-          via-white
-          to-lime-50
+          from-indigo-50 dark:from-indigo-950/40
+          via-background dark:via-card
+          to-lime-50 dark:to-background
           p-4
           dark:from-indigo-950/20
           dark:via-background
@@ -430,9 +430,9 @@ export function RoleForm({
         rounded-xl
         border
         bg-gradient-to-br
-        from-indigo-50
-        via-white
-        to-lime-50
+        from-indigo-50 dark:from-indigo-950/40
+        via-background dark:via-card
+        to-lime-50 dark:to-background
         p-5
         dark:from-indigo-950/20
         dark:via-background

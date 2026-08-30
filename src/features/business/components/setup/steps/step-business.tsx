@@ -241,7 +241,7 @@ export function StepBusiness({
 
             <option
               value=""
-              className="text-black"
+              className="text-foreground"
             >
               Select business type
             </option>
@@ -250,7 +250,7 @@ export function StepBusiness({
               <option
                 key={type.value}
                 value={type.value}
-                className="text-black"
+                className="text-foreground"
               >
                 {type.label}
               </option>

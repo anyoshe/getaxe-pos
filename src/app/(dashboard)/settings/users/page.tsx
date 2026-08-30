@@ -21,9 +21,9 @@ export default function UsersPage() {
                     rounded-2xl
                     border
                     bg-gradient-to-r
-                    from-indigo-50
-                    via-white
-                    to-lime-50
+                    from-indigo-50 dark:from-indigo-950/40
+                    via-background dark:via-card
+                    to-lime-50 dark:to-background
                     p-6
                     shadow-sm
                     dark:from-indigo-950/30

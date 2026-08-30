@@ -113,7 +113,7 @@ export function StepPreferences({
               <option
                 key={currency.id}
                 value={currency.code}
-                className="text-black"
+                className="text-foreground"
               >
 
                 {currency.symbol} {currency.code} - {currency.name}
@@ -173,7 +173,7 @@ export function StepPreferences({
                 <option
                   key={country.id}
                   value={country.timezone!}
-                  className="text-black"
+                  className="text-foreground"
                 >
 
                   {country.name} ({country.timezone})

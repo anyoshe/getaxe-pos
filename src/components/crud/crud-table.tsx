@@ -110,9 +110,10 @@ export function CrudTable<T>({
                     key={(row as { id?: string }).id ?? index}
                     className="
                       transition-all
-                      odd:bg-white
-                      even:bg-muted/50/40
+                      odd:bg-card
+                      even:bg-muted/40
                       hover:bg-primary/10
+                      text-foreground
                     "
                   >
 
@@ -168,7 +169,7 @@ export function CrudTable<T>({
                               className="
                                 rounded-xl
                                 border-border
-                                hover:border-indigo-300
+                                hover:border-primary/40
                                 hover:bg-primary/10
                               "
                             >
@@ -285,7 +286,7 @@ export function CrudTable<T>({
                         flex-1
                         rounded-xl
                         border-border
-                        hover:border-indigo-300
+                        hover:border-primary/40
                         hover:bg-primary/10
                       "
                     >

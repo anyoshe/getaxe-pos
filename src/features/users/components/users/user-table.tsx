@@ -92,9 +92,9 @@ export function UserTable({
 
                         <TableRow className="
                             bg-gradient-to-r
-                            from-indigo-50
-                            via-white
-                            to-lime-50
+                            from-indigo-50 dark:from-indigo-950/40
+                            via-background dark:via-card
+                            to-lime-50 dark:to-background
                             dark:from-indigo-950/30
                             dark:via-background
                             dark:to-lime-950/20
