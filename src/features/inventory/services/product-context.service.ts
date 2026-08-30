@@ -30,7 +30,6 @@ import {
   productRuleResolver,
 } from "./product-rule-resolver";
 
-import { seedDefaultProductCategories } from "@/features/inventory/services/seed-default-product-categories.service";
 import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/seed-pharmacy-catalogues.service";
 import { financeService } from "@/features/finance/services/finance.service";
 
@@ -64,10 +63,8 @@ export class ProductContextService {
     const hasPharmacyCap = capabilities.some((c) => c.startsWith("pharmacy."));
     if (
       hasPharmacyCap &&
-      (dosageForms.length === 0 ||
-        drugCategories.length === 0 ||
-        drugStrengths.length === 0 ||
-        prescriptionTypes.length === 0)
+      dosageForms.length === 0 &&
+      drugCategories.length === 0
     ) {
       await seedPharmacyCataloguesForBusiness(businessId, "PHARMACY");
       const refreshed = await Promise.all([
@@ -82,11 +79,6 @@ export class ProductContextService {
       prescriptionTypes = refreshed[3];
     }
 
-    if (categories.length === 0) {
-      const typeGuess = hasPharmacyCap ? "PHARMACY" : "OTHER";
-      await seedDefaultProductCategories(businessId, typeGuess);
-      categories = await categoryRepository.findAll(businessId);
-    }
 
     const productRulesByType = PRODUCT_TYPES.reduce((result, productType) => {
       result[productType] = productRuleResolver.resolve({
