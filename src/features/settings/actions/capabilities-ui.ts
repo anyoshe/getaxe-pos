@@ -9,6 +9,7 @@ import { logActivity } from "@/features/audit/services/activity-log.service";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { CapabilityRegistry } from "@/features/capabilities/services/capability-registry";
 import { capabilitySyncService } from "@/features/capabilities/services/capability-sync.service";
+import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/seed-pharmacy-catalogues.service";
 
 /**
  * Capabilities are business configuration — owner/admin with business.view.
@@ -118,6 +119,17 @@ export async function setCapabilityEnabledAction(input: unknown) {
       for (const id of toEnable) {
         await repo.enable(auth.user.businessId, id);
       }
+
+      // Backfill pharmacy reference data when medicine catalogue is turned on
+      if (
+        toEnable.includes("pharmacy.medicine-catalogue") ||
+        toEnable.includes("pharmacy.core")
+      ) {
+        await seedPharmacyCataloguesForBusiness(
+          auth.user.businessId,
+          "PHARMACY",
+        ).catch(() => undefined);
+      }
     } else {
       await repo.disable(auth.user.businessId, parsed.data.capabilityId);
     }
@@ -140,6 +152,10 @@ export async function setCapabilityEnabledAction(input: unknown) {
       "/sales/pos",
       "/purchases/receiving",
       "/dashboard",
+      "/inventory/pharmacy-catalogues",
+      "/inventory/manufacturers",
+      "/customers/loyalty",
+      "/settings/warehouses",
     ]) {
       revalidatePath(path);
     }

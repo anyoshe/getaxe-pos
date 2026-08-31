@@ -105,12 +105,14 @@ export const navigation: NavigationItem[] = [
       href: "/inventory/manufacturers",
       icon: Building2,
       permission: "products.view",
+      capability: "inventory.manufacturers",
     },
     {
       label: "Pharmacy catalogues",
       href: "/inventory/pharmacy-catalogues",
       icon: ClipboardList,
       permission: "products.view",
+      anyCapabilities: ["pharmacy.medicine-catalogue", "pharmacy.core"],
     },
     {
       label: "Stock",
@@ -127,24 +129,28 @@ export const navigation: NavigationItem[] = [
     {
       label: "Adjustments",
       href: "/inventory/adjustments",
+      capability: "inventory.stock-adjustment",
       icon: PackageCheck,
       permission: "stock_adjustments.view",
     },
     {
       label: "Transfers",
       href: "/inventory/transfers",
+      capability: "inventory.stock-transfers",
       icon: ArrowRightLeft,
       permission: "stock_transfers.view",
     },
     {
       label: "Product Batches",
       href: "/inventory/batches",
+      capability: "inventory.batch-control",
       icon: ClipboardList,
       permission: "product_batches.view",
     },
     {
       label: "Price Lists",
       href: "/inventory/price-lists",
+      capability: "inventory.multiple-price-lists",
       icon: FileText,
       permission: "price_lists.view",
     },
@@ -207,6 +213,7 @@ export const navigation: NavigationItem[] = [
       {
         label: "Loyalty",
         href: "/customers/loyalty",
+        capability: "sales.loyalty-program",
         icon: UsersRound,
         permission: "loyalty.manage",
       },

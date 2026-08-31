@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { navigation } from "@/config/navigation";
 import { usePermission } from "@/providers/permissions-provider";
+import { useCapability } from "@/providers/capabilities-provider";
 import type { CurrentUser } from "@/lib/auth/current-user";
 import type { NavigationItem } from "@/config/navigation.types";
 import { cn } from "@/lib/utils";
@@ -32,19 +33,29 @@ const SECTION_BREAKS: Record<string, string> = {
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const { hasPermission } = usePermission();
+  const { hasCapability, hasAnyCapability } = useCapability();
   const [openMenus, setOpenMenus] = useState<string[]>([]);
+
+  function capOk(item: NavigationItem) {
+    if (item.capability && !hasCapability(item.capability)) return false;
+    if (item.anyCapabilities?.length && !hasAnyCapability(item.anyCapabilities))
+      return false;
+    return true;
+  }
 
   const filteredNavigation = useMemo(() => {
     return navigation
       .map((item) => {
         if (!item.children || item.children.length === 0) {
-          if (!item.permission) return item;
-          return hasPermission(item.permission) ? item : null;
+          if (item.permission && !hasPermission(item.permission)) return null;
+          if (!capOk(item)) return null;
+          return item;
         }
 
         const visibleChildren = item.children.filter((child) => {
-          if (!child.permission) return true;
-          return hasPermission(child.permission);
+          if (child.permission && !hasPermission(child.permission)) return false;
+          if (!capOk(child)) return false;
+          return true;
         });
 
         if (visibleChildren.length === 0) return null;
@@ -52,7 +63,7 @@ export function Sidebar({ user }: SidebarProps) {
         return { ...item, children: visibleChildren };
       })
       .filter((item): item is NavigationItem => item !== null);
-  }, [hasPermission]);
+  }, [hasPermission, hasCapability, hasAnyCapability]);
 
   useEffect(() => {
     setOpenMenus((prev) => {
