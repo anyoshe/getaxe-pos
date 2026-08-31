@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  applyPromotion,
+  type PromotionOffer,
+} from "@/features/inventory/services/promotion-price";
+
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -71,42 +76,8 @@ type BranchOption = { id: string; name: string };
 type SerialsByProduct = Record<string, string[]>;
 type PriceMode = "retail" | "wholesale";
 
-export type ActivePromotion = {
-  id: string;
-  name: string;
-  discountType: string;
-  discountValue: number;
-  scope: string;
-  productIds: string[];
-};
+export type ActivePromotion = PromotionOffer;
 
-function applyPromotion(
-  base: number,
-  productId: string,
-  promos: ActivePromotion[],
-): { price: number; promoName: string | null } {
-  let best = base;
-  let promoName: string | null = null;
-  for (const promo of promos) {
-    if (promo.scope === "SELECTED" && !promo.productIds.includes(productId)) {
-      continue;
-    }
-    let next = base;
-    if (promo.discountType === "PERCENT_OFF") {
-      next = base * (1 - promo.discountValue / 100);
-    } else if (promo.discountType === "AMOUNT_OFF") {
-      next = base - promo.discountValue;
-    } else if (promo.discountType === "FIXED_PRICE") {
-      next = promo.discountValue;
-    }
-    next = Math.max(0, next);
-    if (next < best) {
-      best = next;
-      promoName = promo.name;
-    }
-  }
-  return { price: best, promoName };
-}
 
 export type PosProductUnit = {
   unitId: string;

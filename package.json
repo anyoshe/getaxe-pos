@@ -15,7 +15,10 @@
     "db:seed": "tsx src/db/seed/index.ts",
     "db:sync-capabilities": "tsx src/db/seed/sync-capabilities.ts",
     "permissions:validate": "tsx src/db/validate-permissions.ts",
-    "db:reset": "tsx src/db/reset.ts"
+    "db:reset": "tsx src/db/reset.ts",
+    "test": "tsx --test src/**/*.test.ts",
+    "test:smoke": "tsx --test src/features/inventory/readiness-smoke.test.ts src/features/inventory/promotion-price.test.ts src/features/inventory/stock-math.test.ts src/features/inventory/unit-conversion.test.ts src/features/inventory/product-rule-resolver.test.ts src/features/inventory/serialized-inventory.test.ts src/features/capabilities/capability-catalogue.test.ts src/features/capabilities/capability-wiring.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
