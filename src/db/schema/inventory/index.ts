@@ -8,3 +8,4 @@ export * from "./suppliers";
 export * from "./inventory_balances";
 export * from "./product_serials";
 export * from "./product_units";
+export * from "./stock_counts";

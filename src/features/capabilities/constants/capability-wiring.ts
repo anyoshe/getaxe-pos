@@ -118,7 +118,11 @@ export const CAPABILITY_WIRING: Record<string, CapabilityWiring> = {
   "inventory.quarantine-stock": { status: "roadmap" },
   "inventory.consignment-stock": { status: "roadmap" },
   "inventory.controlled-items": { status: "partial", note: "Pharmacy controlled path partial" },
-  "inventory.cycle-count": { status: "roadmap" },
+  "inventory.cycle-count": {
+    status: "wired",
+    routes: ["/inventory/cycle-counts"],
+    note: "Stock take sessions; posts variances as adjustments",
+  },
   "inventory.dead-stock": { status: "partial", routes: ["/reports/inventory"] },
   "inventory.stock-aging": { status: "partial", routes: ["/reports/inventory"] },
   "inventory.moving-analysis": { status: "partial", routes: ["/reports/inventory"] },

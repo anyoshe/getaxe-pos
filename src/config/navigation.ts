@@ -134,6 +134,13 @@ export const navigation: NavigationItem[] = [
       permission: "stock_adjustments.view",
     },
     {
+      label: "Cycle counts",
+      href: "/inventory/cycle-counts",
+      icon: ClipboardList,
+      permission: "stock_movements.view",
+      capability: "inventory.cycle-count",
+    },
+    {
       label: "Transfers",
       href: "/inventory/transfers",
       capability: "inventory.stock-transfers",
