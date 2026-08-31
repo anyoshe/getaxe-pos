@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   const { summary } = dashboard;
   const saleCount = summary.todaySalesCount ?? 0;
   const incomplete =
-    readiness?.checks.filter((c) => !c.done && c.id !== "supplier") ?? [];
+    readiness?.checks.filter((c) => !c.done && !c.optional) ?? [];
 
   return (
     <div className="space-y-8">
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
               </p>
             </div>
             <Link
-              href="/settings"
+              href="/settings/readiness"
               className="text-sm font-medium text-primary hover:underline"
             >
               Open settings →

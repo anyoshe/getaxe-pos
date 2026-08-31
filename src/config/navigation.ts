@@ -44,6 +44,12 @@ export const navigation: NavigationItem[] = [
     icon: Wrench,
     permission: "business.view",
   },
+      {
+        label: "Go-live readiness",
+        href: "/settings/readiness",
+        icon: ClipboardList,
+        permission: "business.view",
+      },
   {
     label: "Sales",
     icon: ShoppingCart,
