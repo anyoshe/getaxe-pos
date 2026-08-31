@@ -225,9 +225,18 @@ export function ReportsDashboard({ data }: { data: ReportsOverviewData }) {
                       cx="50%"
                       cy="50%"
                       outerRadius={90}
-                      label={({ method, total }) =>
-                        `${method}: ${money(Number(total))}`
-                      }
+                      label={(props) => {
+                        const method = String(
+                          (props as { method?: string }).method ?? "",
+                        );
+                        const total = Number(
+                          (props as { payload?: { total?: number } }).payload
+                            ?.total ??
+                            (props as { total?: number }).total ??
+                            0,
+                        );
+                        return `${method}: ${money(total)}`;
+                      }}
                     >
                       {data.payments.byMethod.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />

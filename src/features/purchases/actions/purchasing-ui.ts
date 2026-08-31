@@ -148,26 +148,6 @@ export async function approvePurchaseOrderAction(purchaseOrderId: string) {
       approvedBy: user.id,
     });
     revalidatePath("/purchases/orders");
-    try {
-      const amt = Number(
-        (Array.isArray(data.items) ? data.items : []).reduce(
-          (s: number, it: any) =>
-            s + Number(it.quantity ?? 0) * Number(it.unitCost ?? it.costPrice ?? 0),
-          0,
-        ),
-      );
-      if (amt > 0) {
-        await journalPostingService.postPurchaseReceive({
-          businessId: user.businessId,
-          sourceId: String(data.purchaseOrderId),
-          reference: String(data.purchaseOrderId).slice(0, 8),
-          amount: amt,
-          postedBy: user.id,
-        });
-      }
-    } catch (e) {
-      console.error("[grn] journal", e);
-    }
     revalidatePath("/purchases/receiving");
     return { success: true as const, message: "Purchase order approved." };
   } catch (error) {
@@ -391,7 +371,6 @@ export async function createSupplierReturnAction(input: unknown) {
         businessId: user.businessId,
         supplierId: data.supplierId,
         returnNumber,
-        status: "DRAFT",
         notes: data.notes ?? null,
         createdBy: user.id,
       },

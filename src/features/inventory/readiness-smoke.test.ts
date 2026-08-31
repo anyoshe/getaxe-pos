@@ -78,8 +78,8 @@ describe("readiness smoke (pharmacy / retail / hardware)", () => {
     });
     const ser = rules.fields.find((f) => f.key === "serialized");
     assert.ok(ser, "serialized field should be available");
-    // Capability makes field available — not auto-required as true
-    assert.notEqual(ser?.required === true && ser?.defaultValue === true, true);
+    // Capability makes field available — not auto-required
+    assert.notEqual(ser?.required, true);
   });
 
   it("cycle count posts variance equal to counted − system", () => {
