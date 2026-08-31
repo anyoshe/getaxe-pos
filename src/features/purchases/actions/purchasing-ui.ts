@@ -371,7 +371,7 @@ export async function createSupplierReturnAction(input: unknown) {
         businessId: user.businessId,
         supplierId: data.supplierId,
         returnNumber,
-        notes: data.notes ?? null,
+        reason: "OTHER",
         createdBy: user.id,
       },
       items: data.items.map((i) => ({
