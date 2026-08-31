@@ -41,3 +41,4 @@ export * from "./validate-product-import";
 export * from "./validate-opening-stock-import";
 export * from "./commit-opening-stock-import";
 export * from "./cycle-count";
+export * from "./promotions";

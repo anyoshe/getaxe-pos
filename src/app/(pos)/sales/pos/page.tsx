@@ -12,10 +12,19 @@ import { productUnits } from "@/db/schema/inventory/product_units";
 import { productPrices } from "@/db/schema/inventory/product_prices";
 import { units } from "@/db/schema/settings/units";
 import { PosClient } from "@/features/sales/components/pos/pos-client";
+import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
+import { promotionsRepository } from "@/repositories/inventory/promotions.repository";
 
 export default async function FullScreenPosPage() {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  const enabledCaps = await new BusinessCapabilityRepository()
+    .listEnabled(user.businessId)
+    .catch(() => [] as string[]);
+  const activePromotions = enabledCaps.includes("inventory.promotional-pricing")
+    ? await promotionsRepository.listActiveForPos(user.businessId).catch(() => [])
+    : [];
 
   const [
     products,
@@ -273,6 +282,7 @@ export default async function FullScreenPosPage() {
       productUnitsByProduct={unitsByProduct}
       pricesByProductUnit={pricesByProductUnit}
       batchesByProductWarehouse={batchesByProductWarehouse}
+      activePromotions={activePromotions}
     />
   );
 }

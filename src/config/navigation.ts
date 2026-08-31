@@ -162,6 +162,13 @@ export const navigation: NavigationItem[] = [
       permission: "price_lists.view",
     },
     {
+      label: "Promotions",
+      href: "/inventory/promotions",
+      icon: Receipt,
+      permission: "products.view",
+      capability: "inventory.promotional-pricing",
+    },
+    {
       label: "Product Prices",
       href: "/inventory/product-prices",
       icon: CircleDollarSign,

@@ -71,7 +71,11 @@ export const CAPABILITY_WIRING: Record<string, CapabilityWiring> = {
     routes: ["/inventory/price-lists", "/inventory/product-prices"],
   },
   "inventory.customer-specific-pricing": { status: "roadmap" },
-  "inventory.promotional-pricing": { status: "roadmap" },
+  "inventory.promotional-pricing": {
+    status: "wired",
+    routes: ["/inventory/promotions", "/sales/pos"],
+    note: "POS applies best active promo automatically",
+  },
   "inventory.margin-control": { status: "roadmap" },
   "inventory.brands": { status: "wired", routes: ["/inventory/products"], note: "Brand field on product" },
   "inventory.manufacturers": {

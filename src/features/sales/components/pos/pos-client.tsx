@@ -71,6 +71,43 @@ type BranchOption = { id: string; name: string };
 type SerialsByProduct = Record<string, string[]>;
 type PriceMode = "retail" | "wholesale";
 
+export type ActivePromotion = {
+  id: string;
+  name: string;
+  discountType: string;
+  discountValue: number;
+  scope: string;
+  productIds: string[];
+};
+
+function applyPromotion(
+  base: number,
+  productId: string,
+  promos: ActivePromotion[],
+): { price: number; promoName: string | null } {
+  let best = base;
+  let promoName: string | null = null;
+  for (const promo of promos) {
+    if (promo.scope === "SELECTED" && !promo.productIds.includes(productId)) {
+      continue;
+    }
+    let next = base;
+    if (promo.discountType === "PERCENT_OFF") {
+      next = base * (1 - promo.discountValue / 100);
+    } else if (promo.discountType === "AMOUNT_OFF") {
+      next = base - promo.discountValue;
+    } else if (promo.discountType === "FIXED_PRICE") {
+      next = promo.discountValue;
+    }
+    next = Math.max(0, next);
+    if (next < best) {
+      best = next;
+      promoName = promo.name;
+    }
+  }
+  return { price: best, promoName };
+}
+
 export type PosProductUnit = {
   unitId: string;
   factorToStock: number;
@@ -112,6 +149,8 @@ interface PosClientProps {
   /** Optional explicit pack prices; else retail/wholesale × factor */
   pricesByProductUnit?: Record<string, Record<string, number>>;
   batchesByProductWarehouse?: Record<string, Record<string, PosBatchOption[]>>;
+  /** Active time-bound promotions (inventory.promotional-pricing) */
+  activePromotions?: ActivePromotion[];
   fullScreen?: boolean;
   cashierName?: string | null;
   recentSales?: RecentSale[];
@@ -127,6 +166,7 @@ export function PosClient({
   productUnitsByProduct = {},
   pricesByProductUnit = {},
   batchesByProductWarehouse = {},
+  activePromotions = [],
   fullScreen = false,
   cashierName,
   recentSales = [],
@@ -224,14 +264,25 @@ export function PosClient({
     (p: PosProduct, unitId?: string | null, factorToStock = 1) => {
       const base =
         priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice;
+      let raw = base;
       if (unitId) {
         const explicit = pricesByProductUnit[p.id]?.[unitId];
-        if (explicit != null && explicit > 0) return explicit;
+        if (explicit != null && explicit > 0) raw = explicit;
+        else {
+          const factor = factorToStock > 0 ? factorToStock : 1;
+          raw = base * factor;
+        }
+      } else {
+        const factor = factorToStock > 0 ? factorToStock : 1;
+        raw = base * factor;
       }
-      const factor = factorToStock > 0 ? factorToStock : 1;
-      return base * factor;
+      // Promotions only on retail path (not wholesale mode)
+      if (priceMode === "wholesale" || activePromotions.length === 0) {
+        return raw;
+      }
+      return applyPromotion(raw, p.id, activePromotions).price;
     },
-    [priceMode, pricesByProductUnit],
+    [priceMode, pricesByProductUnit, activePromotions],
   );
 
   // When switching retail/wholesale, update cart unit prices
