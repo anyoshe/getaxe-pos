@@ -176,7 +176,29 @@ export const navigation: NavigationItem[] = [
     },
   ],
 },
+  
   {
+    label: "Pharmacy",
+    icon: ClipboardList,
+    module: "pharmacy",
+    children: [
+      {
+        label: "Dispensing",
+        href: "/pharmacy/dispensing",
+        icon: ClipboardList,
+        permission: "products.view",
+        capability: "pharmacy.dispensing",
+      },
+      {
+        label: "Catalogues",
+        href: "/inventory/pharmacy-catalogues",
+        icon: ClipboardList,
+        permission: "products.view",
+        anyCapabilities: ["pharmacy.medicine-catalogue", "pharmacy.core"],
+      },
+    ],
+  },
+{
     label: "Purchasing",
     icon: ClipboardList,
     module: "purchasing",

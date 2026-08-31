@@ -7,3 +7,4 @@ export * from "./prescriptions";
 export * from "./prescription_items";
 export * from "./dispensations";
 export * from "./dispensation_items";
+export * from "./walk_in_dispensings";
