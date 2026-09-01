@@ -165,6 +165,9 @@ export function ProductForm({
     const [pending, startTransition] =
         useTransition();
 
+    const [packagingDraft, setPackagingDraft] =
+        useState<PackagingLineDraft[]>([]);
+
     const form =
         useForm<ProductFormInput>({
             resolver:
