@@ -56,10 +56,12 @@ type Line = {
 
 function defaultUnit(product: ProductOpt | undefined): ProductUnitOpt | null {
   if (!product || product.units.length === 0) return null;
+  // Prefer explicit purchase default, then stock unit (pieces/tabs).
+  // Never force a box/strip just because factor > 1 — user chooses pack size.
   return (
-    product.units.find((u) => u.isPurchaseDefault) ??
-    product.units.find((u) => u.factorToStock > 1) ??
+    product.units.find((u) => u.isPurchaseDefault && u.allowPurchase) ??
     product.units.find((u) => u.isStockUnit) ??
+    product.units.find((u) => u.allowPurchase) ??
     product.units[0]
   );
 }
@@ -384,9 +386,12 @@ export function PurchaseOrdersClient({
                           {purchaseUnits.map((u) => (
                             <option key={u.unitId} value={u.unitId}>
                               {u.label}
-                              {u.factorToStock !== 1
-                                ? ` (= ${u.factorToStock} ${stockUnitName})`
-                                : ""}
+                              {u.isStockUnit
+                                ? " (stock / pieces)"
+                                : u.factorToStock !== 1
+                                  ? ` (= ${u.factorToStock} ${stockUnitName})`
+                                  : ""}
+                              {u.isPurchaseDefault ? " · buy default" : ""}
                             </option>
                           ))}
                         </select>

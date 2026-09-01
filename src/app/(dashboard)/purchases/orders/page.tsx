@@ -16,7 +16,7 @@ export default async function PurchaseOrdersPage() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [orders, suppliers, products, unitRows] = await Promise.all([
+  const [orders, suppliers, products, unitRows, allUnits] = await Promise.all([
     purchasesQueryService.getPurchaseOrders(user.businessId).catch(() => []),
     supplierService.getSuppliers(user.businessId).catch(() => []),
     productService.getProducts(user.businessId).catch(() => []),
@@ -41,7 +41,20 @@ export default async function PurchaseOrdersPage() {
         ),
       )
       .catch(() => []),
+    db
+      .select({
+        id: units.id,
+        code: units.code,
+        name: units.name,
+      })
+      .from(units)
+      .where(eq(units.active, true))
+      .catch(() => []),
   ]);
+
+  const unitMeta = new Map(
+    allUnits.map((u) => [u.id, { code: u.code, name: u.name }]),
+  );
 
   const unitsByProduct = new Map<string, ProductOpt["units"]>();
   for (const row of unitRows) {
@@ -52,7 +65,7 @@ export default async function PurchaseOrdersPage() {
       factorToStock: Number(row.factorToStock) || 1,
       isPurchaseDefault: row.isPurchaseDefault,
       isStockUnit: row.isStockUnit,
-      allowPurchase: row.allowPurchase,
+      allowPurchase: row.allowPurchase !== false,
     });
     unitsByProduct.set(row.productId, list);
   }
@@ -63,47 +76,117 @@ export default async function PurchaseOrdersPage() {
       name: string;
       sku?: string | null;
       costPrice?: unknown;
-      stockUnit?: { name?: string; code?: string } | null;
+      stockUnit?: { id?: string; name?: string; code?: string } | null;
       stockUnitId?: string | null;
+      purchaseUnitId?: string | null;
+      salesUnitId?: string | null;
+      purchaseUnit?: { id?: string; name?: string; code?: string } | null;
+      salesUnit?: { id?: string; name?: string; code?: string } | null;
     }>
   ).map((p) => {
-    const pu = unitsByProduct.get(p.id) ?? [];
-    const stock =
-      pu.find((u) => u.isStockUnit) ??
-      (p.stockUnit
-        ? {
-            unitId: p.stockUnitId ?? "stock",
-            label: p.stockUnit.name || p.stockUnit.code || "Stock unit",
-            factorToStock: 1,
-            isPurchaseDefault: false,
-            isStockUnit: true,
-            allowPurchase: true,
-          }
-        : null);
+    const byId = new Map<string, ProductOpt["units"][number]>();
 
-    // Ensure at least stock unit option for ordering
-    const units =
-      pu.length > 0
-        ? pu
-        : stock
-          ? [stock]
-          : [
-              {
-                unitId: p.stockUnitId ?? p.id,
-                label: "Unit",
-                factorToStock: 1,
-                isPurchaseDefault: true,
-                isStockUnit: true,
-                allowPurchase: true,
-              },
-            ];
+    for (const u of unitsByProduct.get(p.id) ?? []) {
+      byId.set(u.unitId, { ...u });
+    }
+
+    const ensureUnit = (
+      unitId: string | null | undefined,
+      opts: {
+        isStockUnit?: boolean;
+        isPurchaseDefault?: boolean;
+        factorToStock?: number;
+        labelHint?: string | null;
+      },
+    ) => {
+      if (!unitId) return;
+      const meta = unitMeta.get(unitId);
+      const existing = byId.get(unitId);
+      if (existing) {
+        if (opts.isStockUnit) existing.isStockUnit = true;
+        if (opts.isPurchaseDefault) existing.isPurchaseDefault = true;
+        if (opts.factorToStock != null && existing.factorToStock === 1) {
+          // keep existing factor if packaging already set
+        }
+        existing.allowPurchase = true;
+        return;
+      }
+      const label =
+        opts.labelHint ||
+        meta?.name ||
+        meta?.code ||
+        "Unit";
+      byId.set(unitId, {
+        unitId,
+        label,
+        factorToStock: opts.factorToStock ?? 1,
+        isPurchaseDefault: Boolean(opts.isPurchaseDefault),
+        isStockUnit: Boolean(opts.isStockUnit),
+        allowPurchase: true,
+      });
+    };
+
+    const stockId = p.stockUnitId ?? p.stockUnit?.id ?? null;
+    const purchaseId = p.purchaseUnitId ?? p.purchaseUnit?.id ?? null;
+    const salesId = p.salesUnitId ?? p.salesUnit?.id ?? null;
+
+    ensureUnit(stockId, {
+      isStockUnit: true,
+      factorToStock: 1,
+      labelHint: p.stockUnit?.name || p.stockUnit?.code || null,
+    });
+    ensureUnit(purchaseId, {
+      isPurchaseDefault: true,
+      labelHint: p.purchaseUnit?.name || p.purchaseUnit?.code || null,
+    });
+    ensureUnit(salesId, {
+      labelHint: p.salesUnit?.name || p.salesUnit?.code || null,
+    });
+
+    // Always allow ordering in stock units
+    for (const u of byId.values()) {
+      if (u.isStockUnit) u.allowPurchase = true;
+    }
+
+    let units = Array.from(byId.values());
+
+    // Prefer purchaseable units in the list (stock always included)
+    units = units.filter((u) => u.allowPurchase || u.isStockUnit);
+
+    if (units.length === 0) {
+      units = [
+        {
+          unitId: stockId ?? p.id,
+          label:
+            p.stockUnit?.name ||
+            p.stockUnit?.code ||
+            "Stock unit",
+          factorToStock: 1,
+          isPurchaseDefault: true,
+          isStockUnit: true,
+          allowPurchase: true,
+        },
+      ];
+    }
+
+    // Sort: stock first, then by factor ascending (pcs → strip → box)
+    units.sort((a, b) => {
+      if (a.isStockUnit !== b.isStockUnit) return a.isStockUnit ? -1 : 1;
+      return a.factorToStock - b.factorToStock;
+    });
+
+    const stockLabel =
+      units.find((u) => u.isStockUnit)?.label ||
+      p.stockUnit?.name ||
+      p.stockUnit?.code ||
+      "unit";
 
     return {
       id: p.id,
       name: p.name,
       sku: p.sku ?? null,
       costPerStockUnit: p.costPrice != null ? Number(p.costPrice) : 0,
-      stockUnitLabel: stock?.label ?? units.find((u) => u.isStockUnit)?.label ?? "unit",
+      stockUnitLabel: stockLabel,
       units,
     };
   });
@@ -118,14 +201,9 @@ export default async function PurchaseOrdersPage() {
         supplierName: String(
           (o.supplier as { name?: string } | null)?.name ?? "—",
         ),
-        orderedAt: o.orderedAt
-          ? new Date(o.orderedAt as string | Date).toLocaleString()
-          : "—",
+        orderedAt: String(o.orderedAt ?? o.createdAt ?? ""),
       }))}
-      suppliers={(suppliers as Array<{ id: string; name: string }>).map((s) => ({
-        id: s.id,
-        name: s.name,
-      }))}
+      suppliers={suppliers.map((s) => ({ id: s.id, name: s.name }))}
       products={productOpts}
     />
   );
