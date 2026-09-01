@@ -170,16 +170,22 @@ export function PurchaseOrdersClient({
   function addLine() {
     const p = products[0];
     const u = defaultUnit(p);
+    const key = crypto.randomUUID();
     setLines((prev) => [
       ...prev,
       {
-        key: crypto.randomUUID(),
+        key,
         productId: p?.id ?? "",
         unitId: u?.unitId ?? null,
         quantity: 1,
         costPerOrderUnit: p ? p.costPerStockUnit * (u?.factorToStock ?? 1) : 0,
       },
     ]);
+    // Scroll to the new line after paint so "Add product" stays at the bottom of lines
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`po-line-${key}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   }
 
   function removeLine(key: string) {
@@ -289,16 +295,12 @@ export function PurchaseOrdersClient({
           </div>
 
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <Label className="text-base">Order lines</Label>
-                <p className="text-xs text-muted-foreground">
-                  Qty and cost are always for the unit you select (e.g. cost per box).
-                </p>
-              </div>
-              <Button type="button" size="sm" variant="outline" onClick={addLine}>
-                Add product
-              </Button>
+            <div>
+              <Label className="text-base">Order lines</Label>
+              <p className="text-xs text-muted-foreground">
+                Qty and cost are for the unit you select (pcs, strip, or box). Use
+                &quot;Add product&quot; under the last line to append more.
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -316,6 +318,7 @@ export function PurchaseOrdersClient({
 
                 return (
                   <div
+                    id={`po-line-${line.key}`}
                     key={line.key}
                     className="space-y-3 rounded-xl border bg-card p-3 shadow-sm sm:p-4"
                   >
@@ -466,6 +469,15 @@ export function PurchaseOrdersClient({
                   </div>
                 );
               })}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-primary/30 bg-background/80 px-3 py-3">
+              <p className="text-xs text-muted-foreground">
+                Line {lines.length} complete? Add another product below the list.
+              </p>
+              <Button type="button" size="sm" variant="outline" onClick={addLine}>
+                + Add product
+              </Button>
             </div>
           </div>
 
