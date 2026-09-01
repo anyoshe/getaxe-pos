@@ -20,6 +20,10 @@ interface ProductWizardProps {
     pending: boolean;
     onSubmit: () => void;
     productId?: string | null;
+    packagingDraft?: import("./sections/product-packaging-editor").PackagingLineDraft[];
+    onPackagingDraftChange?: (
+        lines: import("./sections/product-packaging-editor").PackagingLineDraft[],
+    ) => void;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -37,6 +41,8 @@ export function ProductWizard({
     pending,
     onSubmit,
     productId,
+    packagingDraft,
+    onPackagingDraftChange,
 }: ProductWizardProps) {
     if (!wizard.hasProductType) {
         return (
@@ -67,6 +73,8 @@ export function ProductWizard({
                     context={context}
                     productType={wizard.productType}
                     productId={productId}
+                    packagingDraft={packagingDraft}
+                    onPackagingDraftChange={onPackagingDraftChange}
                 />
             </div>
 

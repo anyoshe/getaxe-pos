@@ -2,6 +2,7 @@
 
 import {
     useEffect,
+    useState,
     useTransition,
 } from "react";
 
@@ -237,6 +238,13 @@ export function ProductForm({
                 }
             );
 
+            if (!product && packagingDraft.length > 0) {
+                formData.append(
+                    "packagingUnits",
+                    JSON.stringify(packagingDraft),
+                );
+            }
+
             const result =
                 product
                     ? await updateProductAction(
@@ -283,6 +291,8 @@ export function ProductForm({
                 form={form}
                 context={context}
                 pending={pending}
+                packagingDraft={packagingDraft}
+                onPackagingDraftChange={setPackagingDraft}
                 onSubmit={
                     form.handleSubmit(onSubmit)
                 }

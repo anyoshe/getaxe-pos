@@ -30,6 +30,14 @@ import {
   productPriceService,
 } from "../services/product-prices.service";
 
+import {
+  productUnitRepository,
+} from "@/repositories/inventory/product-units.repository";
+
+import {
+  assertValidFactor,
+} from "../services/unit-conversion.service";
+
 
 export async function createProductAction(
   formData: FormData
@@ -260,6 +268,57 @@ export async function createProductAction(
               ? `Product created, but selling price was not saved: ${priceError.message}`
               : "Product created, but selling price was not saved.",
         };
+      }
+    }
+
+
+    // Packaging conversions drafted during create wizard
+    const packagingRaw = formData.get("packagingUnits");
+    if (typeof packagingRaw === "string" && packagingRaw.trim()) {
+      try {
+        const lines = JSON.parse(packagingRaw) as Array<{
+          unitId: string;
+          factorToStock: number;
+          isStockUnit?: boolean;
+          isPurchaseDefault?: boolean;
+          isSalesDefault?: boolean;
+          allowPurchase?: boolean;
+          allowSale?: boolean;
+        }>;
+        for (const line of lines) {
+          if (!line.unitId || !(Number(line.factorToStock) > 0)) continue;
+          assertValidFactor(Number(line.factorToStock));
+          await productUnitRepository.create({
+            businessId: user.businessId,
+            productId: product.id,
+            unitId: line.unitId,
+            factorToStock: String(line.factorToStock),
+            isStockUnit: Boolean(line.isStockUnit),
+            isPurchaseDefault: Boolean(line.isPurchaseDefault),
+            isSalesDefault: Boolean(line.isSalesDefault),
+            allowPurchase: line.allowPurchase !== false,
+            allowSale: line.allowSale !== false,
+          });
+        }
+      } catch (packErr) {
+        console.error("[create-product] packaging units", packErr);
+      }
+    } else if (parsed.data.stockUnitId) {
+      // Ensure stock unit factor 1 exists when only dropdown was set
+      try {
+        await productUnitRepository.create({
+          businessId: user.businessId,
+          productId: product.id,
+          unitId: parsed.data.stockUnitId,
+          factorToStock: "1",
+          isStockUnit: true,
+          isPurchaseDefault: parsed.data.purchaseUnitId === parsed.data.stockUnitId,
+          isSalesDefault: parsed.data.salesUnitId === parsed.data.stockUnitId,
+          allowPurchase: true,
+          allowSale: true,
+        });
+      } catch {
+        /* ignore duplicate */
       }
     }
 

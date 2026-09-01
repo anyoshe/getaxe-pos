@@ -4,7 +4,10 @@ import type { UseFormReturn } from "react-hook-form";
 import { FormSection, FormSearchableSelect } from "@/components/forms";
 import type { ProductContext } from "../../../types";
 import type { ProductFormInput } from "../product-form.types";
-import { ProductPackagingEditor } from "./product-packaging-editor";
+import {
+  ProductPackagingEditor,
+  type PackagingLineDraft,
+} from "./product-packaging-editor";
 
 interface ProductUnitsProps {
   form: UseFormReturn<ProductFormInput>;
@@ -12,6 +15,8 @@ interface ProductUnitsProps {
   visibleFields?: string[];
   requiredFields?: string[];
   productId?: string | null;
+  packagingDraft?: PackagingLineDraft[];
+  onPackagingDraftChange?: (lines: PackagingLineDraft[]) => void;
 }
 
 export function ProductUnits({
@@ -20,6 +25,8 @@ export function ProductUnits({
   visibleFields,
   requiredFields,
   productId,
+  packagingDraft = [],
+  onPackagingDraftChange,
 }: ProductUnitsProps) {
   const visibleSet = new Set(visibleFields ?? []);
   const requiredSet = new Set(requiredFields ?? []);
@@ -30,7 +37,7 @@ export function ProductUnits({
   return (
     <FormSection
       title="Units of Measure"
-      description="Optional units for buying, selling, and warehouse quantity. Skip if you use a single unit everywhere."
+      description="Optional units for buying, selling, and warehouse quantity. Add packaging factors (strip/box) below — works on create and edit."
     >
       <div className="grid gap-4 md:grid-cols-3">
         {showField("purchaseUnitId") && (
@@ -63,25 +70,20 @@ export function ProductUnits({
             label="Stock unit"
             placeholder="Select stock unit"
             required={isRequired("stockUnitId")}
-            description="Unit used for warehouse quantities"
+            description="Canonical warehouse unit (factor 1)"
           />
         )}
       </div>
-      {productId ? (
-        <ProductPackagingEditor
-          productId={productId}
-          units={context.units.map((u) => ({
-            id: u.id,
-            name: u.name,
-            code: (u as { code?: string }).code,
-          }))}
-        />
-      ) : (
-        <p className="mt-4 text-xs text-muted-foreground">
-          Save the product first, then edit it to add packaging conversions
-          (e.g. 1 box = 100 tablets).
-        </p>
-      )}
+      <ProductPackagingEditor
+        productId={productId}
+        units={context.units.map((u) => ({
+          id: u.id,
+          name: u.name,
+          code: (u as { code?: string | null }).code ?? null,
+        }))}
+        draftLines={packagingDraft}
+        onDraftChange={onPackagingDraftChange}
+      />
     </FormSection>
   );
 }

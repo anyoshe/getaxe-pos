@@ -15,14 +15,16 @@ import {
 } from "../sections";
 
 import { productRuleResolver } from "../../../services/product-rule-resolver";
+import type { PackagingLineDraft } from "../sections/product-packaging-editor";
 
 interface ProductWizardStepProps {
     stepId: string;
     form: UseFormReturn<ProductFormInput>;
     context: ProductContext;
-    /** Prefer wizard state so rules resolve even if form productType lags. */
     productType?: ProductType | null;
     productId?: string | null;
+    packagingDraft?: PackagingLineDraft[];
+    onPackagingDraftChange?: (lines: PackagingLineDraft[]) => void;
 }
 
 type SectionProps = {
@@ -31,6 +33,8 @@ type SectionProps = {
     visibleFields?: string[];
     requiredFields?: string[];
     productId?: string | null;
+    packagingDraft?: PackagingLineDraft[];
+    onPackagingDraftChange?: (lines: PackagingLineDraft[]) => void;
 };
 
 const STEP_COMPONENTS: Record<string, ComponentType<SectionProps>> = {
@@ -50,6 +54,8 @@ export function ProductWizardStep({
     context,
     productType: productTypeProp,
     productId,
+    packagingDraft,
+    onPackagingDraftChange,
 }: ProductWizardStepProps) {
     const Component = STEP_COMPONENTS[stepId];
 
@@ -61,7 +67,6 @@ export function ProductWizardStep({
         );
     }
 
-    // Watch so visibleFields recompute when type is set; prefer explicit wizard prop
     const watchedType = form.watch("productType") as ProductType | null | undefined;
     const productType = (productTypeProp ?? watchedType ?? null) as ProductType | null;
 
@@ -73,7 +78,6 @@ export function ProductWizardStep({
               })
             : null;
 
-    // Fields for THIS step only — includes `serialized` when rules say so
     const visibleFields = ruleSet
         ? ruleSet.fields
               .filter((field) => field.step === stepId)
@@ -89,6 +93,8 @@ export function ProductWizardStep({
             visibleFields={visibleFields}
             requiredFields={requiredFields}
             productId={productId}
+            packagingDraft={packagingDraft}
+            onPackagingDraftChange={onPackagingDraftChange}
         />
     );
 }
