@@ -37,7 +37,7 @@ export function ProductUnits({
   return (
     <FormSection
       title="Units of Measure"
-      description="Optional units for buying, selling, and warehouse quantity. Add packaging factors (strip/box) below — works on create and edit."
+      description="Stock unit = how inventory counts (tablet/piece). Purchase/sales can be strip or box; set packaging below so 1 box = N pieces. Cost on PO is always per the unit you order."
     >
       <div className="grid gap-4 md:grid-cols-3">
         {showField("purchaseUnitId") && (

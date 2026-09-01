@@ -255,8 +255,8 @@ export function PurchaseOrdersClient({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Purchase orders</h1>
           <p className="text-sm text-muted-foreground">
-            Order in supplier units (box, carton, pack). Quantities convert to stock
-            units for inventory.
+            Order in pieces, strips, or boxes. Stock is always stored in pieces;
+            packs only multiply qty × pieces-per-pack.
           </p>
         </div>
         <Button type="button" onClick={() => setShowCreate((v) => !v)}>
@@ -298,8 +298,10 @@ export function PurchaseOrdersClient({
             <div>
               <Label className="text-base">Order lines</Label>
               <p className="text-xs text-muted-foreground">
-                Qty and cost are for the unit you select (pcs, strip, or box). Use
-                &quot;Add product&quot; under the last line to append more.
+                Qty = how many of the selected unit. Cost = what you pay the supplier
+                for <strong>one</strong> of that unit (e.g. 2,000 per box if a box
+                has 50 tabs at 40 each). Use &quot;Add product&quot; under the last
+                line.
               </p>
             </div>
 
@@ -420,7 +422,7 @@ export function PurchaseOrdersClient({
 
                       <div className="space-y-1 lg:col-span-2">
                         <Label>
-                          Cost / {orderUnitName}{" "}
+                          Supplier price / 1 {orderUnitName}{" "}
                           <span className="text-destructive">*</span>
                         </Label>
                         <Input
@@ -447,24 +449,38 @@ export function PurchaseOrdersClient({
                       </div>
                     </div>
 
-                    <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">Inventory impact: </span>
-                      {line.quantity} {orderUnitName}
-                      {factor !== 1 && (
-                        <>
-                          {" "}
-                          × {factor} = <strong>{money(stockQty)}</strong> {stockUnitName}
-                        </>
-                      )}
-                      {factor === 1 && (
-                        <>
-                          {" "}
-                          = <strong>{money(stockQty)}</strong> {stockUnitName}
-                        </>
-                      )}
-                      {" · "}
-                      cost in stock = <strong>{money(costPerStock)}</strong> /{" "}
-                      {stockUnitName}
+                    <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground space-y-1">
+                      <p>
+                        <span className="font-medium text-foreground">Into stock: </span>
+                        {line.quantity} {orderUnitName}
+                        {factor !== 1 ? (
+                          <>
+                            {" "}
+                            × {factor} pcs/{orderUnitName} ={" "}
+                            <strong>{money(stockQty)}</strong> {stockUnitName}
+                          </>
+                        ) : (
+                          <>
+                            {" "}
+                            = <strong>{money(stockQty)}</strong> {stockUnitName}
+                          </>
+                        )}
+                      </p>
+                      <p>
+                        <span className="font-medium text-foreground">Cost: </span>
+                        {line.quantity} × {money(line.costPerOrderUnit)} ={" "}
+                        <strong>{money(lineTotal)}</strong>
+                        {" · "}
+                        per {stockUnitName} ={" "}
+                        <strong>{money(costPerStock)}</strong>
+                        {factor > 1 ? (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            (check: {factor} × {money(costPerStock)} should ≈{" "}
+                            {money(line.costPerOrderUnit)} per {orderUnitName})
+                          </span>
+                        ) : null}
+                      </p>
                     </div>
                   </div>
                 );

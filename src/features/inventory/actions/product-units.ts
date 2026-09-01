@@ -36,7 +36,14 @@ export async function upsertProductUnitAction(input: unknown) {
     if (data.isStockUnit && data.factorToStock !== 1) {
       return {
         success: false as const,
-        message: "Stock unit factor must be 1.",
+        message: "Stock unit factor must be 1 (one piece = one stock unit).",
+      };
+    }
+    if (!data.isStockUnit && data.factorToStock <= 1) {
+      return {
+        success: false as const,
+        message:
+          "A pack unit (strip/box) must contain more than 1 stock piece. Example: 1 box = 50 tablets → factor 50.",
       };
     }
 

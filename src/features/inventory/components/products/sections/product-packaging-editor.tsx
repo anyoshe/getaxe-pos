@@ -123,7 +123,13 @@ export function ProductPackagingEditor({
       return;
     }
     if (isStockUnit && factorToStock !== 1) {
-      toast.error("Stock unit factor must be 1.");
+      toast.error("Stock unit must have factor 1 (one piece = one stock unit).");
+      return;
+    }
+    if (!isStockUnit && factorToStock <= 1) {
+      toast.error(
+        "Pack unit must contain more than 1 piece (e.g. box = 50 tablets). Factor 1 means it is the stock unit — tick “stock unit” instead.",
+      );
       return;
     }
 
@@ -175,12 +181,22 @@ export function ProductPackagingEditor({
       <div>
         <h3 className="text-sm font-semibold">Packaging conversions</h3>
         <p className="text-xs text-muted-foreground">
-          How many stock units are in a strip, box, carton, etc. Example: stock =
-          capsule, strip factor = 10, box factor = 100.
+          Stock is always counted in the <strong>smallest sellable piece</strong>{" "}
+          (tablet, capsule, piece). Packs only store how many pieces are inside.
+          Example: stock = tablet; strip = <strong>10</strong>; box ={" "}
+          <strong>50</strong> → ordering 2 boxes adds 100 tablets to stock.
           {isDraft
-            ? " Lines are kept with this form and saved when you create the product."
+            ? " Draft lines save when you create the product."
             : " Changes save immediately."}
         </p>
+        <div className="rounded-lg border border-primary/20 bg-background/80 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          <strong className="text-foreground">Pricing rule:</strong> if one tablet
+          costs 40 and one box has 50 tablets, supplier price for 1 box ={" "}
+          <strong className="text-foreground">2,000</strong> (50 × 40). On a PO,
+          choose unit <em>Box</em>, qty = number of boxes, cost = 2,000 per box.
+          Never set box factor = 1 unless the product is only sold as whole boxes
+          with no piece tracking.
+        </div>
       </div>
 
       {displayRows.length > 0 ? (
@@ -251,7 +267,7 @@ export function ProductPackagingEditor({
         </label>
         <label className="space-y-1 text-sm">
           <span className="text-muted-foreground">
-            Factor to stock (e.g. 10 for strip)
+            Pieces in ONE of this unit (e.g. 50 if 1 box = 50 tablets)
           </span>
           <Input
             type="number"
@@ -270,7 +286,7 @@ export function ProductPackagingEditor({
               if (e.target.checked) setFactor("1");
             }}
           />
-          This is the stock unit (factor must be 1)
+          This is the stock / piece unit (always factor 1)
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input
