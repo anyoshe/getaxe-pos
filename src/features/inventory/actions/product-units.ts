@@ -47,44 +47,57 @@ export async function upsertProductUnitAction(input: unknown) {
       };
     }
 
-    if (data.supersede) {
+    const existing = await productUnitRepository.listByProduct(
+      user.businessId,
+      data.productId,
+    );
+    const match = existing.find((u) => u.unitId === data.unitId);
+    const flags = {
+      isStockUnit: data.isStockUnit,
+      isPurchaseDefault: data.isPurchaseDefault,
+      isSalesDefault: data.isSalesDefault,
+      allowPurchase: data.allowPurchase,
+      allowSale: data.allowSale,
+    };
+
+    if (!match) {
+      await productUnitRepository.create({
+        businessId: user.businessId,
+        productId: data.productId,
+        unitId: data.unitId,
+        factorToStock: String(data.factorToStock),
+        ...flags,
+        active: true,
+      });
+      revalidatePath("/inventory/products");
+      return { success: true as const, message: "Packaging unit added." };
+    }
+
+    const prevFactor = Number(match.factorToStock);
+    if (prevFactor !== data.factorToStock || data.supersede) {
+      // Close old factor version; do not rewrite historical movements
       await productUnitRepository.supersedeFactor({
         businessId: user.businessId,
         productId: data.productId,
         unitId: data.unitId,
         newFactor: data.factorToStock,
+        ...flags,
       });
-    } else {
-      const existing = await productUnitRepository.listByProduct(
-        user.businessId,
-        data.productId,
-      );
-      const match = existing.find((u) => u.unitId === data.unitId);
-      if (match && Number(match.factorToStock) !== data.factorToStock) {
-        return {
-          success: false as const,
-          message:
-            "Factor already set. Use supersede to change packaging without rewriting history.",
-        };
-      }
-      if (!match) {
-        await productUnitRepository.create({
-          businessId: user.businessId,
-          productId: data.productId,
-          unitId: data.unitId,
-          factorToStock: String(data.factorToStock),
-          isStockUnit: data.isStockUnit,
-          isPurchaseDefault: data.isPurchaseDefault,
-          isSalesDefault: data.isSalesDefault,
-          allowPurchase: data.allowPurchase,
-          allowSale: data.allowSale,
-          active: true,
-        });
-      }
+      revalidatePath("/inventory/products");
+      return {
+        success: true as const,
+        message: `Packaging updated: was ${prevFactor} pieces per unit, now ${data.factorToStock}. Past stock moves keep the old factor.`,
+      };
     }
 
+    await productUnitRepository.updateFlags({
+      businessId: user.businessId,
+      productId: data.productId,
+      unitId: data.unitId,
+      ...flags,
+    });
     revalidatePath("/inventory/products");
-    return { success: true as const, message: "Product unit saved." };
+    return { success: true as const, message: "Packaging unit flags updated." };
   } catch (error) {
     return {
       success: false as const,

@@ -322,8 +322,18 @@ export function ProductPackagingEditor({
         </label>
       </div>
       <Button type="button" disabled={pending} onClick={onAdd}>
-        {pending ? "Saving…" : isDraft ? "Add packaging line" : "Add / update packaging unit"}
+        {pending
+          ? "Saving…"
+          : isDraft
+            ? "Add packaging line"
+            : "Save packaging (updates factor if already set)"}
       </Button>
+      {!isDraft ? (
+        <p className="text-[11px] text-muted-foreground">
+          Changing pieces-per-box (e.g. 1 → 50) updates packaging going forward.
+          Old receives keep their original conversion.
+        </p>
+      ) : null}
     </div>
   );
 }

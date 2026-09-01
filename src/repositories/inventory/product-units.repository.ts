@@ -64,6 +64,11 @@ export class ProductUnitRepository extends BaseRepository {
     productId: string;
     unitId: string;
     newFactor: number;
+    isStockUnit?: boolean;
+    isPurchaseDefault?: boolean;
+    isSalesDefault?: boolean;
+    allowPurchase?: boolean;
+    allowSale?: boolean;
   }) {
     const existing = await this.database
       .select()
@@ -91,15 +96,48 @@ export class ProductUnitRepository extends BaseRepository {
       productId: params.productId,
       unitId: params.unitId,
       factorToStock: String(params.newFactor),
-      isStockUnit: template?.isStockUnit ?? false,
-      isPurchaseDefault: template?.isPurchaseDefault ?? false,
-      isSalesDefault: template?.isSalesDefault ?? false,
-      allowPurchase: template?.allowPurchase ?? true,
-      allowSale: template?.allowSale ?? true,
+      isStockUnit: params.isStockUnit ?? template?.isStockUnit ?? false,
+      isPurchaseDefault:
+        params.isPurchaseDefault ?? template?.isPurchaseDefault ?? false,
+      isSalesDefault: params.isSalesDefault ?? template?.isSalesDefault ?? false,
+      allowPurchase: params.allowPurchase ?? template?.allowPurchase ?? true,
+      allowSale: params.allowSale ?? template?.allowSale ?? true,
       active: true,
       validFrom: now,
       validTo: null,
     });
+  }
+
+  async updateFlags(params: {
+    businessId: string;
+    productId: string;
+    unitId: string;
+    isStockUnit?: boolean;
+    isPurchaseDefault?: boolean;
+    isSalesDefault?: boolean;
+    allowPurchase?: boolean;
+    allowSale?: boolean;
+  }) {
+    const now = new Date();
+    await this.database
+      .update(productUnits)
+      .set({
+        isStockUnit: params.isStockUnit,
+        isPurchaseDefault: params.isPurchaseDefault,
+        isSalesDefault: params.isSalesDefault,
+        allowPurchase: params.allowPurchase,
+        allowSale: params.allowSale,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(productUnits.businessId, params.businessId),
+          eq(productUnits.productId, params.productId),
+          eq(productUnits.unitId, params.unitId),
+          isNull(productUnits.validTo),
+          eq(productUnits.active, true),
+        ),
+      );
   }
 }
 
