@@ -27,6 +27,8 @@ import {
     productFormSchema,
 } from "./product-form.types";
 
+import type { PackagingLineDraft } from "./sections/product-packaging-editor";
+
 import {
     createProductAction,
     updateProductAction,
