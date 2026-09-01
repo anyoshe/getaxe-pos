@@ -12,6 +12,7 @@ import {
 
 export type PackagingLineDraft = {
   unitId: string;
+  unitLabel?: string;
   factorToStock: number;
   isStockUnit: boolean;
   isPurchaseDefault: boolean;
@@ -74,6 +75,16 @@ export function ProductPackagingEditor({
     void load();
   }, [load]);
 
+  const unitLabel = (unitId: string, fallbackName?: string | null, fallbackCode?: string | null) => {
+    const fromProp = units.find((x) => x.id === unitId);
+    const name = (fallbackName || fromProp?.name || "").trim();
+    const code = (fallbackCode || fromProp?.code || "").trim();
+    if (name && code) return `${name} (${code})`;
+    if (name) return name;
+    if (code) return code;
+    return "Unknown unit";
+  };
+
   const displayRows: Array<{
     unitId: string;
     label: string;
@@ -82,23 +93,17 @@ export function ProductPackagingEditor({
     isPurchaseDefault: boolean;
     isSalesDefault: boolean;
   }> = isDraft
-    ? draftLines.map((l) => {
-        const u = units.find((x) => x.id === l.unitId);
-        return {
-          unitId: l.unitId,
-          label: u ? `${u.name}${u.code ? ` (${u.code})` : ""}` : l.unitId.slice(0, 8),
-          factorToStock: l.factorToStock,
-          isStockUnit: l.isStockUnit,
-          isPurchaseDefault: l.isPurchaseDefault,
-          isSalesDefault: l.isSalesDefault,
-        };
-      })
+    ? draftLines.map((l) => ({
+        unitId: l.unitId,
+        label: l.unitLabel || unitLabel(l.unitId),
+        factorToStock: l.factorToStock,
+        isStockUnit: l.isStockUnit,
+        isPurchaseDefault: l.isPurchaseDefault,
+        isSalesDefault: l.isSalesDefault,
+      }))
     : saved.map((r) => ({
         unitId: r.unitId,
-        label:
-          r.unitName || r.unitCode
-            ? `${r.unitName ?? ""}${r.unitCode ? ` (${r.unitCode})` : ""}`
-            : r.unitId.slice(0, 8),
+        label: unitLabel(r.unitId, r.unitName, r.unitCode),
         factorToStock: Number(r.factorToStock),
         isStockUnit: r.isStockUnit,
         isPurchaseDefault: r.isPurchaseDefault,
@@ -125,6 +130,7 @@ export function ProductPackagingEditor({
     if (isDraft) {
       const next: PackagingLineDraft = {
         unitId,
+        unitLabel: unitLabel(unitId),
         factorToStock,
         isStockUnit,
         isPurchaseDefault,

@@ -2,6 +2,7 @@ import { and, eq, isNull, asc } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
 import { productUnits } from "@/db/schema/inventory/product_units";
+import { units } from "@/db/schema/settings/units";
 import { BaseRepository } from "../base";
 
 type ProductUnitInsert = InferInsertModel<typeof productUnits>;
@@ -9,8 +10,27 @@ type ProductUnitInsert = InferInsertModel<typeof productUnits>;
 export class ProductUnitRepository extends BaseRepository {
   async listByProduct(businessId: string, productId: string) {
     return this.database
-      .select()
+      .select({
+        id: productUnits.id,
+        businessId: productUnits.businessId,
+        productId: productUnits.productId,
+        unitId: productUnits.unitId,
+        factorToStock: productUnits.factorToStock,
+        isStockUnit: productUnits.isStockUnit,
+        isPurchaseDefault: productUnits.isPurchaseDefault,
+        isSalesDefault: productUnits.isSalesDefault,
+        allowPurchase: productUnits.allowPurchase,
+        allowSale: productUnits.allowSale,
+        active: productUnits.active,
+        validFrom: productUnits.validFrom,
+        validTo: productUnits.validTo,
+        createdAt: productUnits.createdAt,
+        unitName: units.name,
+        unitCode: units.code,
+        unitSymbol: units.symbol,
+      })
       .from(productUnits)
+      .leftJoin(units, eq(units.id, productUnits.unitId))
       .where(
         and(
           eq(productUnits.businessId, businessId),
