@@ -14,8 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   OPENING_STOCK_TEMPLATE_CSV,
-  parseOpeningStockCsv,
 } from "../../import/opening-stock-import-columns";
+import {
+  downloadCsv,
+  downloadXlsxFromCsvText,
+  parseSpreadsheetFile,
+  SPREADSHEET_ACCEPT,
+} from "@/lib/spreadsheet";
 import {
   validateOpeningStockImportAction,
   type OpeningStockRowResult,
@@ -41,37 +46,43 @@ export function OpeningStockImportDialog({
   const okRows = useMemo(() => results.filter((r) => r.ok), [results]);
   const badRows = useMemo(() => results.filter((r) => !r.ok), [results]);
 
-  function downloadTemplate() {
-    const blob = new Blob([OPENING_STOCK_TEMPLATE_CSV], {
-      type: "text/csv;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "getaxe-opening-stock-template.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  function downloadTemplateCsv() {
+    downloadCsv("getaxe-opening-stock-template.csv", OPENING_STOCK_TEMPLATE_CSV);
+  }
+
+  function downloadTemplateXlsx() {
+    downloadXlsxFromCsvText(
+      "getaxe-opening-stock-template.xlsx",
+      "Opening stock",
+      OPENING_STOCK_TEMPLATE_CSV,
+    );
   }
 
   async function onFile(file: File | null) {
     if (!file) return;
     setFileName(file.name);
     setResults([]);
-    const text = await file.text();
-    const { rows } = parseOpeningStockCsv(text);
-    if (rows.length === 0) {
-      toast.error("No data rows found.");
-      return;
+    try {
+      const { rows } = await parseSpreadsheetFile(file);
+      if (rows.length === 0) {
+        toast.error("No data rows found.");
+        return;
+      }
+      setValidating(true);
+      const res = await validateOpeningStockImportAction(rows);
+      setValidating(false);
+      if (!res.success) {
+        toast.error(res.message);
+        return;
+      }
+      setResults(res.results);
+      toast.message(res.message);
+    } catch (e) {
+      setValidating(false);
+      toast.error(
+        e instanceof Error ? e.message : "Could not read the spreadsheet.",
+      );
     }
-    setValidating(true);
-    const res = await validateOpeningStockImportAction(rows);
-    setValidating(false);
-    if (!res.success) {
-      toast.error(res.message);
-      return;
-    }
-    setResults(res.results);
-    toast.message(res.message);
   }
 
   async function commit() {
@@ -123,16 +134,20 @@ export function OpeningStockImportDialog({
         </DialogHeader>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="rounded-xl" onClick={downloadTemplate}>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={downloadTemplateCsv}>
             <Download className="mr-2 h-4 w-4" />
-            Download template
+            Template (CSV)
+          </Button>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={downloadTemplateXlsx}>
+            <Download className="mr-2 h-4 w-4" />
+            Template (Excel)
           </Button>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium hover:bg-muted">
             <Upload className="h-4 w-4" />
-            {validating ? "Validating…" : "Choose CSV"}
+            {validating ? "Validating…" : "Choose Excel / CSV"}
             <input
               type="file"
-              accept=".csv,text/csv"
+              accept={SPREADSHEET_ACCEPT}
               className="hidden"
               disabled={validating || importing}
               onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
@@ -206,7 +221,7 @@ export function OpeningStockImportDialog({
           </div>
         ) : (
           <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Download the template, fill opening quantities, then upload.
+            Download CSV or Excel template, fill opening quantities, then upload either format.
           </div>
         )}
       </DialogContent>
