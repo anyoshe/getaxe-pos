@@ -30,6 +30,8 @@ import {
   productPriceService,
 } from "../services/product-prices.service";
 
+import { ensureFinanceDefaults } from "@/features/finance/services/finance.service";
+
 import {
   productUnitRepository,
 } from "@/repositories/inventory/product-units.repository";
@@ -240,6 +242,7 @@ export async function createProductAction(
       !Number.isNaN(sellingPrice) &&
       sellingPrice > 0
     ) {
+      await ensureFinanceDefaults(user.businessId);
       const defaultList =
         await priceListRepository.findDefault(user.businessId);
 

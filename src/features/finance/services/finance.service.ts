@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
+import { priceLists } from "@/db/schema/inventory/price_lists";
 
 import { db } from "@/db";
 import { accountTypes } from "@/db/schema/finance/account_types";
@@ -213,6 +214,41 @@ export async function ensureFinanceDefaults(businessId: string) {
     ]);
   }
 
+
+  // Default price lists (Retail + Wholesale) — required for product selling prices
+  const lists = await db
+    .select()
+    .from(priceLists)
+    .where(eq(priceLists.businessId, businessId));
+  if (lists.length === 0) {
+    await db.insert(priceLists).values([
+      {
+        businessId,
+        code: "RETAIL",
+        name: "Retail",
+        description: "Default retail / shelf prices",
+        isDefault: true,
+        active: true,
+      },
+      {
+        businessId,
+        code: "WHOLESALE",
+        name: "Wholesale",
+        description: "Default wholesale prices",
+        isDefault: false,
+        active: true,
+      },
+    ]);
+  } else if (!lists.some((l) => l.isDefault && l.active)) {
+    // Ensure at least one default active list
+    const first = lists.find((l) => l.active) ?? lists[0];
+    if (first) {
+      await db
+        .update(priceLists)
+        .set({ isDefault: true, active: true })
+        .where(eq(priceLists.id, first.id));
+    }
+  }
 
   // Default payment methods (global or business)
   const methods = await db
