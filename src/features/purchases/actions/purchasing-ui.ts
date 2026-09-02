@@ -215,9 +215,54 @@ export async function receivePurchaseOrderAction(input: unknown) {
     return { success: false as const, message: "Purchase order not found." };
   }
 
+  const blocked = new Set(["RECEIVED", "CANCELLED", "DRAFT", "CLOSED"]);
+  if (blocked.has(String(po.status))) {
+    return {
+      success: false as const,
+      message: `Purchase order is ${po.status} and cannot be received again.`,
+    };
+  }
+
+  // Remaining qty per product (stock units on PO lines)
+  const poLines = await db
+    .select()
+    .from(purchaseOrderItems)
+    .where(eq(purchaseOrderItems.purchaseOrderId, data.purchaseOrderId));
+
+  if (poLines.length === 0) {
+    return { success: false as const, message: "Purchase order has no lines." };
+  }
+
+  const remainingByProduct = new Map<string, number>();
+  for (const l of poLines) {
+    const ordered = Number(l.quantity ?? 0);
+    const received = Number(l.receivedQuantity ?? 0);
+    const left = Math.max(0, ordered - received);
+    remainingByProduct.set(
+      l.productId,
+      (remainingByProduct.get(l.productId) ?? 0) + left,
+    );
+  }
+
+  const totalRemaining = [...remainingByProduct.values()].reduce((a, b) => a + b, 0);
+  if (totalRemaining <= 1e-9) {
+    // Harden: mark fully received so UI stops offering it
+    await db
+      .update(purchaseOrders)
+      .set({ status: "RECEIVED", updatedAt: new Date() })
+      .where(eq(purchaseOrders.id, data.purchaseOrderId));
+    return {
+      success: false as const,
+      message:
+        "This purchase order is already fully received. Nothing left to receive.",
+    };
+  }
+
   const receiptNumber = `GRN-${Date.now().toString(36).toUpperCase()}`;
   let subtotal = 0;
   const items = [];
+  // Track how much of remaining we consume in this GRN (multi-line same product)
+  const consuming = new Map<string, number>();
 
   for (const line of data.items) {
     let qty = line.quantity;
@@ -251,6 +296,23 @@ export async function receivePurchaseOrderAction(input: unknown) {
           err instanceof Error ? err.message : "Unit conversion failed on receive.",
       };
     }
+
+    const already = consuming.get(line.productId) ?? 0;
+    const left = remainingByProduct.get(line.productId) ?? 0;
+    const available = left - already;
+    if (qty > available + 1e-6) {
+      return {
+        success: false as const,
+        message: `Cannot receive ${qty} stock unit(s) for this product — only ${Math.max(0, available)} remaining on the PO.`,
+      };
+    }
+    if (qty <= 0) {
+      return {
+        success: false as const,
+        message: "Receive quantity must be greater than zero.",
+      };
+    }
+    consuming.set(line.productId, already + qty);
 
     const total = qty * cost;
     subtotal += total;
@@ -339,7 +401,7 @@ export async function receivePurchaseOrderAction(input: unknown) {
         await db
           .update(purchaseOrders)
           .set({
-            status: allDone ? "RECEIVED" : anyRecv ? "PARTIAL" : "APPROVED",
+            status: allDone ? "RECEIVED" : anyRecv ? "PARTIALLY_RECEIVED" : "APPROVED",
             updatedAt: new Date(),
           })
           .where(eq(purchaseOrders.id, data.purchaseOrderId));

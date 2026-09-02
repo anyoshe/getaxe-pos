@@ -80,9 +80,17 @@ export function GoodsReceivingClient({
   const [pending, startTransition] = useTransition();
   const receivable = useMemo(
     () =>
-      purchaseOrders.filter((p) =>
-        ["APPROVED", "PARTIALLY_RECEIVED", "PENDING"].includes(p.status),
-      ),
+      purchaseOrders.filter((p) => {
+        if (["RECEIVED", "CANCELLED", "CLOSED", "DRAFT"].includes(p.status)) {
+          return false;
+        }
+        // Hide fully received even if status lagged
+        const left = (p.items ?? []).reduce(
+          (s, it) => s + Math.max(0, Number(it.quantity) - Number(it.receivedQuantity)),
+          0,
+        );
+        return left > 1e-9 && ["APPROVED", "PARTIALLY_RECEIVED", "PARTIAL", "PENDING"].includes(p.status);
+      }),
     [purchaseOrders],
   );
   const [poId, setPoId] = useState(receivable[0]?.id ?? "");
