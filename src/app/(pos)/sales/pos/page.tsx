@@ -7,7 +7,7 @@ import { productSerials } from "@/db/schema/inventory/product_serials";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
 import { productBatches } from "@/db/schema/inventory/product_batches";
 import { db } from "@/db";
-import { and, asc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { productUnits } from "@/db/schema/inventory/product_units";
 import { productPrices } from "@/db/schema/inventory/product_prices";
 import { units } from "@/db/schema/settings/units";
@@ -71,8 +71,8 @@ export default async function FullScreenPosPage() {
         and(
           eq(productUnits.businessId, user.businessId),
           eq(productUnits.active, true),
-          eq(productUnits.allowSale, true),
           isNull(productUnits.validTo),
+          or(eq(productUnits.allowSale, true), eq(productUnits.isStockUnit, true)),
         ),
       ),
     db
@@ -148,6 +148,44 @@ export default async function FullScreenPosPage() {
       label: row.unitName || row.unitCode,
     });
     unitsByProduct[row.productId] = list;
+  }
+
+  // Ensure stock / sales units appear even if packaging was incomplete
+  for (const p of products as Array<{
+    id: string;
+    stockUnitId?: string | null;
+    salesUnitId?: string | null;
+    stockUnit?: { id?: string; name?: string; code?: string } | null;
+    salesUnit?: { id?: string; name?: string; code?: string } | null;
+  }>) {
+    const list = unitsByProduct[p.id] ?? [];
+    const ids = new Set(list.map((u) => u.unitId));
+    const stockId = p.stockUnitId ?? p.stockUnit?.id ?? null;
+    if (stockId && !ids.has(stockId)) {
+      list.unshift({
+        unitId: stockId,
+        factorToStock: 1,
+        isSalesDefault: true,
+        isStockUnit: true,
+        label:
+          p.stockUnit?.name ||
+          p.stockUnit?.code ||
+          "Piece",
+      });
+      ids.add(stockId);
+    } else if (stockId) {
+      const row = list.find((u) => u.unitId === stockId);
+      if (row) {
+        row.isStockUnit = true;
+        if (row.factorToStock <= 1) row.isSalesDefault = row.isSalesDefault || true;
+      }
+    }
+    // Sort: stock first, then by factor ascending (pc → strip → box)
+    list.sort((a, b) => {
+      if (a.isStockUnit !== b.isStockUnit) return a.isStockUnit ? -1 : 1;
+      return a.factorToStock - b.factorToStock;
+    });
+    unitsByProduct[p.id] = list;
   }
 
   /** productId -> warehouseId -> available serials */

@@ -350,10 +350,12 @@ export function PosClient({
   function defaultUnitFor(productId: string): PosProductUnit | null {
     const list = productUnitsByProduct[productId] ?? [];
     if (list.length === 0) return null;
+    // Prefer piece/tablet (sales default or stock unit) — never force box/strip
     return (
-      list.find((u) => u.isSalesDefault) ??
-      list.find((u) => u.factorToStock > 1) ??
+      list.find((u) => u.isSalesDefault && u.factorToStock <= 1) ??
       list.find((u) => u.isStockUnit) ??
+      list.find((u) => u.isSalesDefault) ??
+      list.find((u) => u.factorToStock <= 1) ??
       list[0]
     );
   }
@@ -1362,18 +1364,24 @@ export function PosClient({
                           <Plus className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      {units.length > 1 ? (
+                      {units.length > 0 ? (
                         <select
-                          className="h-8 rounded-lg border bg-background px-2 text-[11px]"
+                          className="h-8 min-w-[7.5rem] rounded-lg border bg-background px-2 text-[11px]"
                           value={line.unitId ?? ""}
                           onChange={(e) => {
                             const unitId = e.target.value;
                             if (unitId) setLineUnit(line.productId, unitId);
                           }}
+                          title="Sell as piece, strip, or box"
                         >
                           {units.map((u) => (
                             <option key={u.unitId} value={u.unitId}>
                               {u.label}
+                              {u.factorToStock > 1
+                                ? ` (×${u.factorToStock})`
+                                : u.isStockUnit
+                                  ? " (pc)"
+                                  : ""}
                             </option>
                           ))}
                         </select>
