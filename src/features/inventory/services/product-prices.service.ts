@@ -90,32 +90,32 @@ export class ProductPriceService {
       data.minimumQuantity ??
       existing.minimumQuantity;
 
-    if (
-      productId !== existing.productId ||
-      priceListId !== existing.priceListId ||
-      minimumQuantity !==
-        existing.minimumQuantity
-    ) {
-      const exists =
-        await productPriceRepository.exists(
-          existing.businessId,
-          productId,
-          priceListId,
-          minimumQuantity
-        );
+    // Only conflict if another row (not this id) shares product + list + min qty
+    const minQtyStr = String(minimumQuantity);
+    const exists = await productPriceRepository.exists(
+      existing.businessId,
+      productId,
+      priceListId,
+      minQtyStr,
+      id,
+    );
 
-      if (exists) {
-        throw new Error(
-          "A price already exists for this product, price list and minimum quantity."
-        );
-      }
+    if (exists) {
+      throw new Error(
+        "A price already exists for this product, price list and minimum quantity.",
+      );
     }
 
-    return productPriceRepository.update(
-      id,
-      businessId,
-      data
-    );
+    return productPriceRepository.update(id, businessId, {
+      ...data,
+      // normalize numeric strings for consistent storage
+      price:
+        data.price != null ? String(data.price) : undefined,
+      minimumQuantity:
+        data.minimumQuantity != null
+          ? String(Number(data.minimumQuantity))
+          : undefined,
+    });
   }
 
   async deleteProductPrice(

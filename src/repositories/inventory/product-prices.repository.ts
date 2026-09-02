@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 
 import { productPrices } from "@/db/schema/inventory/product_prices";
@@ -129,22 +129,21 @@ export class ProductPriceRepository
     businessId: string,
     productId: string,
     priceListId: string,
-    minimumQuantity: string
+    minimumQuantity: string,
+    /** When updating, exclude the current row so price-only edits succeed. */
+    excludeId?: string,
   ) {
-    const record =
-      await this.database.query.productPrices.findFirst({
-        where: and(
-          eq(productPrices.businessId, businessId),
-          eq(productPrices.productId, productId),
-          eq(productPrices.priceListId, priceListId),
-          eq(
-            productPrices.minimumQuantity,
-            minimumQuantity
-          )
-        ),
-      });
+    const qty = Number(minimumQuantity);
+    const rows = await this.database.query.productPrices.findMany({
+      where: and(
+        eq(productPrices.businessId, businessId),
+        eq(productPrices.productId, productId),
+        eq(productPrices.priceListId, priceListId),
+        excludeId ? ne(productPrices.id, excludeId) : undefined,
+      ),
+    });
 
-    return !!record;
+    return rows.some((r) => Number(r.minimumQuantity) === qty);
   }
 }
 
