@@ -45,7 +45,7 @@ export async function getApAging(businessId: string) {
     .where(
       and(
         eq(purchaseOrders.businessId, businessId),
-        sql`${purchaseOrders.status} NOT IN ('CANCELLED', 'DRAFT', 'RECEIVED')`,
+        sql`${purchaseOrders.status} NOT IN ('CANCELLED', 'DRAFT', 'RECEIVED', 'CLOSED')`,
       ),
     )
     .catch(() => []);

@@ -2,6 +2,11 @@
 
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 import { logActivity } from "@/features/audit/services/activity-log.service";
+import { supplierInvoiceService } from "../services/supplier-invoice.service";
+import { db } from "@/db";
+import { purchaseOrders } from "@/db/schema/purchasing/purchase_orders";
+import { purchaseOrderItems } from "@/db/schema/purchasing/purchase_order_items";
+import { eq } from "drizzle-orm";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -294,16 +299,61 @@ export async function receivePurchaseOrderAction(input: unknown) {
         await journalPostingService.postPurchaseReceive({
           businessId: user.businessId,
           sourceId: String(data.purchaseOrderId),
-          reference: String(data.purchaseOrderId).slice(0, 8),
+          reference: receiptNumber,
           amount: amt,
           postedBy: user.id,
         });
+
+        // Open AP bill so Finance → AP aging can be cleared by payment
+        const invNo =
+          (data.supplierInvoiceNumber && String(data.supplierInvoiceNumber).trim()) ||
+          `AP-${receiptNumber}`;
+        try {
+          await supplierInvoiceService.create({
+            businessId: user.businessId,
+            supplierId: po.supplierId,
+            purchaseOrderId: data.purchaseOrderId,
+            invoiceNumber: invNo,
+            total: amt,
+            notes: `Auto from GRN ${receiptNumber}`,
+            createdBy: user.id,
+            skipJournal: true,
+          });
+        } catch (invErr) {
+          console.error("[grn] supplier invoice", invErr);
+        }
+      }
+
+      // Mark PO received when all lines fully received
+      try {
+        const lines = await db
+          .select()
+          .from(purchaseOrderItems)
+          .where(eq(purchaseOrderItems.purchaseOrderId, data.purchaseOrderId));
+        const allDone =
+          lines.length > 0 &&
+          lines.every(
+            (l) => Number(l.receivedQuantity ?? 0) >= Number(l.quantity ?? 0) - 1e-9,
+          );
+        const anyRecv = lines.some((l) => Number(l.receivedQuantity ?? 0) > 0);
+        await db
+          .update(purchaseOrders)
+          .set({
+            status: allDone ? "RECEIVED" : anyRecv ? "PARTIAL" : "APPROVED",
+            updatedAt: new Date(),
+          })
+          .where(eq(purchaseOrders.id, data.purchaseOrderId));
+      } catch (poErr) {
+        console.error("[grn] po status", poErr);
       }
     } catch (e) {
       console.error("[grn] journal", e);
     }
     revalidatePath("/purchases/receiving");
     revalidatePath("/purchases/orders");
+    revalidatePath("/purchases/supplier-invoices");
+    revalidatePath("/finance/ap-aging");
+    revalidatePath("/finance/journals");
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
 

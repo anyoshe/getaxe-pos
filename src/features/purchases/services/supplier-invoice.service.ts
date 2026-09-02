@@ -39,6 +39,8 @@ export class SupplierInvoiceService {
     currency?: string;
     notes?: string | null;
     createdBy?: string | null;
+    /** When true, skip CoA post (e.g. GRN already posted Dr Inventory / Cr AP). */
+    skipJournal?: boolean;
   }) {
     const total = input.total;
     const tax = input.tax ?? 0;
@@ -65,27 +67,29 @@ export class SupplierInvoiceService {
       })
       .returning();
 
-    // Dr Expense/Inventory proxy, Cr AP — use inventory for stock purchases
-    await journalPostingService.post({
-      businessId: input.businessId,
-      sourceType: "PURCHASE",
-      sourceId: row.id,
-      description: `Supplier invoice ${row.invoiceNumber}`,
-      reference: row.invoiceNumber,
-      postedBy: input.createdBy,
-      lines: [
-        {
-          accountCode: "1200",
-          debit: total.toFixed(2),
-          description: `Supplier inv ${row.invoiceNumber}`,
-        },
-        {
-          accountCode: "2000",
-          credit: total.toFixed(2),
-          description: `AP ${row.invoiceNumber}`,
-        },
-      ],
-    });
+    if (!input.skipJournal) {
+      // Dr Inventory, Cr AP — skip when GRN already posted the same entry
+      await journalPostingService.post({
+        businessId: input.businessId,
+        sourceType: "PURCHASE",
+        sourceId: row.id,
+        description: `Supplier invoice ${row.invoiceNumber}`,
+        reference: row.invoiceNumber,
+        postedBy: input.createdBy,
+        lines: [
+          {
+            accountCode: "1200",
+            debit: total.toFixed(2),
+            description: `Supplier inv ${row.invoiceNumber}`,
+          },
+          {
+            accountCode: "2000",
+            credit: total.toFixed(2),
+            description: `AP ${row.invoiceNumber}`,
+          },
+        ],
+      });
+    }
 
     return row;
   }
