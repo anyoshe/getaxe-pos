@@ -1,9 +1,11 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { purchaseOrders } from "@/db/schema/purchasing/purchase_orders";
 import { suppliers } from "@/db/schema/inventory/suppliers";
 import { journalEntries } from "@/db/schema/finance/journal_entries";
+import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
+import { chartOfAccounts } from "@/db/schema/finance/chart_of_accounts";
 import { supplierInvoiceService } from "@/features/purchases/services/supplier-invoice.service";
 
 export async function getApAging(businessId: string) {
@@ -86,12 +88,66 @@ export async function getApAging(businessId: string) {
   return { source: "purchase_orders" as const, buckets, detail };
 }
 
-export async function listJournals(businessId: string, limit = 50) {
-  return db
+export async function listJournals(businessId: string, limit = 80) {
+  const entries = await db
     .select()
     .from(journalEntries)
     .where(eq(journalEntries.businessId, businessId))
     .orderBy(desc(journalEntries.createdAt))
     .limit(limit)
     .catch(() => []);
+
+  if (entries.length === 0) return [];
+
+  const ids = entries.map((e) => e.id);
+  const lines = await db
+    .select({
+      id: journalEntryLines.id,
+      journalEntryId: journalEntryLines.journalEntryId,
+      lineNumber: journalEntryLines.lineNumber,
+      description: journalEntryLines.description,
+      debit: journalEntryLines.debit,
+      credit: journalEntryLines.credit,
+      accountId: journalEntryLines.accountId,
+      accountCode: chartOfAccounts.accountCode,
+      accountName: chartOfAccounts.accountName,
+    })
+    .from(journalEntryLines)
+    .leftJoin(
+      chartOfAccounts,
+      eq(journalEntryLines.accountId, chartOfAccounts.id),
+    )
+    .where(inArray(journalEntryLines.journalEntryId, ids))
+    .orderBy(asc(journalEntryLines.lineNumber))
+    .catch(() => []);
+
+  const byEntry = new Map<string, typeof lines>();
+  for (const line of lines) {
+    const list = byEntry.get(line.journalEntryId) ?? [];
+    list.push(line);
+    byEntry.set(line.journalEntryId, list);
+  }
+
+  return entries.map((e) => {
+    const entryLines = byEntry.get(e.id) ?? [];
+    const totalDebit = entryLines.reduce((s, l) => s + Number(l.debit ?? 0), 0);
+    const totalCredit = entryLines.reduce(
+      (s, l) => s + Number(l.credit ?? 0),
+      0,
+    );
+    return {
+      ...e,
+      totalDebit,
+      totalCredit,
+      lines: entryLines.map((l) => ({
+        id: l.id,
+        lineNumber: l.lineNumber,
+        accountCode: l.accountCode ?? "—",
+        accountName: l.accountName ?? "Unknown account",
+        description: l.description,
+        debit: Number(l.debit ?? 0),
+        credit: Number(l.credit ?? 0),
+      })),
+    };
+  });
 }

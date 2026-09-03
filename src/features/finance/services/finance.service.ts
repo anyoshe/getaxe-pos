@@ -82,6 +82,7 @@ export async function ensureFinanceDefaults(businessId: string) {
 
   const needCats = [
     { code: "CA", name: "Current Assets", type: "AST", order: 1 },
+    { code: "CL", name: "Current Liabilities", type: "LIA", order: 6 },
     { code: "INV", name: "Inventory", type: "AST", order: 2 },
     { code: "REV", name: "Operating Revenue", type: "REV", order: 3 },
     { code: "COGS", name: "Cost of Sales", type: "EXP", order: 4 },
@@ -119,7 +120,7 @@ export async function ensureFinanceDefaults(businessId: string) {
     { code: "1100", name: "Bank", cat: "CA" },
     { code: "1200", name: "Inventory Asset", cat: "INV" },
     { code: "1300", name: "Accounts Receivable", cat: "CA" },
-    { code: "2000", name: "Accounts Payable", cat: "CA" },
+    { code: "2000", name: "Accounts Payable", cat: "CL" },
     { code: "4000", name: "Sales Revenue", cat: "REV" },
     { code: "5000", name: "Cost of Goods Sold", cat: "COGS" },
     { code: "6000", name: "Operating Expense", cat: "OPEX" },
