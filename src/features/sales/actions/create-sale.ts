@@ -87,26 +87,70 @@ export async function createSaleAction(input: unknown) {
           user.businessId,
           line.productId,
         );
-        if (productUnits.length > 0) {
-          const resolved = resolveToStock({
-            productUnits: productUnits.map((u) => ({
-              unitId: u.unitId,
-              factorToStock: Number(u.factorToStock),
-              isStockUnit: u.isStockUnit,
-              allowSale: u.allowSale,
-              allowPurchase: u.allowPurchase,
-              active: u.active,
-              validTo: u.validTo,
-            })),
-            unitId: line.unitId ?? product.salesUnitId ?? undefined,
-            quantityEntered: Number(line.quantity),
-            // Qty is always in the selected sales unit; convert to stock units here
-            allowDecimals: true,
+        // Build unit matrix; always allow product stock/sales unit FKs at factor 1
+        // even when packaging rows were never saved (POS still offers those units).
+        const matrix: {
+          unitId: string;
+          factorToStock: number;
+          isStockUnit: boolean;
+          allowSale: boolean;
+          allowPurchase: boolean;
+          active: boolean;
+          validTo: Date | string | null;
+        }[] = productUnits.map((u) => ({
+          unitId: u.unitId,
+          factorToStock: Number(u.factorToStock),
+          isStockUnit: Boolean(u.isStockUnit),
+          allowSale: u.allowSale !== false,
+          allowPurchase: u.allowPurchase !== false,
+          active: u.active !== false,
+          validTo: u.validTo,
+        }));
+
+        const ensureUnit = (
+          unitId: string | null | undefined,
+          flags: { isStockUnit?: boolean },
+        ) => {
+          if (!unitId) return;
+          if (matrix.some((u) => u.unitId === unitId)) return;
+          matrix.push({
+            unitId,
+            factorToStock: 1,
+            isStockUnit: Boolean(flags.isStockUnit),
+            allowSale: true,
+            allowPurchase: true,
+            active: true,
+            validTo: null,
           });
-          quantityStock = resolved.quantityStock;
-          quantityEntered = resolved.quantityEntered;
-          conversionFactor = resolved.factorToStock;
-          lineUnitId = resolved.unitId;
+        };
+        ensureUnit(product.stockUnitId, { isStockUnit: true });
+        ensureUnit(product.salesUnitId, { isStockUnit: false });
+        // POS may send the line unit even when packaging is incomplete
+        ensureUnit(line.unitId, { isStockUnit: false });
+
+        const requestedUnit =
+          line.unitId ?? product.salesUnitId ?? product.stockUnitId ?? null;
+
+        if (matrix.length > 0) {
+          try {
+            const resolved = resolveToStock({
+              productUnits: matrix,
+              unitId: requestedUnit,
+              quantityEntered: Number(line.quantity),
+              allowDecimals: true,
+            });
+            quantityStock = resolved.quantityStock;
+            quantityEntered = resolved.quantityEntered;
+            conversionFactor = resolved.factorToStock;
+            lineUnitId = resolved.unitId;
+          } catch {
+            // Last resort: sell in stock units (qty as entered, factor 1)
+            const stockId = product.stockUnitId ?? requestedUnit;
+            quantityEntered = Number(line.quantity);
+            quantityStock = quantityEntered;
+            conversionFactor = 1;
+            lineUnitId = stockId;
+          }
         }
       } catch (err) {
         return {
