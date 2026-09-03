@@ -5,6 +5,7 @@ import { chartOfAccounts } from "@/db/schema/finance/chart_of_accounts";
 import { journalEntries } from "@/db/schema/finance/journal_entries";
 import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
 import { ensureFinanceDefaults } from "./finance.service";
+import { numberingSequencesService } from "@/features/settings/services/numbering-sequences.service";
 
 type SourceType =
   | "SALE"
@@ -95,13 +96,22 @@ export class JournalPostingService {
         );
       }
 
-      const seq = await db
-        .select({
-          n: sql<number>`count(*)::int`,
-        })
-        .from(journalEntries)
-        .where(eq(journalEntries.businessId, input.businessId));
-      const journalNumber = `JV-${String((seq[0]?.n ?? 0) + 1).padStart(6, "0")}`;
+      let journalNumber: string;
+      try {
+        journalNumber = await numberingSequencesService.nextDocumentNumber(
+          input.businessId,
+          "JOURNAL",
+          null,
+        );
+      } catch {
+        const seq = await db
+          .select({
+            n: sql<number>`count(*)::int`,
+          })
+          .from(journalEntries)
+          .where(eq(journalEntries.businessId, input.businessId));
+        journalNumber = `JV-${String((seq[0]?.n ?? 0) + 1).padStart(6, "0")}`;
+      }
 
       const [entry] = await db
         .insert(journalEntries)

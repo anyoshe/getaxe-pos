@@ -1,5 +1,7 @@
 "use server";
 
+import { numberingSequencesService } from "@/features/settings/services/numbering-sequences.service";
+
 import { financeService } from "@/features/finance/services/finance.service";
 import { logActivity } from "@/features/audit/services/activity-log.service";
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
@@ -203,7 +205,11 @@ export async function createSaleAction(input: unknown) {
     }
 
     const subtotal = lines.reduce((s, l) => s + Number(l.total), 0);
-    const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+    const invoiceNumber = await numberingSequencesService.nextDocumentNumber(
+      user.businessId,
+      "SALE",
+      data.branchId ?? null,
+    );
 
     const defaultCash = await financeService
       .getDefaultCashAccount(user.businessId)

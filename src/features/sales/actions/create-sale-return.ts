@@ -1,5 +1,7 @@
 "use server";
 
+import { numberingSequencesService } from "@/features/settings/services/numbering-sequences.service";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -57,7 +59,11 @@ export async function createSaleReturnAction(input: unknown) {
     return { success: false as const, message: "Sale not found." };
   }
 
-  const returnNumber = `RET-${Date.now().toString(36).toUpperCase()}`;
+  const returnNumber = await numberingSequencesService.nextDocumentNumber(
+    user.businessId,
+    "SALE_RETURN",
+    null,
+  );
   const lines = data.items.map((item) => {
     const total = item.quantity * item.unitPrice;
     // Prefer batch from sale allocation

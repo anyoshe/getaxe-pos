@@ -1,5 +1,7 @@
 "use server";
 
+import { numberingSequencesService } from "@/features/settings/services/numbering-sequences.service";
+
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 import { logActivity } from "@/features/audit/services/activity-log.service";
 import { supplierInvoiceService } from "../services/supplier-invoice.service";
@@ -48,7 +50,11 @@ export async function createPurchaseOrderAction(input: unknown) {
   }
 
   const data = parsed.data;
-  const orderNumber = `PO-${Date.now().toString(36).toUpperCase()}`;
+  const orderNumber = await numberingSequencesService.nextDocumentNumber(
+    user.businessId,
+    "PURCHASE_ORDER",
+    null,
+  );
 
   let subtotal = 0;
   const items = [];
@@ -258,7 +264,11 @@ export async function receivePurchaseOrderAction(input: unknown) {
     };
   }
 
-  const receiptNumber = `GRN-${Date.now().toString(36).toUpperCase()}`;
+  const receiptNumber = await numberingSequencesService.nextDocumentNumber(
+    user.businessId,
+    "GOODS_RECEIPT",
+    null,
+  );
   let subtotal = 0;
   const items = [];
   // Track how much of remaining we consume in this GRN (multi-line same product)
@@ -472,7 +482,11 @@ export async function createSupplierReturnAction(input: unknown) {
   }
 
   const data = parsed.data;
-  const returnNumber = `SR-${Date.now().toString(36).toUpperCase()}`;
+  const returnNumber = await numberingSequencesService.nextDocumentNumber(
+    user.businessId,
+    "SUPPLIER_RETURN",
+    null,
+  );
 
   try {
     // Prefer service API if present

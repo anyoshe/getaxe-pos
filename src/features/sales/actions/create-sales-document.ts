@@ -1,5 +1,7 @@
 "use server";
 
+import { numberingSequencesService } from "@/features/settings/services/numbering-sequences.service";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -106,7 +108,11 @@ export async function createSalesDocumentAction(input: unknown) {
     }
 
     const subtotal = lines.reduce((s, l) => s + Number(l.total), 0);
-    const invoiceNumber = `${prefix}-${Date.now().toString(36).toUpperCase()}`;
+    const invoiceNumber = await numberingSequencesService.nextDocumentNumber(
+      user.businessId,
+      "SALE",
+      data.branchId ?? null,
+    );
 
     const notePrefix =
       data.documentType === "quotation" ? "[QUOTATION]" : "[SALES_ORDER]";
