@@ -10,6 +10,15 @@ function money(n: number) {
   });
 }
 
+const UUID_RE =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
+
+function readable(text: string | null | undefined, fallback = "—"): string {
+  if (!text) return fallback;
+  const cleaned = String(text).replace(UUID_RE, "").replace(/\s{2,}/g, " ").trim();
+  return cleaned || fallback;
+}
+
 export default async function JournalsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -22,7 +31,7 @@ export default async function JournalsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Journals</h1>
         <p className="text-sm text-muted-foreground">
           Full double-entry trail — every GRN, sale, and AP payment posts debit
-          and credit lines with account codes.
+          and credit lines with account codes and names.
         </p>
       </div>
 
@@ -59,7 +68,7 @@ export default async function JournalsPage() {
               <header className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-3">
                 <div>
                   <p className="font-mono text-sm font-semibold">
-                    {j.journalNumber}
+                    {readable(j.journalNumber, "JV")}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {j.transactionDate
@@ -67,19 +76,28 @@ export default async function JournalsPage() {
                       : "—"}
                     {" · "}
                     <span className="font-medium text-foreground">
-                      {j.sourceType}
+                      {readable(
+                        String(j.sourceType).replaceAll("_", " "),
+                        "Journal",
+                      )}
                     </span>
-                    {j.reference ? ` · ${j.reference}` : ""}
+                    {j.reference
+                      ? ` · ${readable(String(j.reference), "")}`
+                      : ""}
                   </p>
                 </div>
                 <div className="text-right text-xs">
-                  <p className="text-muted-foreground">{j.status}</p>
+                  <p className="text-muted-foreground">
+                    {readable(String(j.status), "POSTED")}
+                  </p>
                   <p className="tabular-nums text-foreground">
                     Dr {money(j.totalDebit)} · Cr {money(j.totalCredit)}
                   </p>
                 </div>
               </header>
-              <p className="border-b px-4 py-2 text-sm">{j.description}</p>
+              <p className="border-b px-4 py-2 text-sm">
+                {readable(j.description, "Journal entry")}
+              </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/30 text-left text-xs text-muted-foreground">
@@ -105,15 +123,15 @@ export default async function JournalsPage() {
                       j.lines.map((l) => (
                         <tr key={l.id} className="border-t">
                           <td className="p-2 pl-4">
-                            <span className="font-mono text-xs">
-                              {l.accountCode}
+                            <span className="font-mono text-xs font-semibold">
+                              {readable(l.accountCode, "—")}
                             </span>{" "}
                             <span className="text-muted-foreground">
-                              {l.accountName}
+                              {readable(l.accountName, "Account")}
                             </span>
                           </td>
                           <td className="p-2 text-muted-foreground">
-                            {l.description ?? "—"}
+                            {readable(l.description, "—")}
                           </td>
                           <td className="p-2 text-right tabular-nums">
                             {l.debit > 0 ? money(l.debit) : "—"}
@@ -136,10 +154,7 @@ export default async function JournalsPage() {
         <Link href="/finance/ap-aging" className="text-primary hover:underline">
           AP aging →
         </Link>
-        <Link
-          href="/finance/accounts"
-          className="text-primary hover:underline"
-        >
+        <Link href="/finance/accounts" className="text-primary hover:underline">
           Chart of accounts →
         </Link>
         <Link
