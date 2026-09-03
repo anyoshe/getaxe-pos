@@ -69,7 +69,7 @@ export default async function JournalsPage() {
                     <span className="font-medium text-foreground">
                       {j.sourceType}
                     </span>
-                    {j.reference ? ` · ref ${j.reference}` : ""}
+                    {j.reference ? ` · ${j.reference}` : ""}
                   </p>
                 </div>
                 <div className="text-right text-xs">

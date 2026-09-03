@@ -358,9 +358,12 @@ export async function receivePurchaseOrderAction(input: unknown) {
         ),
       );
       if (amt > 0) {
+        const grnId =
+          (result as { receipt?: { id?: string } })?.receipt?.id ??
+          data.purchaseOrderId;
         await journalPostingService.postPurchaseReceive({
           businessId: user.businessId,
-          sourceId: String(data.purchaseOrderId),
+          sourceId: String(grnId),
           reference: receiptNumber,
           amount: amt,
           postedBy: user.id,
