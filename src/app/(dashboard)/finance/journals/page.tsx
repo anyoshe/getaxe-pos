@@ -12,10 +12,15 @@ function money(n: number) {
 
 const UUID_RE =
   /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
+const HEX8_RE = /\b[0-9a-f]{8}\b/gi;
 
 function readable(text: string | null | undefined, fallback = "—"): string {
   if (!text) return fallback;
-  const cleaned = String(text).replace(UUID_RE, "").replace(/\s{2,}/g, " ").trim();
+  const cleaned = String(text)
+    .replace(UUID_RE, "")
+    .replace(HEX8_RE, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
   return cleaned || fallback;
 }
 

@@ -104,8 +104,11 @@ const ACCOUNT_LABELS: Record<string, string> = {
   "6000": "Operating Expense",
 };
 
+/** Full UUID */
 const UUID_RE =
   /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
+/** Truncated id prefixes historically stored as journal reference (slice(0,8)) */
+const HEX8_RE = /\b[0-9a-f]{8}\b/gi;
 
 function isUuid(value: string | null | undefined): boolean {
   if (!value) return false;
@@ -114,10 +117,22 @@ function isUuid(value: string | null | undefined): boolean {
   );
 }
 
-function stripUuids(text: string | null | undefined, replacement = ""): string {
+/** True for full UUID or 8-char hex fragment used as a document ref */
+function isOpaqueId(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const v = value.trim();
+  if (isUuid(v)) return true;
+  return /^[0-9a-f]{8}$/i.test(v);
+}
+
+function stripOpaqueIds(
+  text: string | null | undefined,
+  replacement = "",
+): string {
   if (!text) return "";
   return String(text)
     .replace(UUID_RE, replacement)
+    .replace(HEX8_RE, replacement)
     .replace(/\s{2,}/g, " ")
     .trim();
 }
@@ -253,17 +268,96 @@ export async function listJournals(businessId: string, limit = 80) {
         .catch(() => []),
     ]);
     for (const r of saleRows) {
-      if (r.invoiceNumber) saleMap.set(r.id, r.invoiceNumber);
+      if (r.invoiceNumber) {
+        saleMap.set(r.id, r.invoiceNumber);
+        saleMap.set(r.id.slice(0, 8), r.invoiceNumber);
+      }
     }
     for (const r of grnRows) {
-      if (r.receiptNumber) grnMap.set(r.id, r.receiptNumber);
+      if (r.receiptNumber) {
+        grnMap.set(r.id, r.receiptNumber);
+        grnMap.set(r.id.slice(0, 8), r.receiptNumber);
+      }
     }
     for (const r of invRows) {
-      if (r.invoiceNumber) invMap.set(r.id, r.invoiceNumber);
+      if (r.invoiceNumber) {
+        invMap.set(r.id, r.invoiceNumber);
+        invMap.set(r.id.slice(0, 8), r.invoiceNumber);
+      }
     }
     for (const r of poRows) {
-      poMap.set(r.id, r.orderNumber || "PO");
+      const label = r.orderNumber || "PO";
+      poMap.set(r.id, label);
+      poMap.set(r.id.slice(0, 8), label);
     }
+  }
+
+  // Historical journals used reference = purchaseOrderId.slice(0, 8).
+  // Load business POs + GRNs so those prefixes resolve to real numbers.
+  const prefixKeys = new Set<string>();
+  for (const e of entries) {
+    if (e.reference && isOpaqueId(e.reference)) {
+      prefixKeys.add(e.reference.trim().toLowerCase());
+    }
+    if (e.sourceId) prefixKeys.add(e.sourceId.slice(0, 8).toLowerCase());
+    const desc = e.description ?? "";
+    for (const m of desc.matchAll(/\b[0-9a-f]{8}\b/gi)) {
+      prefixKeys.add(m[0].toLowerCase());
+    }
+  }
+  if (prefixKeys.size > 0) {
+    const [allPos, allGrns] = await Promise.all([
+      db
+        .select({
+          id: purchaseOrders.id,
+          orderNumber: purchaseOrders.orderNumber,
+        })
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.businessId, businessId))
+        .catch(() => []),
+      db
+        .select({
+          id: goodsReceipts.id,
+          receiptNumber: goodsReceipts.receiptNumber,
+          purchaseOrderId: goodsReceipts.purchaseOrderId,
+        })
+        .from(goodsReceipts)
+        .where(eq(goodsReceipts.businessId, businessId))
+        .catch(() => []),
+    ]);
+    for (const r of allPos) {
+      const label = r.orderNumber || "PO";
+      poMap.set(r.id, label);
+      poMap.set(r.id.slice(0, 8).toLowerCase(), label);
+    }
+    for (const r of allGrns) {
+      if (r.receiptNumber) {
+        grnMap.set(r.id, r.receiptNumber);
+        grnMap.set(r.id.slice(0, 8).toLowerCase(), r.receiptNumber);
+        if (r.purchaseOrderId) {
+          // Prefer GRN number when journal was keyed by PO id prefix
+          const pfx = r.purchaseOrderId.slice(0, 8).toLowerCase();
+          if (!grnMap.has(pfx)) grnMap.set(pfx, r.receiptNumber);
+        }
+      }
+    }
+  }
+
+  function resolveOpaque(key: string | null | undefined): string | null {
+    if (!key) return null;
+    const k = key.trim();
+    const lower = k.toLowerCase();
+    return (
+      grnMap.get(k) ||
+      grnMap.get(lower) ||
+      poMap.get(k) ||
+      poMap.get(lower) ||
+      invMap.get(k) ||
+      invMap.get(lower) ||
+      saleMap.get(k) ||
+      saleMap.get(lower) ||
+      null
+    );
   }
 
   function docLabel(
@@ -271,22 +365,27 @@ export async function listJournals(businessId: string, limit = 80) {
     sourceId: string,
     reference: string | null,
   ): string {
-    if (reference && !isUuid(reference)) return reference.trim();
-    if (sourceType === "SALE" && saleMap.get(sourceId)) {
-      return saleMap.get(sourceId)!;
+    // Prefer GRN / invoice / PO number over opaque hex refs
+    const fromSource =
+      grnMap.get(sourceId) ||
+      invMap.get(sourceId) ||
+      poMap.get(sourceId) ||
+      saleMap.get(sourceId) ||
+      grnMap.get(sourceId.slice(0, 8).toLowerCase()) ||
+      poMap.get(sourceId.slice(0, 8).toLowerCase()) ||
+      null;
+
+    if (fromSource) return fromSource;
+
+    if (reference && !isOpaqueId(reference)) return reference.trim();
+    if (reference && isOpaqueId(reference)) {
+      const resolved = resolveOpaque(reference);
+      if (resolved) return resolved;
     }
-    if (sourceType === "PURCHASE") {
-      return (
-        grnMap.get(sourceId) ||
-        invMap.get(sourceId) ||
-        poMap.get(sourceId) ||
-        "Purchase"
-      );
-    }
-    if (sourceType === "PAYMENT") {
-      return invMap.get(sourceId) || "Payment";
-    }
-    if (reference && !isUuid(reference)) return reference;
+
+    if (sourceType === "SALE") return "Sale";
+    if (sourceType === "PURCHASE") return "Purchase";
+    if (sourceType === "PAYMENT") return "Payment";
     return String(sourceType).replace(/_/g, " ");
   }
 
@@ -299,14 +398,18 @@ export async function listJournals(businessId: string, limit = 80) {
     );
     const label = docLabel(String(e.sourceType), e.sourceId, e.reference);
 
-    let description = stripUuids(e.description, ` ${label} `);
-    description = description.replace(/\s{2,}/g, " ").trim();
-    if (!description) {
-      if (e.sourceType === "SALE") description = `POS sale ${label}`;
-      else if (e.sourceType === "PURCHASE")
-        description = `Goods / purchase ${label}`;
-      else if (e.sourceType === "PAYMENT") description = `Payment ${label}`;
-      else description = label;
+    let description: string;
+    if (e.sourceType === "SALE") {
+      description = `POS sale ${label}`;
+    } else if (e.sourceType === "PURCHASE") {
+      description = `Goods received ${label}`;
+    } else if (e.sourceType === "PAYMENT") {
+      description = `Supplier payment ${label}`;
+    } else {
+      description =
+        stripOpaqueIds(e.description, ` ${label} `)
+          .replace(/\s{2,}/g, " ")
+          .trim() || label;
     }
 
     const journalNumber = isUuid(e.journalNumber)
@@ -337,7 +440,17 @@ export async function listJournals(businessId: string, limit = 80) {
           lineNumber: l.lineNumber,
           accountCode: code,
           accountName: name,
-          description: stripUuids(l.description, label) || "—",
+          description: (() => {
+            const raw = l.description ?? "";
+            if (/inventory\s*in/i.test(raw)) return `Inventory in ${label}`;
+            if (/^ap\b/i.test(raw.trim()) || /accounts payable/i.test(raw))
+              return `Accounts payable ${label}`;
+            if (/cash/i.test(raw) && /purchase/i.test(raw))
+              return `Cash purchase ${label}`;
+            if (/pay\s*ap/i.test(raw)) return `Pay AP ${label}`;
+            const cleaned = stripOpaqueIds(raw, label);
+            return cleaned || "—";
+          })(),
           debit: Number(l.debit ?? 0),
           credit: Number(l.credit ?? 0),
         };
