@@ -69,6 +69,21 @@ export const customers = pgTable(
       .default("0")
       .notNull(),
 
+    allowCredit: boolean("allow_credit")
+      .default(false)
+      .notNull(),
+
+    creditTermsDays: integer("credit_terms_days")
+      .default(30),
+
+    occupation: text("occupation"),
+    employer: text("employer"),
+    idType: text("id_type"),
+    county: text("county"),
+    city: text("city"),
+    postalCode: text("postal_code"),
+    creditNotes: text("credit_notes"),
+
     loyaltyPoints: integer("loyalty_points")
       .default(0)
       .notNull(),

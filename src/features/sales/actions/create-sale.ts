@@ -217,7 +217,11 @@ export async function createSaleAction(input: unknown) {
       }
       // Ensure customer exists and belongs to this business
       const [cust] = await db
-        .select({ id: customers.id, active: customers.active })
+        .select({
+          id: customers.id,
+          active: customers.active,
+          allowCredit: customers.allowCredit,
+        })
         .from(customers)
         .where(eq(customers.id, data.customerId))
         .limit(1);
@@ -226,6 +230,13 @@ export async function createSaleAction(input: unknown) {
           success: false as const,
           message:
             "Customer account not found or inactive. Open a customer account before selling on credit.",
+        };
+      }
+      if (!cust.allowCredit) {
+        return {
+          success: false as const,
+          message:
+            "This customer is not enabled for credit. Under Customers, enable credit account and complete KYC.",
         };
       }
     }
