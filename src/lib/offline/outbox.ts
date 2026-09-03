@@ -5,7 +5,7 @@ export type OutboxSalePayload = {
   branchId: string;
   customerId: string | null;
   notes: string | null;
-  paymentMethod: "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY";
+  paymentMethod: "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY" | "CREDIT";
   items: Array<{
     productId: string;
     quantity: number;

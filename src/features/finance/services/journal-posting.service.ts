@@ -157,18 +157,26 @@ export class JournalPostingService {
     cogs?: number;
     postedBy?: string | null;
     cashAccountCode?: string;
+    /** Credit / on-account sale → Dr Accounts Receivable instead of Cash */
+    isCredit?: boolean;
   }) {
-    const cashCode = input.cashAccountCode ?? "1000";
+    const debitCode = input.isCredit
+      ? "1300"
+      : (input.cashAccountCode ?? "1000");
     const lines: Line[] = [
       {
-        accountCode: cashCode,
+        accountCode: debitCode,
         debit: input.total.toFixed(2),
-        description: `Sale ${input.invoiceNumber}`,
+        description: input.isCredit
+          ? `AR invoice ${input.invoiceNumber}`
+          : `Cash sale ${input.invoiceNumber}`,
       },
       {
         accountCode: "4000",
         credit: input.total.toFixed(2),
-        description: `Sale ${input.invoiceNumber}`,
+        description: input.isCredit
+          ? `Credit sales ${input.invoiceNumber}`
+          : `Cash sale ${input.invoiceNumber}`,
       },
     ];
     if (input.cogs && input.cogs > 0) {
@@ -189,7 +197,9 @@ export class JournalPostingService {
       businessId: input.businessId,
       sourceType: "SALE",
       sourceId: input.saleId,
-      description: `POS sale ${input.invoiceNumber}`,
+      description: input.isCredit
+        ? `Credit invoice ${input.invoiceNumber}`
+        : `Cash sale ${input.invoiceNumber}`,
       reference: input.invoiceNumber,
       postedBy: input.postedBy,
       lines,

@@ -205,6 +205,31 @@ export async function createSaleAction(input: unknown) {
     }
 
     const subtotal = lines.reduce((s, l) => s + Number(l.total), 0);
+    const isCredit = data.paymentMethod === "CREDIT";
+
+    if (isCredit) {
+      if (!data.customerId) {
+        return {
+          success: false as const,
+          message:
+            "Credit invoice requires a registered customer account. Look up or create the customer before invoicing.",
+        };
+      }
+      // Ensure customer exists and belongs to this business
+      const [cust] = await db
+        .select({ id: customers.id, active: customers.active })
+        .from(customers)
+        .where(eq(customers.id, data.customerId))
+        .limit(1);
+      if (!cust || cust.active === false) {
+        return {
+          success: false as const,
+          message:
+            "Customer account not found or inactive. Open a customer account before selling on credit.",
+        };
+      }
+    }
+
     const invoiceNumber = await numberingSequencesService.nextDocumentNumber(
       user.businessId,
       "SALE",
@@ -227,9 +252,9 @@ export async function createSaleAction(input: unknown) {
         discount: "0",
         tax: "0",
         total: subtotal.toFixed(2),
-        amountPaid: subtotal.toFixed(2),
-        balanceDue: "0",
-        paymentStatus: "COMPLETED",
+        amountPaid: isCredit ? "0" : subtotal.toFixed(2),
+        balanceDue: isCredit ? subtotal.toFixed(2) : "0",
+        paymentStatus: isCredit ? "PENDING" : "COMPLETED",
         notes: data.notes ?? null,
         soldBy: user.id,
         soldAt: nowNairobiWallClock(),
@@ -259,18 +284,20 @@ export async function createSaleAction(input: unknown) {
         preferredBatchIds: (l as { preferredBatchIds?: string[] })
           .preferredBatchIds,
       })),
-      payments: [
-        {
-          businessId: user.businessId,
-          saleId: "",
-          cashAccountId: defaultCash?.id ?? null,
-          method: data.paymentMethod,
-          status: "COMPLETED",
-          amount: subtotal.toFixed(2),
-          transactionReference: null,
-          receivedBy: user.id,
-        },
-      ],
+      payments: isCredit
+        ? []
+        : [
+            {
+              businessId: user.businessId,
+              saleId: "",
+              cashAccountId: defaultCash?.id ?? null,
+              method: data.paymentMethod,
+              status: "COMPLETED",
+              amount: subtotal.toFixed(2),
+              transactionReference: null,
+              receivedBy: user.id,
+            },
+          ],
     }));
 
     revalidatePath("/sales");
@@ -288,6 +315,7 @@ export async function createSaleAction(input: unknown) {
         invoiceNumber: String((result as any).sale.invoiceNumber),
         total: totalNum,
         postedBy: user.id,
+        isCredit,
       });
     } catch (e) {
       console.error("[create-sale] journal", e);
@@ -316,7 +344,7 @@ export async function createSaleAction(input: unknown) {
       action: "CREATE",
       entity: "SALE",
       entityId: (result as any).sale?.id,
-      description: `POS sale ${(result as any).sale?.invoiceNumber} total ${(result as any).sale?.total} (${data.paymentMethod})`,
+      description: `${isCredit ? "Credit invoice" : "Cash sale"} ${(result as any).sale?.invoiceNumber} total ${(result as any).sale?.total}`,
     });
 
     return {

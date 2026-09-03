@@ -185,8 +185,10 @@ export function PosClient({
     return batchesByProductWarehouse[productId]?.[whId] ?? [];
   }
   const [paymentMethod, setPaymentMethod] = useState<
-    "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY"
+    "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY" | "CREDIT"
   >("CASH");
+  /** Cash sale (immediate payment) vs credit invoice (AR / customer account). */
+  const [saleMode, setSaleMode] = useState<"CASH" | "CREDIT">("CASH");
   const [amountTendered, setAmountTendered] = useState("");
   const [showCustomer, setShowCustomer] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
@@ -625,6 +627,16 @@ export function PosClient({
         }
       }
 
+      // Credit invoice must be on a registered customer account (AR)
+      if (saleMode === "CREDIT") {
+        if (!customerId) {
+          toast.error(
+            "Credit invoice requires a customer account. Look up the customer by phone or register them first.",
+          );
+          return;
+        }
+      }
+
       let resolvedCustomerId = customerId;
       let receiptNote: string | null = null;
       const isOffline =
@@ -655,12 +667,18 @@ export function PosClient({
         receiptNote = `Walk-in: ${customerName.trim()}`;
       }
 
+      const effectiveMethod = saleMode === "CREDIT" ? "CREDIT" : paymentMethod;
       const salePayload: OutboxSalePayload = {
         warehouseId,
         branchId,
         customerId: resolvedCustomerId,
-        notes: receiptNote,
-        paymentMethod,
+        notes:
+          saleMode === "CREDIT"
+            ? `Credit invoice${receiptNote ? ` · ${receiptNote}` : ""}`
+            : receiptNote
+              ? `Cash sale · ${receiptNote}`
+              : "Cash sale",
+        paymentMethod: effectiveMethod,
         items: cart.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,
@@ -1472,7 +1490,7 @@ export function PosClient({
               })}
             </div>
 
-            {paymentMethod === "CASH" ? (
+            {saleMode === "CASH" && paymentMethod === "CASH" ? (
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">
@@ -1585,13 +1603,63 @@ export function PosClient({
                 })}
               </span>
             </div>
+            {/* Cash sale vs credit invoice */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSaleMode("CASH");
+                  if (paymentMethod === "CREDIT") setPaymentMethod("CASH");
+                }}
+                className={
+                  saleMode === "CASH"
+                    ? "rounded-xl border-2 border-primary bg-primary/10 px-2 py-2 text-xs font-bold text-primary"
+                    : "rounded-xl border border-border bg-muted/40 px-2 py-2 text-xs font-medium text-muted-foreground"
+                }
+              >
+                Cash sale
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSaleMode("CREDIT");
+                  setPaymentMethod("CREDIT");
+                }}
+                className={
+                  saleMode === "CREDIT"
+                    ? "rounded-xl border-2 border-primary bg-primary/10 px-2 py-2 text-xs font-bold text-primary"
+                    : "rounded-xl border border-border bg-muted/40 px-2 py-2 text-xs font-medium text-muted-foreground"
+                }
+              >
+                Credit invoice
+              </button>
+            </div>
+            {saleMode === "CREDIT" ? (
+              <p className="text-[11px] text-muted-foreground">
+                Posts to Accounts Receivable. Customer account required — look
+                up or register the buyer above before completing.
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                Immediate payment (cash, M-Pesa, card). Optional customer for
+                loyalty.
+              </p>
+            )}
             <Button
               className="h-12 w-full rounded-xl text-base font-bold shadow-md"
               size="lg"
-              disabled={pending || cart.length === 0}
+              disabled={
+                pending ||
+                cart.length === 0 ||
+                (saleMode === "CREDIT" && !customerId)
+              }
               onClick={checkout}
             >
-              {pending ? "Processing…" : "Complete sale"}
+              {pending
+                ? "Processing…"
+                : saleMode === "CREDIT"
+                  ? "Post credit invoice"
+                  : "Complete cash sale"}
             </Button>
           </div>
         </section>
