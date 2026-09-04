@@ -107,7 +107,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
       });
       if (result.success) {
         toast.success(result.message);
-        setForm(empty);
+        setForm({ ...empty });
         router.refresh();
       } else {
         toast.error(result.message);
@@ -156,7 +156,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                   ? "Authorized contact first name *"
                   : "First / given name *"}
               </Label>
-              <Input required value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+              <Input required value={form.firstName ?? ""} onChange={(e) => set("firstName", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>
@@ -164,14 +164,14 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                   ? "Contact surname"
                   : "Last / surname"}
               </Label>
-              <Input value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
+              <Input value={form.lastName ?? ""} onChange={(e) => set("lastName", e.target.value)} />
             </div>
             {form.customerType === "BUSINESS" ? (
               <>
                 <div className="space-y-1 sm:col-span-2">
                   <Label>Legal company / business name *</Label>
                   <Input
-                    value={form.companyName}
+                    value={form.companyName ?? ""}
                     onChange={(e) => set("companyName", e.target.value)}
                     placeholder="As on registration certificate"
                   />
@@ -179,7 +179,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                 <div className="space-y-1">
                   <Label>Trading name (if different)</Label>
                   <Input
-                    value={form.tradingName}
+                    value={form.tradingName ?? ""}
                     onChange={(e) => set("tradingName", e.target.value)}
                   />
                 </div>
@@ -189,7 +189,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                     {form.allowCredit ? " *" : ""}
                   </Label>
                   <Input
-                    value={form.registrationNumber}
+                    value={form.registrationNumber ?? ""}
                     onChange={(e) => set("registrationNumber", e.target.value)}
                     placeholder="e.g. PVT-XXXX / BN-XXXX"
                   />
@@ -200,14 +200,14 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                     {form.allowCredit ? " *" : ""}
                   </Label>
                   <Input
-                    value={form.taxPin}
+                    value={form.taxPin ?? ""}
                     onChange={(e) => set("taxPin", e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Nature of business</Label>
                   <Input
-                    value={form.businessNature}
+                    value={form.businessNature ?? ""}
                     onChange={(e) => set("businessNature", e.target.value)}
                     placeholder="e.g. Pharmacy, wholesale hardware"
                   />
@@ -215,7 +215,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                 <div className="space-y-1">
                   <Label>Contact person title</Label>
                   <Input
-                    value={form.contactPersonTitle}
+                    value={form.contactPersonTitle ?? ""}
                     onChange={(e) => set("contactPersonTitle", e.target.value)}
                     placeholder="e.g. Procurement, Director"
                   />
@@ -226,7 +226,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
               <Label>ID type</Label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-                value={form.idType}
+                value={form.idType ?? ""}
                 onChange={(e) => set("idType", e.target.value)}
               >
                 <option value="NATIONAL_ID">National ID</option>
@@ -237,21 +237,21 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
             </div>
             <div className="space-y-1">
               <Label>ID / passport number{form.allowCredit ? " *" : ""}</Label>
-              <Input value={form.idNumber} onChange={(e) => set("idNumber", e.target.value)} />
+              <Input value={form.idNumber ?? ""} onChange={(e) => set("idNumber", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>KRA PIN</Label>
-              <Input value={form.taxPin} onChange={(e) => set("taxPin", e.target.value)} />
+              <Input value={form.taxPin ?? ""} onChange={(e) => set("taxPin", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Date of birth</Label>
-              <Input type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
+              <Input type="date" value={form.dateOfBirth ?? ""} onChange={(e) => set("dateOfBirth", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Gender</Label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-                value={form.gender}
+                value={form.gender ?? ""}
                 onChange={(e) => set("gender", e.target.value as typeof form.gender)}
               >
                 <option value="">—</option>
@@ -262,11 +262,11 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
             </div>
             <div className="space-y-1">
               <Label>Occupation</Label>
-              <Input value={form.occupation} onChange={(e) => set("occupation", e.target.value)} />
+              <Input value={form.occupation ?? ""} onChange={(e) => set("occupation", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Employer</Label>
-              <Input value={form.employer} onChange={(e) => set("employer", e.target.value)} />
+              <Input value={form.employer ?? ""} onChange={(e) => set("employer", e.target.value)} />
             </div>
           </div>
         </section>
@@ -276,27 +276,27 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
               <Label>Mobile phone *</Label>
-              <Input required value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="07…" />
+              <Input required value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} placeholder="07…" />
             </div>
             <div className="space-y-1">
               <Label>Email</Label>
-              <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              <Input type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
             </div>
             <div className="space-y-1 sm:col-span-2">
               <Label>Physical address{form.allowCredit ? " *" : ""}</Label>
-              <Input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Street, building, estate" />
+              <Input value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} placeholder="Street, building, estate" />
             </div>
             <div className="space-y-1">
               <Label>City / town</Label>
-              <Input value={form.city} onChange={(e) => set("city", e.target.value)} />
+              <Input value={form.city ?? ""} onChange={(e) => set("city", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>County</Label>
-              <Input value={form.county} onChange={(e) => set("county", e.target.value)} />
+              <Input value={form.county ?? ""} onChange={(e) => set("county", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Postal code</Label>
-              <Input value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
+              <Input value={form.postalCode ?? ""} onChange={(e) => set("postalCode", e.target.value)} />
             </div>
           </div>
         </section>
@@ -308,11 +308,11 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Next of kin full name</Label>
-              <Input value={form.emergencyContact} onChange={(e) => set("emergencyContact", e.target.value)} />
+              <Input value={form.emergencyContact ?? ""} onChange={(e) => set("emergencyContact", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Next of kin phone</Label>
-              <Input value={form.emergencyPhone} onChange={(e) => set("emergencyPhone", e.target.value)} />
+              <Input value={form.emergencyPhone ?? ""} onChange={(e) => set("emergencyPhone", e.target.value)} />
             </div>
           </div>
         </section>
@@ -334,15 +334,15 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1">
                 <Label>Credit limit (KES) *</Label>
-                <Input type="number" min={0} step="0.01" value={form.creditLimit} onChange={(e) => set("creditLimit", e.target.value)} />
+                <Input type="number" min={0} step="0.01" value={form.creditLimit ?? ""} onChange={(e) => set("creditLimit", e.target.value)} />
               </div>
               <div className="space-y-1">
                 <Label>Payment terms (days)</Label>
-                <Input type="number" min={0} value={form.creditTermsDays} onChange={(e) => set("creditTermsDays", e.target.value)} />
+                <Input type="number" min={0} value={form.creditTermsDays ?? ""} onChange={(e) => set("creditTermsDays", e.target.value)} />
               </div>
               <div className="space-y-1 sm:col-span-3">
                 <Label>Credit notes / conditions</Label>
-                <Input value={form.creditNotes} onChange={(e) => set("creditNotes", e.target.value)} placeholder="e.g. Net 30" />
+                <Input value={form.creditNotes ?? ""} onChange={(e) => set("creditNotes", e.target.value)} placeholder="e.g. Net 30" />
               </div>
             </div>
           ) : (
