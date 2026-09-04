@@ -8,9 +8,13 @@ import { customerRepository } from "@/repositories/sales/customer.repository";
 
 const schema = z.object({
   customerType: z.enum(["INDIVIDUAL", "BUSINESS"]).default("INDIVIDUAL"),
-  firstName: z.string().trim().min(1, "First name is required"),
+  firstName: z.string().trim().min(1, "Contact / given name is required"),
   lastName: z.string().trim().optional().nullable(),
   companyName: z.string().trim().optional().nullable(),
+  tradingName: z.string().trim().optional().nullable(),
+  registrationNumber: z.string().trim().optional().nullable(),
+  businessNature: z.string().trim().optional().nullable(),
+  contactPersonTitle: z.string().trim().optional().nullable(),
   phone: z.string().trim().min(7, "Phone is required"),
   email: z.string().trim().email().optional().nullable().or(z.literal("")),
   idType: z.string().trim().optional().nullable(),
@@ -39,42 +43,68 @@ export async function createCustomerAction(input: unknown) {
     const fe = parsed.error.flatten().fieldErrors;
     return {
       success: false as const,
-      message: fe.firstName?.[0] || fe.phone?.[0] || "Check customer KYC details.",
+      message:
+        fe.firstName?.[0] || fe.phone?.[0] || "Check customer KYC details.",
     };
   }
 
   const data = parsed.data;
+  const isBusiness = data.customerType === "BUSINESS";
 
-  if (data.customerType === "BUSINESS" && !data.companyName?.trim()) {
+  if (isBusiness && !data.companyName?.trim()) {
     return {
       success: false as const,
-      message: "Company name is required for business customers.",
+      message: "Legal business / company name is required for business customers.",
     };
   }
 
   if (data.allowCredit) {
-    if (!data.idNumber?.trim()) {
-      return {
-        success: false as const,
-        message: "National ID / passport number is required for credit accounts.",
-      };
-    }
-    if (!data.address?.trim()) {
-      return {
-        success: false as const,
-        message: "Physical address is required for credit accounts.",
-      };
+    if (isBusiness) {
+      if (!data.registrationNumber?.trim()) {
+        return {
+          success: false as const,
+          message:
+            "Business registration / incorporation number is required for B2B credit.",
+        };
+      }
+      if (!data.taxPin?.trim()) {
+        return {
+          success: false as const,
+          message: "Business KRA PIN is required for B2B credit accounts.",
+        };
+      }
+      if (!data.address?.trim()) {
+        return {
+          success: false as const,
+          message: "Business physical address is required for credit accounts.",
+        };
+      }
+    } else {
+      if (!data.idNumber?.trim()) {
+        return {
+          success: false as const,
+          message:
+            "National ID / passport number is required for credit accounts.",
+        };
+      }
+      if (!data.address?.trim()) {
+        return {
+          success: false as const,
+          message: "Physical address is required for credit accounts.",
+        };
+      }
+      if (!data.emergencyContact?.trim() || !data.emergencyPhone?.trim()) {
+        return {
+          success: false as const,
+          message:
+            "Next of kin name and phone are required for individual credit accounts.",
+        };
+      }
     }
     if (!data.creditLimit || data.creditLimit <= 0) {
       return {
         success: false as const,
         message: "Set a credit limit greater than zero for credit accounts.",
-      };
-    }
-    if (!data.emergencyContact?.trim() || !data.emergencyPhone?.trim()) {
-      return {
-        success: false as const,
-        message: "Next of kin name and phone are required for credit accounts.",
       };
     }
   }
@@ -89,6 +119,10 @@ export async function createCustomerAction(input: unknown) {
       firstName: data.firstName,
       lastName: data.lastName || null,
       companyName: data.companyName || null,
+      tradingName: data.tradingName || null,
+      registrationNumber: data.registrationNumber || null,
+      businessNature: data.businessNature || null,
+      contactPersonTitle: data.contactPersonTitle || null,
       phone: data.phone || null,
       email: data.email || null,
       idType: data.idType || null,
@@ -116,8 +150,12 @@ export async function createCustomerAction(input: unknown) {
     return {
       success: true as const,
       message: data.allowCredit
-        ? "Credit customer account created."
-        : "Customer created.",
+        ? isBusiness
+          ? "B2B credit customer (business) created."
+          : "Credit customer account created."
+        : isBusiness
+          ? "Business customer created."
+          : "Customer created.",
     };
   } catch (error) {
     return {

@@ -29,6 +29,10 @@ const empty = {
   firstName: "",
   lastName: "",
   companyName: "",
+  tradingName: "",
+  registrationNumber: "",
+  businessNature: "",
+  contactPersonTitle: "",
   phone: "",
   email: "",
   idType: "NATIONAL_ID",
@@ -79,6 +83,10 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
         ...form,
         lastName: form.lastName || null,
         companyName: form.companyName || null,
+        tradingName: form.tradingName || null,
+        registrationNumber: form.registrationNumber || null,
+        businessNature: form.businessNature || null,
+        contactPersonTitle: form.contactPersonTitle || null,
         email: form.email || null,
         idType: form.idType || null,
         idNumber: form.idNumber || null,
@@ -112,8 +120,9 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
         <p className="text-sm text-muted-foreground">
-          One register for all customers. Enable credit to collect standard KYC
-          (ID, address, next of kin, credit limit) required for POS credit invoices.
+          Individuals and other businesses (B2B). Enable credit for on-account
+          sales — personal KYC for people, company registration + PIN for
+          businesses you lend to.
         </p>
       </div>
 
@@ -132,7 +141,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                     : "rounded-lg border px-3 py-1.5 text-xs text-muted-foreground"
                 }
               >
-                {t === "INDIVIDUAL" ? "Individual" : "Business"}
+                {t === "INDIVIDUAL" ? "Individual (person)" : "Business (B2B)"}
               </button>
             ))}
           </div>
@@ -142,19 +151,77 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">1. Identity</h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
-              <Label>First / given name *</Label>
+              <Label>
+                {form.customerType === "BUSINESS"
+                  ? "Authorized contact first name *"
+                  : "First / given name *"}
+              </Label>
               <Input required value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Last / surname</Label>
+              <Label>
+                {form.customerType === "BUSINESS"
+                  ? "Contact surname"
+                  : "Last / surname"}
+              </Label>
               <Input value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
             </div>
-            {form.customerType === "BUSINESS" && (
-              <div className="space-y-1">
-                <Label>Company name *</Label>
-                <Input value={form.companyName} onChange={(e) => set("companyName", e.target.value)} />
-              </div>
-            )}
+            {form.customerType === "BUSINESS" ? (
+              <>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Legal company / business name *</Label>
+                  <Input
+                    value={form.companyName}
+                    onChange={(e) => set("companyName", e.target.value)}
+                    placeholder="As on registration certificate"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Trading name (if different)</Label>
+                  <Input
+                    value={form.tradingName}
+                    onChange={(e) => set("tradingName", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>
+                    Registration / incorporation no.
+                    {form.allowCredit ? " *" : ""}
+                  </Label>
+                  <Input
+                    value={form.registrationNumber}
+                    onChange={(e) => set("registrationNumber", e.target.value)}
+                    placeholder="e.g. PVT-XXXX / BN-XXXX"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>
+                    Business KRA PIN
+                    {form.allowCredit ? " *" : ""}
+                  </Label>
+                  <Input
+                    value={form.taxPin}
+                    onChange={(e) => set("taxPin", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Nature of business</Label>
+                  <Input
+                    value={form.businessNature}
+                    onChange={(e) => set("businessNature", e.target.value)}
+                    placeholder="e.g. Pharmacy, wholesale hardware"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Contact person title</Label>
+                  <Input
+                    value={form.contactPersonTitle}
+                    onChange={(e) => set("contactPersonTitle", e.target.value)}
+                    placeholder="e.g. Procurement, Director"
+                  />
+                </div>
+              </>
+            ) : null}
             <div className="space-y-1">
               <Label>ID type</Label>
               <select
@@ -280,7 +347,8 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Leave off for normal cash customers. Turn on only when this person may buy on credit from POS.
+              Leave off for cash customers. Turn on to lend on account to a
+              person or another business (B2B) from POS credit invoices.
             </p>
           )}
         </section>
@@ -318,7 +386,10 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                   <td className="p-3 font-medium">
                     {[c.firstName, c.lastName].filter(Boolean).join(" ")}
                     {c.companyName ? (
-                      <span className="block text-xs text-muted-foreground">{c.companyName}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {c.companyName}
+                        <span className="text-primary"> · Business</span>
+                      </span>
                     ) : null}
                   </td>
                   <td className="p-3 text-muted-foreground">{c.phone ?? "—"}</td>

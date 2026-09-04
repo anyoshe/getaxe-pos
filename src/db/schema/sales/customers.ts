@@ -40,6 +40,12 @@ export const customers = pgTable(
 
     companyName: text("company_name"),
 
+    /** Legal / company registration number (B2B). */
+    registrationNumber: text("registration_number"),
+    tradingName: text("trading_name"),
+    businessNature: text("business_nature"),
+    contactPersonTitle: text("contact_person_title"),
+
     firstName: text("first_name")
       .notNull(),
 
