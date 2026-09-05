@@ -22,6 +22,30 @@ function qty(n: number) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }
 
+function productTotals(p: {
+  openingStock: number;
+  closingStock: number;
+  movements: Array<{ quantity: number }>;
+}) {
+  let qtyIn = 0;
+  let qtyOut = 0;
+  for (const m of p.movements) {
+    const q = Number(m.quantity);
+    if (!Number.isFinite(q) || q === 0) continue;
+    if (q > 0) qtyIn += q;
+    else qtyOut += Math.abs(q);
+  }
+  const net = qtyIn - qtyOut;
+  return {
+    opening: Number(p.openingStock) || 0,
+    qtyIn,
+    qtyOut,
+    net,
+    closing: Number(p.closingStock) || 0,
+  };
+}
+
+
 type ReportData = Awaited<
   ReturnType<typeof getStockMovementsReportAction>
 > extends { success: true; data: infer D }
@@ -308,23 +332,28 @@ export function StockMovementsReport() {
                       </span>
                     ) : null}
                   </div>
+                  {(() => {
+                    const t = productTotals(p);
+                    return (
                   <div className="flex flex-wrap gap-3 text-xs tabular-nums">
                     <span>
-                      Open <strong>{qty(p.openingStock)}</strong>
+                      Open <strong>{qty(t.opening)}</strong>
                     </span>
                     <span className="text-emerald-700 dark:text-emerald-400">
-                      In +{qty(p.quantityIn ?? 0)}
+                      In +{qty(t.qtyIn)}
                     </span>
                     <span className="text-red-700 dark:text-red-400">
-                      Out −{qty(p.quantityOut ?? 0)}
+                      Out −{qty(t.qtyOut)}
                     </span>
                     <span>
-                      Net {qty(p.quantityNet ?? p.quantityMoved ?? 0)}
+                      Net {qty(t.net)}
                     </span>
                     <span className="font-semibold">
-                      Close {qty(p.closingStock)}
+                      Close {qty(t.closing)}
                     </span>
                   </div>
+                    );
+                  })()}
                 </div>
                 <table className="w-full text-xs">
                   <thead className="bg-secondary/20 text-left text-muted-foreground">

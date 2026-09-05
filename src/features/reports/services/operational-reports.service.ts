@@ -249,13 +249,15 @@ export class OperationalReportsService {
           movements.length > 0
             ? movements[movements.length - 1]!.balanceAfter
             : opening;
-        const qtyIn = movements
-          .filter((m) => m.quantity > 0)
-          .reduce((s, m) => s + m.quantity, 0);
-        const qtyOut = movements
-          .filter((m) => m.quantity < 0)
-          .reduce((s, m) => s + Math.abs(m.quantity), 0);
-        const net = qtyIn - qtyOut; // same as sum of signed qty
+        let qtyIn = 0;
+        let qtyOut = 0;
+        for (const m of movements) {
+          const q = Number(m.quantity);
+          if (!Number.isFinite(q) || q === 0) continue;
+          if (q > 0) qtyIn += q;
+          else qtyOut += Math.abs(q);
+        }
+        const net = qtyIn - qtyOut;
         return {
           productId: pid,
           productName: first?.productName ?? "—",
