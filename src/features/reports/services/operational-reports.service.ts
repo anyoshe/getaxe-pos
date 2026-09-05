@@ -155,9 +155,30 @@ export class OperationalReportsService {
     const start = parseDayStart(fromDate);
     const end = parseDayEndExclusive(toDate);
 
+    // Opening stock at start = sum of all movements before the period
+    const openings = await db
+      .select({
+        productId: stockMovements.productId,
+        opening: sql<string>`coalesce(sum(${stockMovements.quantity}::numeric), 0)`,
+      })
+      .from(stockMovements)
+      .where(
+        and(
+          eq(stockMovements.businessId, businessId),
+          lt(stockMovements.createdAt, start),
+        ),
+      )
+      .groupBy(stockMovements.productId);
+
+    const openingByProduct = new Map(
+      openings.map((o) => [o.productId, Number(o.opening ?? 0)]),
+    );
+
+    // Movements in period, oldest first for running balance
     const rows = await db
       .select({
         id: stockMovements.id,
+        productId: stockMovements.productId,
         createdAt: stockMovements.createdAt,
         movementType: stockMovements.movementType,
         quantity: stockMovements.quantity,
@@ -177,8 +198,69 @@ export class OperationalReportsService {
           lt(stockMovements.createdAt, end),
         ),
       )
-      .orderBy(desc(stockMovements.createdAt))
-      .limit(5000);
+      .orderBy(asc(stockMovements.createdAt), asc(stockMovements.id))
+      .limit(8000);
+
+    // Running balance per product
+    const running = new Map<string, number>();
+    const detailRows = rows.map((r) => {
+      const pid = r.productId;
+      if (!running.has(pid)) {
+        running.set(pid, openingByProduct.get(pid) ?? 0);
+      }
+      const before = running.get(pid)!;
+      const qty = Number(r.quantity ?? 0);
+      const after = before + qty;
+      running.set(pid, after);
+      return {
+        id: r.id,
+        productId: pid,
+        date: r.createdAt
+          ? new Date(r.createdAt).toLocaleString("en-KE", {
+              timeZone: "UTC",
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            })
+          : "—",
+        movementType: String(r.movementType),
+        quantity: qty,
+        balanceBefore: before,
+        balanceAfter: after,
+        reference: r.reference,
+        notes: r.notes,
+        productName: r.productName,
+        sku: r.sku,
+        warehouseName: r.warehouseName,
+      };
+    });
+
+    // Products that moved in period + any with opening only if they moved
+    const productIds = [...new Set(detailRows.map((r) => r.productId))];
+    const byProduct = productIds
+      .map((pid) => {
+        const movements = detailRows.filter((r) => r.productId === pid);
+        const first = movements[0];
+        const opening = openingByProduct.get(pid) ?? 0;
+        const closing =
+          movements.length > 0
+            ? movements[movements.length - 1]!.balanceAfter
+            : opening;
+        const moved = movements.reduce((s, m) => s + m.quantity, 0);
+        return {
+          productId: pid,
+          productName: first?.productName ?? "—",
+          sku: first?.sku ?? null,
+          openingStock: opening,
+          quantityMoved: moved,
+          closingStock: closing,
+          movements,
+        };
+      })
+      .sort((a, b) => a.productName.localeCompare(b.productName));
 
     const byType = await db
       .select({
@@ -200,27 +282,8 @@ export class OperationalReportsService {
     return {
       fromDate,
       toDate,
-      rows: rows.map((r) => ({
-        id: r.id,
-        date: r.createdAt
-          ? new Date(r.createdAt).toLocaleString("en-KE", {
-              timeZone: "UTC",
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            })
-          : "—",
-        movementType: String(r.movementType),
-        quantity: Number(r.quantity ?? 0),
-        reference: r.reference,
-        notes: r.notes,
-        productName: r.productName,
-        sku: r.sku,
-        warehouseName: r.warehouseName,
-      })),
+      byProduct,
+      rows: detailRows,
       byType: byType.map((t) => ({
         movementType: String(t.movementType),
         totalQty: Number(t.totalQty ?? 0),
