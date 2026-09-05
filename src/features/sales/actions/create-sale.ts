@@ -14,7 +14,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
-import { nowNairobiWallClock } from "@/lib/timezone";
+import { formatDateTimeNairobi, nowNairobiWallClock } from "@/lib/timezone";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "@/features/inventory/services/unit-conversion.service";
@@ -371,8 +371,8 @@ export async function createSaleAction(input: unknown) {
       paymentMethod: data.paymentMethod,
       isCredit,
       soldAt: sale.soldAt
-        ? new Date(sale.soldAt).toLocaleString()
-        : new Date().toLocaleString(),
+        ? formatDateTimeNairobi(sale.soldAt)
+        : formatDateTimeNairobi(nowNairobiWallClock()),
       customerId: data.customerId ?? null,
       notes: data.notes ?? null,
       lines: lines.map((l) => ({

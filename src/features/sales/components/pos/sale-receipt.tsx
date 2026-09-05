@@ -36,6 +36,10 @@ export type ReceiptData = {
   isCredit: boolean;
   amountPaid: number;
   balanceDue: number;
+  /** Cash handed over by customer (may exceed total). */
+  amountTendered?: number | null;
+  /** Change returned (tendered - total). */
+  changeDue?: number | null;
   subtotal: number;
   total: number;
   lines: ReceiptLine[];
@@ -132,7 +136,7 @@ export function SaleReceipt({
 
       {/* On-screen dialog */}
       <div className="no-print fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-        <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-4 text-black shadow-xl dark:bg-zinc-950 dark:text-zinc-50">
+        <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-4 text-black shadow-xl">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Receipt</h2>
             <button
@@ -143,7 +147,7 @@ export function SaleReceipt({
               Close
             </button>
           </div>
-          <div className="rounded-lg border border-zinc-200 bg-white p-3 text-black dark:border-zinc-700">
+          <div className="rounded-lg border border-zinc-200 bg-white p-3 text-black">
             <ReceiptBody
               business={business}
               receipt={receipt}
@@ -207,11 +211,7 @@ function ReceiptBody({
         <p className="text-base font-bold" style={ink}>
           {business.name}
         </p>
-        {business.legalName && business.legalName !== business.name ? (
-          <p className="text-xs" style={ink}>
-            {business.legalName}
-          </p>
-        ) : null}
+        
         {addressLine ? (
           <p className="text-xs" style={ink}>
             {addressLine}
@@ -232,11 +232,7 @@ function ReceiptBody({
             PIN: {business.kraPin}
           </p>
         ) : null}
-        {business.registrationNumber ? (
-          <p className="text-xs" style={ink}>
-            Reg: {business.registrationNumber}
-          </p>
-        ) : null}
+        
       </div>
 
       <div
@@ -355,12 +351,44 @@ function ReceiptBody({
             </div>
           </>
         ) : (
-          <div className="flex justify-between">
-            <span>Amount paid</span>
-            <span className="tabular-nums">
-              {money(receipt.amountPaid || receipt.total, currency)}
-            </span>
-          </div>
+          <>
+            <div className="flex justify-between">
+              <span>Amount tendered</span>
+              <span className="tabular-nums">
+                {money(
+                  receipt.amountTendered != null && receipt.amountTendered > 0
+                    ? receipt.amountTendered
+                    : receipt.amountPaid || receipt.total,
+                  currency,
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Amount paid</span>
+              <span className="tabular-nums">
+                {money(receipt.amountPaid || receipt.total, currency)}
+              </span>
+            </div>
+            {(receipt.changeDue != null && receipt.changeDue > 0) ||
+            (receipt.amountTendered != null &&
+              receipt.amountTendered > (receipt.total || 0)) ? (
+              <div className="flex justify-between font-semibold">
+                <span>Change</span>
+                <span className="tabular-nums">
+                  {money(
+                    receipt.changeDue != null && receipt.changeDue > 0
+                      ? receipt.changeDue
+                      : Math.max(
+                          0,
+                          Number(receipt.amountTendered || 0) -
+                            Number(receipt.total || 0),
+                        ),
+                    currency,
+                  )}
+                </span>
+              </div>
+            ) : null}
+          </>
         )}
       </div>
 

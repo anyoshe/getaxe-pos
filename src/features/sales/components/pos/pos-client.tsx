@@ -766,18 +766,45 @@ export function PosClient({
         soldAt?: string;
         notes?: string | null;
       };
+      const tenderedNum = Number(amountTendered);
+      const saleTotal = Number(res.total ?? total);
+      const paidNum = Number(
+        res.isCredit || saleMode === "CREDIT"
+          ? res.amountPaid ?? 0
+          : saleTotal,
+      );
+      const changeNum =
+        !res.isCredit &&
+        saleMode !== "CREDIT" &&
+        Number.isFinite(tenderedNum) &&
+        tenderedNum > 0
+          ? Math.max(0, tenderedNum - saleTotal)
+          : 0;
       setLastReceipt({
         invoiceNumber: res.invoiceNumber ?? "—",
-        soldAt: res.soldAt ?? new Date().toLocaleString(),
+        soldAt: res.soldAt ?? new Date().toLocaleString("en-KE", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "Africa/Nairobi",
+        }),
         cashierName: cashierName ?? null,
         customerName: customerLabel || customerName.trim() || null,
         customerPhone: customerPhone.trim() || null,
         paymentMethod: res.paymentMethod ?? effectiveMethod,
         isCredit: Boolean(res.isCredit ?? saleMode === "CREDIT"),
-        amountPaid: Number(res.amountPaid ?? 0),
+        amountPaid: paidNum,
         balanceDue: Number(res.balanceDue ?? 0),
+        amountTendered:
+          Number.isFinite(tenderedNum) && tenderedNum > 0
+            ? tenderedNum
+            : paidNum,
+        changeDue: changeNum,
         subtotal: Number(res.subtotal ?? total),
-        total: Number(res.total ?? total),
+        total: saleTotal,
         notes: salePayload.notes,
         lines: cart.map((l) => ({
           name: l.name,

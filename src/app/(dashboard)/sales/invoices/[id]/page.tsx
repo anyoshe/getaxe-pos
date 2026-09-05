@@ -10,6 +10,7 @@ import { db } from "@/db";
 import { businesses } from "@/db/schema/core/businesses";
 import { customers } from "@/db/schema/sales/customers";
 import { InvoiceReprintButton } from "@/features/sales/components/invoices/invoice-reprint-button";
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 function money(v: string | number | null) {
   return new Intl.NumberFormat("en-KE", {
@@ -59,9 +60,7 @@ export default async function InvoiceDetailPage({
 
   const receipt = {
     invoiceNumber: sale.invoiceNumber,
-    soldAt: sale.soldAt
-      ? new Date(sale.soldAt).toLocaleString()
-      : "—",
+    soldAt: sale.soldAt ? formatDateTimeNairobi(sale.soldAt) : "—",
     cashierName: null as string | null,
     customerName,
     customerPhone: customerRow?.phone ?? null,
@@ -69,6 +68,8 @@ export default async function InvoiceDetailPage({
     isCredit,
     amountPaid: Number(sale.amountPaid ?? 0),
     balanceDue: Number(sale.balanceDue ?? 0),
+    amountTendered: isCredit ? null : Number(sale.amountPaid ?? sale.total ?? 0),
+    changeDue: null,
     subtotal: Number(sale.subtotal ?? sale.total ?? 0),
     total: Number(sale.total ?? 0),
     notes: sale.notes,
