@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import {
+  getCashReconciliationDayOverviewAction,
   getCashReconciliationSummaryAction,
   saveCashReconciliationAction,
 } from "../actions/cash-reconciliation";
@@ -70,11 +71,34 @@ export function CashReconciliationClient({
     paymentInflows: number;
     otherInflows: number;
   } | null>(null);
+  const [overview, setOverview] = useState<
+    Array<{
+      cashAccountId: string;
+      name: string;
+      type: string;
+      paymentInflows: number;
+      systemInflows: number;
+      systemOutflows: number;
+      expectedBalance: number;
+    }>
+  >([]);
 
   const selected = useMemo(
     () => accounts.find((a) => a.id === cashAccountId),
     [accounts, cashAccountId],
   );
+
+  function loadOverview() {
+    if (!date) return;
+    start(async () => {
+      const r = await getCashReconciliationDayOverviewAction({ date });
+      if (!r.success) {
+        toast.error(r.message);
+        return;
+      }
+      setOverview(r.rows);
+    });
+  }
 
   function loadSummary() {
     if (!cashAccountId || !date) return;
@@ -125,13 +149,90 @@ export function CashReconciliationClient({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Daily cash reconciliation
+          Daily reconciliation
         </h1>
         <p className="text-sm text-muted-foreground">
-          Count cash, bank, M-Pesa and other tills linked under{" "}
-          <strong>Cash &amp; bank</strong>. System expected balance uses POS
-          payments, other income, and expenses on that account for the day.
+          Reconcile each tender channel used at POS — cash drawer, M-Pesa,
+          mobile money, card terminal, and bank. System totals come from POS
+          payments (by method), other income, and expenses for the day.
         </p>
+      </div>
+
+      <div className="space-y-2 rounded-xl border p-4">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold">All channels — {date}</h2>
+            <p className="text-xs text-muted-foreground">
+              POS sales by payment method land on the matching till for
+              end-of-day count.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            onClick={loadOverview}
+          >
+            Refresh day totals
+          </Button>
+        </div>
+        {overview.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead className="bg-secondary/40 text-left">
+                <tr>
+                  <th className="p-2">Channel</th>
+                  <th className="p-2">Type</th>
+                  <th className="p-2 text-right">POS inflows</th>
+                  <th className="p-2 text-right">Total in</th>
+                  <th className="p-2 text-right">Out</th>
+                  <th className="p-2 text-right">Expected</th>
+                  <th className="p-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {overview.map((row) => (
+                  <tr key={row.cashAccountId} className="border-t">
+                    <td className="p-2 font-medium">{row.name}</td>
+                    <td className="p-2 text-muted-foreground">{row.type}</td>
+                    <td className="p-2 text-right tabular-nums">
+                      {money(row.paymentInflows)}
+                    </td>
+                    <td className="p-2 text-right tabular-nums">
+                      {money(row.systemInflows)}
+                    </td>
+                    <td className="p-2 text-right tabular-nums">
+                      {money(row.systemOutflows)}
+                    </td>
+                    <td className="p-2 text-right font-semibold tabular-nums">
+                      {money(row.expectedBalance)}
+                    </td>
+                    <td className="p-2 text-right">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setCashAccountId(row.cashAccountId);
+                          setSummary(null);
+                          setTimeout(() => loadSummary(), 0);
+                        }}
+                      >
+                        Count
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Click <strong>Refresh day totals</strong> to load Cash, M-Pesa,
+            Card, Bank and Mobile Money for this date.
+          </p>
+        )}
       </div>
 
       {accounts.length === 0 ? (

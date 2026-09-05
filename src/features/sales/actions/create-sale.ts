@@ -274,9 +274,11 @@ export async function createSaleAction(input: unknown) {
       data.branchId ?? null,
     );
 
-    const defaultCash = await financeService
-      .getDefaultCashAccount(user.businessId)
-      .catch(() => null);
+    const tillAccountId = isCredit
+      ? null
+      : await financeService
+          .resolveCashAccountIdForMethod(user.businessId, data.paymentMethod)
+          .catch(() => null);
 
     const result = (await salesService.createSale({
       sale: {
@@ -328,7 +330,7 @@ export async function createSaleAction(input: unknown) {
             {
               businessId: user.businessId,
               saleId: "",
-              cashAccountId: defaultCash?.id ?? null,
+              cashAccountId: tillAccountId,
               method: data.paymentMethod,
               status: "COMPLETED",
               amount: subtotal.toFixed(2),

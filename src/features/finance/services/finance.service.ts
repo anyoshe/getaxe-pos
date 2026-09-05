@@ -169,23 +169,67 @@ export async function ensureFinanceDefaults(businessId: string) {
     });
   }
 
-  // Cash drawer
-  const cash = await db
-    .select()
-    .from(cashAccounts)
-    .where(eq(cashAccounts.businessId, businessId));
-  if (cash.length === 0) {
-    const cashCoa = byCode.get("1000");
-    if (cashCoa) {
+  // Cash / tender channels used by POS (reconcile each at end of day)
+  const cashCoa = byCode.get("1000");
+  if (cashCoa) {
+    const existingCash = await db
+      .select()
+      .from(cashAccounts)
+      .where(eq(cashAccounts.businessId, businessId));
+    const byTypeName = new Set(
+      existingCash.map((a) => `${a.type}::${a.name.toLowerCase()}`),
+    );
+    const channels: Array<{
+      name: string;
+      type: "CASH" | "BANK" | "MPESA" | "MOBILE_MONEY" | "PETTY_CASH";
+    }> = [
+      { name: "Main Cash Drawer", type: "CASH" },
+      { name: "M-Pesa Till", type: "MPESA" },
+      { name: "Mobile Money", type: "MOBILE_MONEY" },
+      { name: "Card Terminal", type: "BANK" },
+      { name: "Bank Account", type: "BANK" },
+    ];
+    for (const ch of channels) {
+      const key = `${ch.type}::${ch.name.toLowerCase()}`;
+      if (byTypeName.has(key)) continue;
+      // Also skip if same type already exists for primary channels (avoid dups on rename)
+      if (
+        ch.type !== "BANK" &&
+        existingCash.some((a) => a.type === ch.type)
+      ) {
+        continue;
+      }
+      if (
+        ch.type === "BANK" &&
+        ch.name === "Card Terminal" &&
+        existingCash.some(
+          (a) => a.type === "BANK" && a.name.toLowerCase().includes("card"),
+        )
+      ) {
+        continue;
+      }
+      if (
+        ch.type === "BANK" &&
+        ch.name === "Bank Account" &&
+        existingCash.some(
+          (a) =>
+            a.type === "BANK" &&
+            !a.name.toLowerCase().includes("card"),
+        )
+      ) {
+        continue;
+      }
       await db.insert(cashAccounts).values({
         businessId,
         accountId: cashCoa.id,
-        name: "Main Cash Drawer",
-        type: "CASH",
+        name: ch.name,
+        type: ch.type,
         currency: "KES",
         openingBalance: "0",
         active: true,
       });
+      existingCash.push({ type: ch.type, name: ch.name } as any);
+      byTypeName.add(key);
     }
   }
 
@@ -326,6 +370,44 @@ export class FinanceService {
       .from(cashAccounts)
       .where(and(eq(cashAccounts.businessId, businessId), eq(cashAccounts.active, true)))
       .orderBy(asc(cashAccounts.name));
+  }
+
+  /** Resolve till/account for a POS payment method (for reconciliation). */
+  async resolveCashAccountIdForMethod(
+    businessId: string,
+    method: string,
+  ): Promise<string | null> {
+    await ensureFinanceDefaults(businessId);
+    const accounts = await this.getCashAccounts(businessId);
+    const m = method.toUpperCase();
+    const pick = (
+      pred: (a: (typeof accounts)[number]) => boolean,
+    ) => accounts.find(pred)?.id ?? null;
+
+    if (m === "CASH") {
+      return pick((a) => a.type === "CASH") ?? pick((a) => a.type === "PETTY_CASH");
+    }
+    if (m === "MPESA") {
+      return pick((a) => a.type === "MPESA");
+    }
+    if (m === "MOBILE_MONEY") {
+      return pick((a) => a.type === "MOBILE_MONEY") ?? pick((a) => a.type === "MPESA");
+    }
+    if (m === "CARD") {
+      return (
+        pick(
+          (a) =>
+            a.type === "BANK" && a.name.toLowerCase().includes("card"),
+        ) ?? pick((a) => a.type === "BANK")
+      );
+    }
+    if (m === "BANK_TRANSFER" || m === "CHEQUE") {
+      return pick(
+        (a) =>
+          a.type === "BANK" && !a.name.toLowerCase().includes("card"),
+      );
+    }
+    return pick((a) => a.type === "CASH");
   }
 
   async getDefaultCashAccount(businessId: string) {

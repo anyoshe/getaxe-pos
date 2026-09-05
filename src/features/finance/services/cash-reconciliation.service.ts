@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { cashAccounts } from "@/db/schema/finance/cash_accounts";
@@ -14,6 +14,29 @@ function dayBounds(dateStr: string) {
   end.setDate(end.getDate() + 1);
   return { start, end };
 }
+
+/** Map POS payment method → cash account channel type / name hint */
+export function paymentMethodsForAccount(account: {
+  type: string;
+  name: string;
+}): string[] {
+  const name = (account.name || "").toLowerCase();
+  switch (account.type) {
+    case "CASH":
+    case "PETTY_CASH":
+      return ["CASH"];
+    case "MPESA":
+      return ["MPESA"];
+    case "MOBILE_MONEY":
+      return ["MOBILE_MONEY"];
+    case "BANK":
+      if (name.includes("card")) return ["CARD"];
+      return ["BANK_TRANSFER", "CHEQUE"];
+    default:
+      return [];
+  }
+}
+
 
 export class CashReconciliationService {
   async listAccounts(businessId: string) {
@@ -71,6 +94,8 @@ export class CashReconciliationService {
       ? Number(prior.countedBalance)
       : Number(account.openingBalance ?? 0);
 
+    const methods = paymentMethodsForAccount(account);
+    // Match payments linked to this account OR unlinked payments of matching method
     const [payRow] = await db
       .select({
         total: sql<string>`coalesce(sum(${payments.amount}), 0)`,
@@ -79,10 +104,18 @@ export class CashReconciliationService {
       .where(
         and(
           eq(payments.businessId, businessId),
-          eq(payments.cashAccountId, cashAccountId),
           eq(payments.status, "COMPLETED"),
           gte(payments.paidAt, start),
           lt(payments.paidAt, end),
+          methods.length
+            ? or(
+                eq(payments.cashAccountId, cashAccountId),
+                and(
+                  isNull(payments.cashAccountId),
+                  inArray(payments.method, methods as any),
+                ),
+              )
+            : eq(payments.cashAccountId, cashAccountId),
         ),
       );
 
@@ -129,7 +162,33 @@ export class CashReconciliationService {
     };
   }
 
+  /** System totals for every active channel on a day (for end-of-day dashboard). */
+  async listDayOverview(businessId: string, dateStr: string) {
+    const accounts = await this.listAccounts(businessId);
+    const rows = [];
+    for (const account of accounts) {
+      const summary = await this.computeDaySummary(
+        businessId,
+        account.id,
+        dateStr,
+      );
+      rows.push({
+        cashAccountId: account.id,
+        name: account.name,
+        type: account.type,
+        openingBalance: summary.openingBalance,
+        paymentInflows: summary.paymentInflows,
+        otherInflows: summary.otherInflows,
+        systemInflows: summary.systemInflows,
+        systemOutflows: summary.systemOutflows,
+        expectedBalance: summary.expectedBalance,
+      });
+    }
+    return rows;
+  }
+
   async listRecent(businessId: string, limit = 30) {
+
     return db
       .select({
         id: cashReconciliations.id,

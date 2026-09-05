@@ -77,3 +77,21 @@ export async function saveCashReconciliationAction(input: unknown) {
     };
   }
 }
+
+export async function getCashReconciliationDayOverviewAction(input: {
+  date: string;
+}) {
+  const user = await requireAuthorizedUser("accounts.view");
+  try {
+    const rows = await cashReconciliationService.listDayOverview(
+      user.businessId,
+      input.date,
+    );
+    return { success: true as const, rows };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to load day overview.",
+    };
+  }
+}

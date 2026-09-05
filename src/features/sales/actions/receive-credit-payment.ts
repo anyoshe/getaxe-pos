@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { customers } from "@/db/schema/sales/customers";
 import { sales } from "@/db/schema/sales/sales";
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
+import { financeService } from "@/features/finance/services/finance.service";
 import { logActivity } from "@/features/audit/services/activity-log.service";
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { formatDateTimeNairobi } from "@/lib/timezone";
@@ -166,6 +167,10 @@ export async function receiveCreditPaymentAction(input: unknown) {
   }
 
   try {
+    const tillAccountId = await financeService
+      .resolveCashAccountIdForMethod(user.businessId, method)
+      .catch(() => null);
+
     const result = await paymentService.recordPayment({
       saleId,
       payments: [
@@ -176,6 +181,7 @@ export async function receiveCreditPaymentAction(input: unknown) {
           status: "COMPLETED",
           amount: amount.toFixed(2),
           receivedBy: user.id,
+          cashAccountId: tillAccountId,
           transactionReference: reference || null,
         } as any,
       ],
