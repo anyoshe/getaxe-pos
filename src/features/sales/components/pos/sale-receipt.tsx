@@ -196,6 +196,9 @@ function ReceiptBody({
 }) {
   const ink = forceBlack ? { color: "#000" as const } : undefined;
   const lines = receipt.lines?.length ? receipt.lines : [];
+  // Prefer legal name on receipts; trading name only if legal is missing (avoid double names)
+  const displayName =
+    (business.legalName && business.legalName.trim()) || business.name;
 
   return (
     <div className="space-y-3 text-sm" style={ink}>
@@ -204,12 +207,12 @@ function ReceiptBody({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={business.logo}
-            alt={business.name}
+            alt={displayName}
             className="mx-auto mb-2 h-14 w-auto object-contain"
           />
         ) : null}
         <p className="text-base font-bold" style={ink}>
-          {business.name}
+          {displayName}
         </p>
         
         {addressLine ? (
