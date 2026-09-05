@@ -278,6 +278,23 @@ export function CashReconciliationClient({
             </div>
           </div>
 
+          {selected ? (
+            <p className="text-xs text-muted-foreground">
+              This channel counts POS payments with method:{" "}
+              <strong>
+                {selected.type === "CASH"
+                  ? "CASH"
+                  : selected.type === "MPESA"
+                    ? "MPESA"
+                    : selected.type === "MOBILE_MONEY"
+                      ? "MOBILE_MONEY"
+                      : selected.name.toLowerCase().includes("card")
+                        ? "CARD"
+                        : "BANK_TRANSFER / CHEQUE"}
+              </strong>
+            </p>
+          ) : null}
+
           {summary && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border bg-card p-3 text-sm">
@@ -309,6 +326,23 @@ export function CashReconciliationClient({
               </div>
             </div>
           )}
+
+          {selected ? (
+            <p className="text-xs text-muted-foreground">
+              This channel counts POS payments with method:{" "}
+              <strong>
+                {selected.type === "CASH"
+                  ? "CASH"
+                  : selected.type === "MPESA"
+                    ? "MPESA"
+                    : selected.type === "MOBILE_MONEY"
+                      ? "MOBILE_MONEY"
+                      : selected.name.toLowerCase().includes("card")
+                        ? "CARD"
+                        : "BANK_TRANSFER / CHEQUE"}
+              </strong>
+            </p>
+          ) : null}
 
           {summary && (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -345,6 +379,23 @@ export function CashReconciliationClient({
               </div>
             </div>
           )}
+
+          {selected ? (
+            <p className="text-xs text-muted-foreground">
+              This channel counts POS payments with method:{" "}
+              <strong>
+                {selected.type === "CASH"
+                  ? "CASH"
+                  : selected.type === "MPESA"
+                    ? "MPESA"
+                    : selected.type === "MOBILE_MONEY"
+                      ? "MOBILE_MONEY"
+                      : selected.name.toLowerCase().includes("card")
+                        ? "CARD"
+                        : "BANK_TRANSFER / CHEQUE"}
+              </strong>
+            </p>
+          ) : null}
 
           {summary && (
             <Button type="button" disabled={pending || counted === ""} onClick={save}>

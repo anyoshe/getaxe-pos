@@ -1,3 +1,4 @@
+import { nowNairobiWallClock } from "@/lib/timezone";
 import { salesStatusService } from "./sales-status.service";
 import type { SalesUnitOfWork } from "./unit-of-work";
 import type { PaymentInsert, ReversePaymentRequest } from "../types";
@@ -26,7 +27,8 @@ export class PaymentService {
         receivedBy: payment.receivedBy,
         cashAccountId: payment.cashAccountId || null,
         transactionReference: payment.transactionReference || null,
-      });
+        paidAt: payment.paidAt ?? nowNairobiWallClock(),
+      } as any);
 
       recordedPayments.push(createdPayment);
     }

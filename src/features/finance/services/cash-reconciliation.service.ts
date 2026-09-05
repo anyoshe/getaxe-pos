@@ -8,11 +8,17 @@ import { expenses } from "@/db/schema/finance/expenses";
 import { incomes } from "@/db/schema/finance/incomes";
 
 function dayBounds(dateStr: string) {
-  // dateStr = YYYY-MM-DD (business calendar day)
+  // dateStr = YYYY-MM-DD in Africa/Nairobi. Payments may be stored as:
+  // - Nairobi wall-clock in timestamp without tz, or
+  // - true UTC from defaultNow().
+  // Use an inclusive window from previous UTC evening through next Nairobi midnight+buffer.
   const start = new Date(`${dateStr}T00:00:00+03:00`);
-  const end = new Date(start);
+  const end = new Date(`${dateStr}T00:00:00+03:00`);
   end.setDate(end.getDate() + 1);
-  return { start, end };
+  // Widen by 3h each side so UTC "now" still falls on the intended business day
+  const startWide = new Date(start.getTime() - 3 * 60 * 60 * 1000);
+  const endWide = new Date(end.getTime() + 3 * 60 * 60 * 1000);
+  return { start: startWide, end: endWide, dayStart: start, dayEnd: end };
 }
 
 /** Map POS payment method → cash account channel type / name hint */
@@ -95,7 +101,8 @@ export class CashReconciliationService {
       : Number(account.openingBalance ?? 0);
 
     const methods = paymentMethodsForAccount(account);
-    // Match payments linked to this account OR unlinked payments of matching method
+    // POS reconciliation is method-driven: CARD → Card Terminal, MPESA → M-Pesa, etc.
+    // Also include rows explicitly linked to this account with no/unknown method mapping.
     const [payRow] = await db
       .select({
         total: sql<string>`coalesce(sum(${payments.amount}), 0)`,
@@ -109,10 +116,10 @@ export class CashReconciliationService {
           lt(payments.paidAt, end),
           methods.length
             ? or(
-                eq(payments.cashAccountId, cashAccountId),
+                inArray(payments.method, methods as any),
                 and(
-                  isNull(payments.cashAccountId),
-                  inArray(payments.method, methods as any),
+                  eq(payments.cashAccountId, cashAccountId),
+                  sql`${payments.method}::text not in ('CASH','MPESA','MOBILE_MONEY','CARD','BANK_TRANSFER','CHEQUE')`,
                 ),
               )
             : eq(payments.cashAccountId, cashAccountId),

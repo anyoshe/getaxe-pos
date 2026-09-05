@@ -192,29 +192,42 @@ export async function ensureFinanceDefaults(businessId: string) {
     for (const ch of channels) {
       const key = `${ch.type}::${ch.name.toLowerCase()}`;
       if (byTypeName.has(key)) continue;
-      // Also skip if same type already exists for primary channels (avoid dups on rename)
+      // Skip only when an equivalent channel already exists
       if (
-        ch.type !== "BANK" &&
-        existingCash.some((a) => a.type === ch.type)
+        ch.type === "CASH" &&
+        existingCash.some((a) => a.type === "CASH")
       ) {
         continue;
       }
       if (
-        ch.type === "BANK" &&
+        ch.type === "MPESA" &&
+        existingCash.some((a) => a.type === "MPESA")
+      ) {
+        continue;
+      }
+      if (
+        ch.type === "MOBILE_MONEY" &&
+        existingCash.some((a) => a.type === "MOBILE_MONEY")
+      ) {
+        continue;
+      }
+      if (
         ch.name === "Card Terminal" &&
         existingCash.some(
-          (a) => a.type === "BANK" && a.name.toLowerCase().includes("card"),
+          (a) =>
+            a.name.toLowerCase().includes("card") ||
+            (a.type === "BANK" && a.name.toLowerCase().includes("terminal")),
         )
       ) {
         continue;
       }
       if (
-        ch.type === "BANK" &&
         ch.name === "Bank Account" &&
         existingCash.some(
           (a) =>
             a.type === "BANK" &&
-            !a.name.toLowerCase().includes("card"),
+            !a.name.toLowerCase().includes("card") &&
+            !a.name.toLowerCase().includes("terminal"),
         )
       ) {
         continue;
