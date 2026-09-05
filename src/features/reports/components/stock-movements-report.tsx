@@ -214,6 +214,7 @@ export function StockMovementsReport() {
             </h2>
             <p className="text-xs text-muted-foreground">
               {data.byProduct.length} product(s) · {data.rows.length} movement(s)
+              · Close = Open + In − Out
             </p>
           </div>
 
@@ -307,10 +308,22 @@ export function StockMovementsReport() {
                       </span>
                     ) : null}
                   </div>
-                  <div className="flex gap-3 text-xs tabular-nums">
-                    <span>Open {qty(p.openingStock)}</span>
-                    <span>Moved {qty(p.quantityMoved)}</span>
-                    <span className="font-semibold">Close {qty(p.closingStock)}</span>
+                  <div className="flex flex-wrap gap-3 text-xs tabular-nums">
+                    <span>
+                      Open <strong>{qty(p.openingStock)}</strong>
+                    </span>
+                    <span className="text-emerald-700 dark:text-emerald-400">
+                      In +{qty(p.quantityIn ?? 0)}
+                    </span>
+                    <span className="text-red-700 dark:text-red-400">
+                      Out −{qty(p.quantityOut ?? 0)}
+                    </span>
+                    <span>
+                      Net {qty(p.quantityNet ?? p.quantityMoved ?? 0)}
+                    </span>
+                    <span className="font-semibold">
+                      Close {qty(p.closingStock)}
+                    </span>
                   </div>
                 </div>
                 <table className="w-full text-xs">

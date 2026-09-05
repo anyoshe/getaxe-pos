@@ -249,13 +249,23 @@ export class OperationalReportsService {
           movements.length > 0
             ? movements[movements.length - 1]!.balanceAfter
             : opening;
-        const moved = movements.reduce((s, m) => s + m.quantity, 0);
+        const qtyIn = movements
+          .filter((m) => m.quantity > 0)
+          .reduce((s, m) => s + m.quantity, 0);
+        const qtyOut = movements
+          .filter((m) => m.quantity < 0)
+          .reduce((s, m) => s + Math.abs(m.quantity), 0);
+        const net = qtyIn - qtyOut; // same as sum of signed qty
         return {
           productId: pid,
           productName: first?.productName ?? "—",
           sku: first?.sku ?? null,
           openingStock: opening,
-          quantityMoved: moved,
+          quantityIn: qtyIn,
+          quantityOut: qtyOut,
+          quantityNet: net,
+          /** @deprecated use quantityIn/Out/Net — kept for older clients */
+          quantityMoved: net,
           closingStock: closing,
           movements,
         };
