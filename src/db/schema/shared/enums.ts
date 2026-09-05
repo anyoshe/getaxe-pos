@@ -252,6 +252,7 @@ Document type
 ===================================================== */
 export const documentTypeEnum = pgEnum("document_type", [
   "SALE",
+  "CASH_SALE",
   "PURCHASE_ORDER",
   "GOODS_RECEIPT",
   "SUPPLIER_RETURN",

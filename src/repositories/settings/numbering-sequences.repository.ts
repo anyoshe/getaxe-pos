@@ -6,6 +6,7 @@ import { numberingSequences } from "@/db/schema/settings/numbering_sequences";
 
 export type NumberingDocumentType =
   | "SALE"
+  | "CASH_SALE"
   | "PURCHASE_ORDER"
   | "GOODS_RECEIPT"
   | "SUPPLIER_RETURN"

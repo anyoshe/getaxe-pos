@@ -13,6 +13,7 @@ const DEFAULT_DOCUMENT_SEQUENCES: {
   prefix: string;
 }[] = [
   { documentType: "SALE", prefix: "INV" },
+  { documentType: "CASH_SALE", prefix: "C/SALE" },
   { documentType: "PURCHASE_ORDER", prefix: "PO" },
   { documentType: "GOODS_RECEIPT", prefix: "GRN" },
   { documentType: "SUPPLIER_RETURN", prefix: "SR" },

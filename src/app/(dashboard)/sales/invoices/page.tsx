@@ -65,7 +65,16 @@ export default async function InvoicesPage() {
             ) : (
               rows.map((r) => (
                 <tr key={r.id} className="border-t">
-                  <td className="p-3 font-medium">{r.invoiceNumber}</td>
+                  <td className="p-3 font-medium">
+                    {r.invoiceNumber}
+                    <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground">
+                      {Number(r.balanceDue ?? 0) > 0.001 ||
+                      r.paymentStatus === "PENDING" ||
+                      r.paymentStatus === "PARTIAL"
+                        ? "Credit / unpaid"
+                        : "Cash sale"}
+                    </span>
+                  </td>
                   <td className="p-3 text-muted-foreground">{fmt(r.soldAt)}</td>
                   <td className="p-3">{r.paymentStatus}</td>
                   <td className="p-3 text-right tabular-nums">

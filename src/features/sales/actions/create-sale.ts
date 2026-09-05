@@ -243,7 +243,7 @@ export async function createSaleAction(input: unknown) {
 
     const invoiceNumber = await numberingSequencesService.nextDocumentNumber(
       user.businessId,
-      "SALE",
+      isCredit ? "SALE" : "CASH_SALE",
       data.branchId ?? null,
     );
 
