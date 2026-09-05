@@ -570,15 +570,69 @@ function BsView({
       <p className="text-sm">
         Total liabilities &amp; equity:{" "}
         <strong>KES {money(data.totalLiabilitiesAndEquity)}</strong>
-        {!data.balanced ? (
-          <span className="ml-2 text-amber-700">
-            (Difference KES {money(data.difference)} — journals may still be
-            posting)
-          </span>
-        ) : (
+        {data.balanced ? (
           <span className="ml-2 text-emerald-700">Balanced</span>
+        ) : (
+          <span className="ml-2 text-amber-700">
+            (Out of balance by KES {money(Math.abs(data.difference))})
+          </span>
         )}
       </p>
+
+      {data.bridge && !data.balanced ? (
+        <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          <h3 className="font-semibold">Where is the difference?</h3>
+          <p className="text-muted-foreground">
+            A balance sheet balances when{" "}
+            <strong>Assets = Liabilities + Equity</strong>. Below is the bridge
+            for this date.
+          </p>
+          <ul className="space-y-1 tabular-nums">
+            <li className="flex justify-between gap-4">
+              <span>Total assets</span>
+              <span>{money(data.bridge.totalAssets)}</span>
+            </li>
+            <li className="flex justify-between gap-4">
+              <span>Less: total liabilities</span>
+              <span>−{money(data.bridge.totalLiabilities)}</span>
+            </li>
+            <li className="flex justify-between gap-4 border-t pt-1 font-medium">
+              <span>Net assets (Assets − Liabilities)</span>
+              <span>{money(data.bridge.netAssets)}</span>
+            </li>
+            <li className="flex justify-between gap-4">
+              <span>Equity shown (incl. retained earnings)</span>
+              <span>{money(data.bridge.equityShown)}</span>
+            </li>
+            <li className="flex justify-between gap-4 border-t pt-1 font-semibold text-amber-800 dark:text-amber-300">
+              <span>Gap (Net assets − Equity)</span>
+              <span>{money(data.bridge.gapNetAssetsVsEquity)}</span>
+            </li>
+            <li className="flex justify-between gap-4 text-muted-foreground">
+              <span>Retained earnings (from P&amp;L)</span>
+              <span>{money(data.bridge.retainedEarningsOperational)}</span>
+            </li>
+            <li className="flex justify-between gap-4 text-muted-foreground">
+              <span>Journal-only P&amp;L (posted entries)</span>
+              <span>{money(data.bridge.retainedEarningsJournalsOnly)}</span>
+            </li>
+          </ul>
+          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+            {(data.bridge.notes as string[]).map((n) => (
+              <p key={n}>• {n}</p>
+            ))}
+          </div>
+          <p className="text-xs">
+            For your figures: if Cash ≈ {money(data.bridge.netAssets)} and
+            equity is only {money(data.bridge.equityShown)}, the gap of{" "}
+            <strong>{money(data.bridge.gapNetAssetsVsEquity)}</strong> is often
+            <em> opening capital / owner funds not yet journaled</em>, or sales
+            cash that is not fully reflected in retained earnings because COGS
+            or expenses estimates differ from journals. Book opening capital
+            under equity (3xxx) or a capital account to close the gap.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -31,6 +31,8 @@ type AccountBalance = {
   accountName: string;
   categoryCode: string;
   categoryName: string;
+  /** ASSET | LIABILITY | EQUITY | REVENUE | EXPENSE | OTHER */
+  statementClass: string;
   debit: number;
   credit: number;
   /** Signed balance: assets/expenses debit-normal; liabilities/equity/revenue credit-normal */
@@ -86,19 +88,45 @@ export class FinancialStatementsService {
       )
       .orderBy(asc(chartOfAccounts.accountCode));
 
-    // Category normal balances
-    const debitNormal = new Set(["CA", "NCA", "INV", "COGS", "OPEX", "EXP"]);
+    // Normal balance: prefer account-code series (1=asset, 2=liability, 3=equity,
+    // 4=revenue, 5-6=expense) so mis-tagged categories cannot put AP under assets.
     return rows.map((r) => {
       const debit = Number(r.debit ?? 0);
       const credit = Number(r.credit ?? 0);
       const cat = String(r.categoryCode);
-      const balance = debitNormal.has(cat) ? debit - credit : credit - debit;
+      const codeNum = parseInt(String(r.accountCode).replace(/\D/g, "").slice(0, 1) || "0", 10);
+      const debitNormal =
+        codeNum === 1 ||
+        codeNum === 5 ||
+        codeNum === 6 ||
+        ["CA", "NCA", "INV", "COGS", "OPEX", "EXP"].includes(cat);
+      // Present liability/equity/revenue as positive credit balances
+      const balance = debitNormal ? debit - credit : credit - debit;
+      const statementClass =
+        codeNum === 1
+          ? "ASSET"
+          : codeNum === 2
+            ? "LIABILITY"
+            : codeNum === 3
+              ? "EQUITY"
+              : codeNum === 4
+                ? "REVENUE"
+                : codeNum === 5 || codeNum === 6
+                  ? "EXPENSE"
+                  : ["CA", "NCA", "INV", "ASSET"].includes(cat)
+                    ? "ASSET"
+                    : ["CL", "NCL", "LIAB", "LTL"].includes(cat)
+                      ? "LIABILITY"
+                      : ["EQ", "EQUITY"].includes(cat)
+                        ? "EQUITY"
+                        : "OTHER";
       return {
         accountId: r.accountId,
         accountCode: r.accountCode,
         accountName: r.accountName,
         categoryCode: cat,
         categoryName: String(r.categoryName),
+        statementClass,
         debit,
         credit,
         balance,
@@ -428,18 +456,21 @@ export class FinancialStatementsService {
       toExclusive: end,
     });
 
-    const assets = ledger.filter((a) =>
-      ["CA", "NCA", "ASSET", "INV"].includes(a.categoryCode),
-    );
-    const liabilities = ledger.filter((a) =>
-      ["CL", "NCL", "LIAB", "LTL"].includes(a.categoryCode),
-    );
-    const equity = ledger.filter((a) =>
-      ["EQ", "EQUITY"].includes(a.categoryCode),
-    );
+    const assets = ledger.filter((a) => a.statementClass === "ASSET");
+    const liabilities = ledger.filter((a) => a.statementClass === "LIABILITY");
+    const equity = ledger.filter((a) => a.statementClass === "EQUITY");
 
-    // Period P&L feeds retained earnings display
+    // YTD P&L (operational-aware) for retained earnings display
     const ytd = await this.profitAndLoss(businessId, "2000-01-01", asOfDate);
+
+    // Journal-only P&L (no operational overrides) for imbalance analysis
+    const journalRev = ledger
+      .filter((a) => a.statementClass === "REVENUE")
+      .reduce((s, a) => s + a.balance, 0);
+    const journalExp = ledger
+      .filter((a) => a.statementClass === "EXPENSE")
+      .reduce((s, a) => s + a.balance, 0);
+    const journalNet = journalRev - journalExp;
 
     const totalAssets = assets.reduce((s, a) => s + a.balance, 0);
     const totalLiabilities = liabilities.reduce((s, a) => s + a.balance, 0);
@@ -447,6 +478,28 @@ export class FinancialStatementsService {
     const retained = ytd.netProfit;
     const totalEquity = totalEquityBooks + retained;
     const totalLiabEquity = totalLiabilities + totalEquity;
+    const difference = totalAssets - totalLiabEquity;
+    const netAssets = totalAssets - totalLiabilities;
+
+    // Bridge: explain why Assets ≠ Liabilities + Equity
+    const bridge = {
+      totalAssets,
+      totalLiabilities,
+      netAssets,
+      equityShown: totalEquity,
+      retainedEarningsOperational: retained,
+      retainedEarningsJournalsOnly: journalNet,
+      /** Net assets should equal equity when books are complete */
+      gapNetAssetsVsEquity: netAssets - totalEquity,
+      differenceAssetsVsLiabEquity: difference,
+      notes: [
+        "Account codes 1xxx = assets, 2xxx = liabilities, 3xxx = equity.",
+        "Accounts Payable (2000) is a liability (credit balance), not an asset.",
+        "Retained earnings uses YTD profit (sales − COGS − expenses).",
+        "If Net assets > Equity, common causes: opening capital not journaled, or cash/bank receipts without matching equity/income postings.",
+        "If Inventory and AP are equal, purchases were on credit; cash balance is mostly from sales collections minus expenses.",
+      ],
+    };
 
     return {
       asOfDate,
@@ -465,8 +518,9 @@ export class FinancialStatementsService {
         lines: equity.filter((a) => Math.abs(a.balance) > 0.0001),
       },
       totalLiabilitiesAndEquity: totalLiabEquity,
-      balanced: Math.abs(totalAssets - totalLiabEquity) < 1,
-      difference: totalAssets - totalLiabEquity,
+      balanced: Math.abs(difference) < 1,
+      difference,
+      bridge,
     };
   }
 
