@@ -1634,7 +1634,7 @@ export function PosClient({
               </div>
             ) : null}
 
-            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.06] p-2.5">
+            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                 <UserRound className="h-3.5 w-3.5" />
                 Customer
@@ -1642,49 +1642,47 @@ export function PosClient({
                   · optional
                 </span>
               </div>
-              <div className="space-y-2">
-                <select
-                  className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm text-foreground"
-                  value={customerId ?? ""}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    if (!id) {
-                      setCustomerId(null);
-                      setCustomerLabel(null);
-                      setCustomerContactName(null);
-                      setCustomerPoints(null);
-                      return;
-                    }
-                    const c = posCustomers.find((x) => x.id === id);
-                    if (!c) return;
-                    if (saleMode === "CREDIT" && !c.allowCredit) {
-                      toast.error("This customer is not enabled for credit.");
-                      return;
-                    }
-                    setCustomerId(c.id);
-                    setCustomerLabel(c.displayName);
-                    setCustomerContactName(c.contactName);
-                    setCustomerPhone(c.phone ?? "");
-                    setCustomerPoints(c.loyaltyPoints);
-                  }}
-                >
-                  <option value="">
-                    {saleMode === "CREDIT"
-                      ? "Select credit customer…"
-                      : "Select customer (optional)…"}
+              <select
+                className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm text-foreground"
+                value={customerId ?? ""}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (!id) {
+                    setCustomerId(null);
+                    setCustomerLabel(null);
+                    setCustomerContactName(null);
+                    setCustomerPoints(null);
+                    return;
+                  }
+                  const c = posCustomers.find((x) => x.id === id);
+                  if (!c) return;
+                  if (saleMode === "CREDIT" && !c.allowCredit) {
+                    toast.error("This customer is not enabled for credit.");
+                    return;
+                  }
+                  setCustomerId(c.id);
+                  setCustomerLabel(c.displayName);
+                  setCustomerContactName(c.contactName);
+                  setCustomerPhone(c.phone ?? "");
+                  setCustomerPoints(c.loyaltyPoints);
+                }}
+              >
+                <option value="">
+                  {saleMode === "CREDIT"
+                    ? "Select credit customer…"
+                    : "Select customer (optional)…"}
+                </option>
+                {(saleMode === "CREDIT"
+                  ? posCustomers.filter((c) => c.allowCredit)
+                  : posCustomers
+                ).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.displayName}
+                    {c.phone ? ` · ${c.phone}` : ""}
+                    {c.allowCredit ? " · credit" : ""}
                   </option>
-                  {(saleMode === "CREDIT"
-                    ? posCustomers.filter((c) => c.allowCredit)
-                    : posCustomers
-                  ).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.displayName}
-                      {c.phone ? ` · ${c.phone}` : ""}
-                      {c.allowCredit ? " · credit" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </select>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Input
                   className="h-9 rounded-xl"
@@ -1746,7 +1744,6 @@ export function PosClient({
                 </p>
               ) : null}
             </div>
-          </div>
 
           {/* Always visible on mobile — total + complete */}
           <div className="shrink-0 space-y-2 border-t border-border/60 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:p-3">
