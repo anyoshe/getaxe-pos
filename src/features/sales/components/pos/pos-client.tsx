@@ -1744,6 +1744,7 @@ export function PosClient({
                 </p>
               ) : null}
             </div>
+          </div>
 
           {/* Always visible on mobile — total + complete */}
           <div className="shrink-0 space-y-2 border-t border-border/60 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:p-3">
