@@ -432,6 +432,13 @@ function PlView({
         </p>
       ) : null}
       <AccountBlock title="Cost of goods sold" total={data.cogs.total} lines={data.cogs.lines} />
+      {(data.cogs as { estimatedFromProducts?: number }).estimatedFromProducts ? (
+        <p className="text-xs text-muted-foreground">
+          COGS includes product cost × qty sold (KES{" "}
+          {money((data.cogs as { estimatedFromProducts?: number }).estimatedFromProducts ?? 0)})
+          when journals have no COGS lines yet.
+        </p>
+      ) : null}
       <p className="font-semibold">
         Gross profit: KES {money(data.grossProfit)}
       </p>

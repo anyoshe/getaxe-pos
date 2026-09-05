@@ -9,6 +9,8 @@ import { incomes } from "@/db/schema/finance/incomes";
 import { journalEntries } from "@/db/schema/finance/journal_entries";
 import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
 import { sales } from "@/db/schema/sales/sales";
+import { saleItems } from "@/db/schema/sales/sale_items";
+import { products } from "@/db/schema/inventory/products";
 import { ensureFinanceDefaults } from "@/features/finance/services/finance.service";
 
 function dayStart(d: string) {
@@ -252,16 +254,41 @@ export class FinancialStatementsService {
     const cashExpenses = Number(expRow?.total ?? 0);
     const otherIncome = Number(incRow?.total ?? 0);
 
-    // Prefer higher of journal revenue vs recorded sales (covers partial posting)
+    // Estimated COGS from product cost × qty on completed sales in range
+    const cogsRows = await db
+      .select({
+        total: sql<string>`coalesce(sum(
+          coalesce(${products.costPrice}::numeric, 0) *
+          coalesce(${saleItems.quantity}::numeric, 0)
+        ), 0)`,
+      })
+      .from(saleItems)
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .innerJoin(products, eq(saleItems.productId, products.id))
+      .where(
+        and(
+          eq(sales.businessId, businessId),
+          eq(sales.status, "COMPLETED"),
+          gte(sales.soldAt, start),
+          lt(sales.soldAt, end),
+        ),
+      );
+    const estimatedCogs = Number(cogsRows[0]?.total ?? 0);
+
+    // Prefer operational figures when journals are incomplete
     if (salesTotal > revenueTotal) {
       revenueTotal = salesTotal;
     }
-    if (otherIncome > 0) {
-      revenueTotal += otherIncome;
+    if (otherIncome > 0 && revenueTotal < salesTotal + otherIncome) {
+      // only add other income once if sales already replaced revenue
+      if (salesTotal >= Number(saleRow?.total ?? 0)) {
+        revenueTotal = salesTotal + otherIncome;
+      }
+    } else if (otherIncome > 0 && salesTotal <= 0) {
+      revenueTotal = Math.max(revenueTotal, otherIncome);
     }
-    if (cashExpenses > opexTotal) {
-      opexTotal = cashExpenses;
-    }
+    cogsTotal = Math.max(cogsTotal, estimatedCogs);
+    opexTotal = Math.max(opexTotal, cashExpenses);
 
     const grossProfit = revenueTotal - cogsTotal;
     const netProfit = grossProfit - opexTotal;
@@ -277,6 +304,7 @@ export class FinancialStatementsService {
       },
       cogs: {
         total: cogsTotal,
+        estimatedFromProducts: estimatedCogs,
         lines: cogs.filter((a) => Math.abs(a.balance) > 0.0001),
       },
       operatingExpenses: {

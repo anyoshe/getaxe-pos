@@ -1,5 +1,7 @@
 "use server";
 
+import { journalPostingService } from "@/features/finance/services/journal-posting.service";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -67,18 +69,37 @@ export async function createExpenseAction(input: unknown) {
     return { success: false as const, message: "Check expense details." };
   }
   try {
-    await db.insert(expenses).values({
-      businessId: user.businessId,
-      categoryId: parsed.data.categoryId,
-      cashAccountId: parsed.data.cashAccountId ?? null,
-      description: parsed.data.description,
-      amount: parsed.data.amount.toFixed(2),
-      paidTo: parsed.data.paidTo ?? null,
-      reference: parsed.data.reference ?? null,
-      status: "PAID",
-      createdBy: user.id,
-    });
+    const [row] = await db
+      .insert(expenses)
+      .values({
+        businessId: user.businessId,
+        categoryId: parsed.data.categoryId,
+        cashAccountId: parsed.data.cashAccountId ?? null,
+        description: parsed.data.description,
+        amount: parsed.data.amount.toFixed(2),
+        paidTo: parsed.data.paidTo ?? null,
+        reference: parsed.data.reference ?? null,
+        status: "PAID",
+        createdBy: user.id,
+      })
+      .returning();
+
+    try {
+      if (row) {
+        await journalPostingService.postExpense({
+          businessId: user.businessId,
+          expenseId: row.id,
+          amount: parsed.data.amount,
+          description: parsed.data.description,
+          postedBy: user.id,
+        });
+      }
+    } catch (je) {
+      console.error("[createExpense] journal", je);
+    }
+
     revalidatePath("/finance/expenses");
+    revalidatePath("/reports/finance");
     return { success: true as const, message: "Expense recorded." };
   } catch (e) {
     return {
@@ -104,18 +125,35 @@ export async function createIncomeAction(input: unknown) {
     return { success: false as const, message: "Check income details." };
   }
   try {
-    await db.insert(incomes).values({
-      businessId: user.businessId,
-      categoryId: parsed.data.categoryId,
-      cashAccountId: parsed.data.cashAccountId ?? null,
-      description: parsed.data.description,
-      amount: parsed.data.amount.toFixed(2),
-      receivedFrom: parsed.data.receivedFrom ?? null,
-      reference: parsed.data.reference ?? null,
-      receivedBy: user.id,
-      status: "COMPLETED",
-    });
+    const [row] = await db
+      .insert(incomes)
+      .values({
+        businessId: user.businessId,
+        categoryId: parsed.data.categoryId,
+        cashAccountId: parsed.data.cashAccountId ?? null,
+        description: parsed.data.description,
+        amount: parsed.data.amount.toFixed(2),
+        receivedFrom: parsed.data.receivedFrom ?? null,
+        reference: parsed.data.reference ?? null,
+        receivedBy: user.id,
+        status: "COMPLETED",
+      })
+      .returning();
+    try {
+      if (row) {
+        await journalPostingService.postIncome({
+          businessId: user.businessId,
+          incomeId: row.id,
+          amount: parsed.data.amount,
+          description: parsed.data.description,
+          postedBy: user.id,
+        });
+      }
+    } catch (je) {
+      console.error("[createIncome] journal", je);
+    }
     revalidatePath("/finance/incomes");
+    revalidatePath("/reports/finance");
     return { success: true as const, message: "Income recorded." };
   } catch (e) {
     return {

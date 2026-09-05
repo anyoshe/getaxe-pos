@@ -277,4 +277,71 @@ export class JournalPostingService {
   }
 }
 
+
+  /** Operating expense: Dr Operating Expense, Cr Cash */
+  async postExpense(input: {
+    businessId: string;
+    expenseId: string;
+    amount: number;
+    description: string;
+    postedBy?: string | null;
+    cashAccountCode?: string;
+  }) {
+    if (input.amount <= 0) return null;
+    const cashCode = input.cashAccountCode ?? "1000";
+    return this.post({
+      businessId: input.businessId,
+      sourceType: "EXPENSE",
+      sourceId: input.expenseId,
+      description: input.description.slice(0, 200),
+      reference: input.expenseId.slice(0, 8),
+      postedBy: input.postedBy,
+      lines: [
+        {
+          accountCode: "6000",
+          debit: input.amount.toFixed(2),
+          description: input.description.slice(0, 120),
+        },
+        {
+          accountCode: cashCode,
+          credit: input.amount.toFixed(2),
+          description: `Pay expense ${input.expenseId.slice(0, 8)}`,
+        },
+      ],
+    });
+  }
+
+  /** Other income: Dr Cash, Cr Sales/Revenue (4000) */
+  async postIncome(input: {
+    businessId: string;
+    incomeId: string;
+    amount: number;
+    description: string;
+    postedBy?: string | null;
+    cashAccountCode?: string;
+  }) {
+    if (input.amount <= 0) return null;
+    const cashCode = input.cashAccountCode ?? "1000";
+    return this.post({
+      businessId: input.businessId,
+      sourceType: "INCOME",
+      sourceId: input.incomeId,
+      description: input.description.slice(0, 200),
+      reference: input.incomeId.slice(0, 8),
+      postedBy: input.postedBy,
+      lines: [
+        {
+          accountCode: cashCode,
+          debit: input.amount.toFixed(2),
+          description: input.description.slice(0, 120),
+        },
+        {
+          accountCode: "4000",
+          credit: input.amount.toFixed(2),
+          description: `Other income ${input.incomeId.slice(0, 8)}`,
+        },
+      ],
+    });
+  }
+
 export const journalPostingService = new JournalPostingService();

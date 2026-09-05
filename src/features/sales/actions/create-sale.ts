@@ -202,6 +202,7 @@ export async function createSaleAction(input: unknown) {
           : [],
         skipStock: !product.trackInventory || product.productType === "service",
         preferredBatchIds: line.preferredBatchIds ?? [],
+        costPrice: Number(product.costPrice ?? 0),
       });
     }
 
@@ -349,11 +350,23 @@ export async function createSaleAction(input: unknown) {
     // Double-entry journal (non-blocking)
     try {
       const totalNum = Number((result as any).sale?.total ?? subtotal);
+      // COGS = sum of product cost × stock qty sold
+      let cogs = 0;
+      for (const l of lines) {
+        const cost = Number(
+          (l as { costPrice?: number | string | null }).costPrice ?? 0,
+        );
+        const stockQty = Number(
+          (l as { quantityStock?: number }).quantityStock ?? l.quantity,
+        );
+        if (cost > 0 && stockQty > 0) cogs += cost * stockQty;
+      }
       await journalPostingService.postSale({
         businessId: user.businessId,
         saleId: (result as any).sale.id,
         invoiceNumber: String((result as any).sale.invoiceNumber),
         total: totalNum,
+        cogs: cogs > 0 ? cogs : undefined,
         postedBy: user.id,
         isCredit,
       });
