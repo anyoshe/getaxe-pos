@@ -221,3 +221,16 @@ select:-webkit-autofill {
     oklch(0.99 0.01 250) 100%
   );
 }
+
+
+/* Native <select> readable in dark mode */
+.dark select,
+select {
+  color: var(--foreground);
+  background-color: var(--background);
+}
+.dark select option,
+select option {
+  color: var(--foreground);
+  background-color: var(--popover);
+}

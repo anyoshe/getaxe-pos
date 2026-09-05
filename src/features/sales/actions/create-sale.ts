@@ -358,12 +358,32 @@ export async function createSaleAction(input: unknown) {
       description: `${isCredit ? "Credit invoice" : "Cash sale"} ${(result as any).sale?.invoiceNumber} total ${(result as any).sale?.total}`,
     });
 
+    const sale = (result as any).sale;
     return {
       success: true as const,
-      message: `Sale ${(result as any).sale.invoiceNumber} completed.`,
-      saleId: (result as any).sale.id,
-      invoiceNumber: (result as any).sale.invoiceNumber,
-      total: (result as any).sale.total,
+      message: `${isCredit ? "Credit invoice" : "Cash sale"} ${sale.invoiceNumber} completed.`,
+      saleId: sale.id,
+      invoiceNumber: String(sale.invoiceNumber),
+      total: Number(sale.total ?? subtotal),
+      subtotal: Number(sale.subtotal ?? subtotal),
+      amountPaid: Number(sale.amountPaid ?? (isCredit ? 0 : subtotal)),
+      balanceDue: Number(sale.balanceDue ?? (isCredit ? subtotal : 0)),
+      paymentMethod: data.paymentMethod,
+      isCredit,
+      soldAt: sale.soldAt
+        ? new Date(sale.soldAt).toLocaleString()
+        : new Date().toLocaleString(),
+      customerId: data.customerId ?? null,
+      notes: data.notes ?? null,
+      lines: lines.map((l) => ({
+        productId: l.productId,
+        quantity: Number(
+          (l as { quantityEntered?: number }).quantityEntered ?? l.quantity,
+        ),
+        unitPrice: Number(l.unitPrice),
+        total: Number(l.total),
+        unitId: (l as { unitId?: string | null }).unitId ?? null,
+      })),
     };
   } catch (error) {
     return {

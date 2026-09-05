@@ -14,10 +14,15 @@ import { units } from "@/db/schema/settings/units";
 import { PosClient } from "@/features/sales/components/pos/pos-client";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { promotionsRepository } from "@/repositories/inventory/promotions.repository";
+import { businesses } from "@/db/schema/core/businesses";
 
 export default async function FullScreenPosPage() {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  const businessRow = await db.query.businesses
+    .findFirst({ where: eq(businesses.id, user.businessId) })
+    .catch(() => null);
 
   const enabledCaps = await new BusinessCapabilityRepository()
     .listEnabled(user.businessId)
@@ -262,6 +267,19 @@ export default async function FullScreenPosPage() {
 
       fullScreen
       cashierName={user.name ?? user.email}
+      business={{
+        name: businessRow?.name ?? "GetAxe POS",
+        legalName: businessRow?.legalName ?? null,
+        phone: businessRow?.phone ?? null,
+        email: businessRow?.email ?? null,
+        address: businessRow?.address ?? null,
+        town: businessRow?.town ?? null,
+        county: businessRow?.county ?? null,
+        kraPin: businessRow?.kraPin ?? null,
+        registrationNumber: businessRow?.registrationNumber ?? null,
+        logo: businessRow?.logo ?? null,
+        currency: businessRow?.currency ?? "KES",
+      }}
       recentSales={sales.map((s) => ({
         id: s.id,
         invoiceNumber: s.invoiceNumber,

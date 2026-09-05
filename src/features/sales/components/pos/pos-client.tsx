@@ -28,6 +28,11 @@ import { Label } from "@/components/ui/label";
 import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
 
 import { createSaleAction } from "../../actions/create-sale";
+import {
+  SaleReceipt,
+  type ReceiptBusiness,
+  type ReceiptData,
+} from "./sale-receipt";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ConnectionStatus } from "@/components/layout/connection-status";
 import { useOffline } from "@/providers/offline-provider";
@@ -110,6 +115,7 @@ type RecentSale = {
 };
 
 interface PosClientProps {
+  business?: ReceiptBusiness;
   products: PosProduct[];
   warehouses: WarehouseOption[];
   branches: BranchOption[];
@@ -128,6 +134,7 @@ interface PosClientProps {
 }
 
 export function PosClient({
+  business,
   products,
   warehouses,
   branches,
@@ -189,6 +196,7 @@ export function PosClient({
   >("CASH");
   /** Cash sale (immediate payment) vs credit invoice (AR / customer account). */
   const [saleMode, setSaleMode] = useState<"CASH" | "CREDIT">("CASH");
+  const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [amountTendered, setAmountTendered] = useState("");
   const [showCustomer, setShowCustomer] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
@@ -745,6 +753,40 @@ export function PosClient({
         toast.error(result.message);
         return;
       }
+
+      // Build printable receipt from cart + server response
+      const res = result as {
+        invoiceNumber?: string;
+        total?: number;
+        subtotal?: number;
+        amountPaid?: number;
+        balanceDue?: number;
+        paymentMethod?: string;
+        isCredit?: boolean;
+        soldAt?: string;
+        notes?: string | null;
+      };
+      setLastReceipt({
+        invoiceNumber: res.invoiceNumber ?? "—",
+        soldAt: res.soldAt ?? new Date().toLocaleString(),
+        cashierName: cashierName ?? null,
+        customerName: customerLabel || customerName.trim() || null,
+        customerPhone: customerPhone.trim() || null,
+        paymentMethod: res.paymentMethod ?? effectiveMethod,
+        isCredit: Boolean(res.isCredit ?? saleMode === "CREDIT"),
+        amountPaid: Number(res.amountPaid ?? 0),
+        balanceDue: Number(res.balanceDue ?? 0),
+        subtotal: Number(res.subtotal ?? total),
+        total: Number(res.total ?? total),
+        notes: salePayload.notes,
+        lines: cart.map((l) => ({
+          name: l.name,
+          quantity: l.quantity,
+          unitLabel: l.unitLabel ?? null,
+          unitPrice: l.unitPrice,
+          total: l.quantity * l.unitPrice,
+        })),
+      });
 
       if (resolvedCustomerId) {
         const preview = await previewLoyaltyEarnAction(total).catch(() => null);
@@ -1665,6 +1707,21 @@ export function PosClient({
         </section>
 
       </div>
+
+      {lastReceipt ? (
+        <SaleReceipt
+          open={!!lastReceipt}
+          business={
+            business ?? {
+              name: "GetAxe POS",
+              currency: "KES",
+            }
+          }
+          receipt={lastReceipt}
+          onClose={() => setLastReceipt(null)}
+          autoPrint
+        />
+      ) : null}
     </div>
   );
 }
