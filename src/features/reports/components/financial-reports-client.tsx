@@ -532,6 +532,10 @@ function BsView({
   return (
     <div className="space-y-4">
       <SectionTitle>Balance sheet as at {data.asOfDate}</SectionTitle>
+      <p className="text-xs text-muted-foreground">
+        Built from live POS payments, expenses, stock on hand × cost, open credit
+        sales, and supplier invoices / goods receipts — not journals alone.
+      </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <Kpi label="Total assets" value={`KES ${money(data.assets.total)}`} />
         <Kpi
@@ -579,13 +583,13 @@ function BsView({
         )}
       </p>
 
-      {data.bridge && !data.balanced ? (
-        <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
-          <h3 className="font-semibold">Where is the difference?</h3>
+      {data.bridge ? (
+        <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+          <h3 className="font-semibold">
+            {data.balanced ? "Position summary" : "Where is the difference?"}
+          </h3>
           <p className="text-muted-foreground">
-            A balance sheet balances when{" "}
-            <strong>Assets = Liabilities + Equity</strong>. Below is the bridge
-            for this date.
+            Assets = Liabilities + Equity. Net assets and equity composition:
           </p>
           <ul className="space-y-1 tabular-nums">
             <li className="flex justify-between gap-4">
@@ -648,6 +652,9 @@ function AlView({
   return (
     <div className="space-y-4">
       <SectionTitle>Assets &amp; liabilities as at {data.asOfDate}</SectionTitle>
+      <p className="text-xs text-muted-foreground">
+        Same operational sources as the balance sheet (cash, stock, AR, AP).
+      </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <Kpi label="Assets" value={`KES ${money(data.assets.total)}`} />
         <Kpi label="Liabilities" value={`KES ${money(data.liabilities.total)}`} />
