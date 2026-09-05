@@ -28,6 +28,7 @@ export default async function BusinessSettingsPage() {
     <BusinessProfileClient
       profile={{
         name: biz.name,
+        logo: biz.logo ?? null,
         legalName: biz.legalName,
         registrationNumber: biz.registrationNumber,
         kraPin: biz.kraPin,
