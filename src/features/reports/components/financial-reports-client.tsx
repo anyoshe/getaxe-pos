@@ -450,6 +450,73 @@ function PlView({
       <p className="text-lg font-bold text-primary">
         Net profit / (loss): KES {money(data.netProfit)}
       </p>
+
+      {data.cash ? (
+        <div className="space-y-3 rounded-xl border p-4">
+          <h3 className="font-semibold">Cash movements (POS &amp; expenses)</h3>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Kpi
+              label="Received (POS payments)"
+              value={`KES ${money(data.cash.totalReceived)}`}
+            />
+            <Kpi
+              label="Paid out (expenses)"
+              value={`KES ${money(data.cash.totalPaid)}`}
+            />
+            <Kpi
+              label="Net cash movement"
+              value={`KES ${money(data.cash.netCash)}`}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 text-sm">
+            <div>
+              <p className="mb-1 font-medium">Received by method</p>
+              {data.cash.receivedByMethod.length === 0 ? (
+                <p className="text-muted-foreground">No POS payments in range.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {data.cash.receivedByMethod.map((r) => (
+                    <li key={r.method} className="flex justify-between gap-4">
+                      <span>{r.method}</span>
+                      <span className="tabular-nums">
+                        {money(r.total)} ({r.count})
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="mb-1 font-medium">Expenses paid from</p>
+              {data.cash.paidByChannel.length === 0 ? (
+                <p className="text-muted-foreground">No expenses in range.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {data.cash.paidByChannel.map((r) => (
+                    <li
+                      key={r.channel + String(r.accountType)}
+                      className="flex justify-between gap-4"
+                    >
+                      <span>
+                        {r.channel}
+                        {r.accountType ? (
+                          <span className="text-xs text-muted-foreground">
+                            {" "}
+                            ({r.accountType})
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="tabular-nums">
+                        {money(r.total)} ({r.count})
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

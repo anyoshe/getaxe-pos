@@ -1,5 +1,7 @@
 "use server";
 
+import { nowNairobiWallClock } from "@/lib/timezone";
+
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 
 import { revalidatePath } from "next/cache";
@@ -81,6 +83,8 @@ export async function createExpenseAction(input: unknown) {
         reference: parsed.data.reference ?? null,
         status: "PAID",
         createdBy: user.id,
+        expenseDate: nowNairobiWallClock(),
+        createdAt: nowNairobiWallClock(),
       })
       .returning();
 

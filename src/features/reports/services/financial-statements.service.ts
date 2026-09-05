@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lt, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { accountCategories } from "@/db/schema/finance/account_categories";
@@ -11,15 +11,18 @@ import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
 import { sales } from "@/db/schema/sales/sales";
 import { saleItems } from "@/db/schema/sales/sale_items";
 import { products } from "@/db/schema/inventory/products";
+import { payments } from "@/db/schema/sales/payments";
+import { cashAccounts } from "@/db/schema/finance/cash_accounts";
 import { ensureFinanceDefaults } from "@/features/finance/services/finance.service";
 
 function dayStart(d: string) {
-  return new Date(`${d}T00:00:00+03:00`);
+  // Nairobi midnight; widen ±3h so UTC server timestamps still fall in-range
+  return new Date(new Date(`${d}T00:00:00+03:00`).getTime() - 3 * 60 * 60 * 1000);
 }
 function dayEndEx(d: string) {
   const x = new Date(`${d}T00:00:00+03:00`);
   x.setDate(x.getDate() + 1);
-  return x;
+  return new Date(x.getTime() + 3 * 60 * 60 * 1000);
 }
 
 type AccountBalance = {
@@ -103,6 +106,80 @@ export class FinancialStatementsService {
     });
   }
 
+
+  /** POS payments received + expenses paid, by tender channel (cash/M-Pesa/card/bank). */
+  async cashMovements(businessId: string, fromDate: string, toDate: string) {
+    const start = dayStart(fromDate);
+    const end = dayEndEx(toDate);
+
+    const received = await db
+      .select({
+        method: payments.method,
+        total: sql<string>`coalesce(sum(${payments.amount}::numeric), 0)`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.businessId, businessId),
+          eq(payments.status, "COMPLETED"),
+          gte(payments.paidAt, start),
+          lt(payments.paidAt, end),
+        ),
+      )
+      .groupBy(payments.method)
+      .orderBy(payments.method);
+
+    const paid = await db
+      .select({
+        channel: sql<string>`coalesce(${cashAccounts.name}, 'Unassigned')`,
+        accountType: cashAccounts.type,
+        total: sql<string>`coalesce(sum(${expenses.amount}::numeric), 0)`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(expenses)
+      .leftJoin(cashAccounts, eq(expenses.cashAccountId, cashAccounts.id))
+      .where(
+        and(
+          eq(expenses.businessId, businessId),
+          or(
+            and(
+              gte(expenses.expenseDate, start),
+              lt(expenses.expenseDate, end),
+            ),
+            and(
+              gte(expenses.createdAt, start),
+              lt(expenses.createdAt, end),
+            ),
+          ),
+        ),
+      )
+      .groupBy(cashAccounts.name, cashAccounts.type)
+      .orderBy(sql`sum(${expenses.amount}::numeric) desc`);
+
+    const totalReceived = received.reduce((s, r) => s + Number(r.total ?? 0), 0);
+    const totalPaid = paid.reduce((s, r) => s + Number(r.total ?? 0), 0);
+
+    return {
+      fromDate,
+      toDate,
+      receivedByMethod: received.map((r) => ({
+        method: String(r.method),
+        total: Number(r.total ?? 0),
+        count: Number(r.count ?? 0),
+      })),
+      paidByChannel: paid.map((r) => ({
+        channel: String(r.channel ?? "Unassigned"),
+        accountType: r.accountType ? String(r.accountType) : null,
+        total: Number(r.total ?? 0),
+        count: Number(r.count ?? 0),
+      })),
+      totalReceived,
+      totalPaid,
+      netCash: totalReceived - totalPaid,
+    };
+  }
+
   /** Operating expenses from the expenses module (cash register). */
   async expenseReport(businessId: string, fromDate: string, toDate: string) {
     const start = dayStart(fromDate);
@@ -127,8 +204,16 @@ export class FinancialStatementsService {
       .where(
         and(
           eq(expenses.businessId, businessId),
-          gte(expenses.expenseDate, start),
-          lt(expenses.expenseDate, end),
+          or(
+            and(
+              gte(expenses.expenseDate, start),
+              lt(expenses.expenseDate, end),
+            ),
+            and(
+              gte(expenses.createdAt, start),
+              lt(expenses.createdAt, end),
+            ),
+          ),
         ),
       )
       .orderBy(asc(expenses.expenseDate));
@@ -147,8 +232,16 @@ export class FinancialStatementsService {
       .where(
         and(
           eq(expenses.businessId, businessId),
-          gte(expenses.expenseDate, start),
-          lt(expenses.expenseDate, end),
+          or(
+            and(
+              gte(expenses.expenseDate, start),
+              lt(expenses.expenseDate, end),
+            ),
+            and(
+              gte(expenses.createdAt, start),
+              lt(expenses.createdAt, end),
+            ),
+          ),
         ),
       )
       .groupBy(expenseCategories.name)
@@ -232,8 +325,16 @@ export class FinancialStatementsService {
       .where(
         and(
           eq(expenses.businessId, businessId),
-          gte(expenses.expenseDate, start),
-          lt(expenses.expenseDate, end),
+          or(
+            and(
+              gte(expenses.expenseDate, start),
+              lt(expenses.expenseDate, end),
+            ),
+            and(
+              gte(expenses.createdAt, start),
+              lt(expenses.createdAt, end),
+            ),
+          ),
         ),
       );
 
@@ -293,6 +394,8 @@ export class FinancialStatementsService {
     const grossProfit = revenueTotal - cogsTotal;
     const netProfit = grossProfit - opexTotal;
 
+    const cash = await this.cashMovements(businessId, fromDate, toDate);
+
     return {
       fromDate,
       toDate,
@@ -312,6 +415,7 @@ export class FinancialStatementsService {
         lines: opex.filter((a) => Math.abs(a.balance) > 0.0001),
         cashExpenses,
       },
+      cash,
       grossProfit,
       netProfit,
     };
