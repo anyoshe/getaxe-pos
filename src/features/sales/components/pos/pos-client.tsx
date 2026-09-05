@@ -1684,6 +1684,7 @@ export function PosClient({
                     </option>
                   ))}
                 </select>
+              </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Input
                   className="h-9 rounded-xl"
