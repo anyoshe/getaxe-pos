@@ -31,6 +31,8 @@ export type ReceiptData = {
   soldAt: string;
   cashierName?: string | null;
   customerName?: string | null;
+  /** Company contact person (B2B credit). */
+  contactName?: string | null;
   customerPhone?: string | null;
   paymentMethod: string;
   isCredit: boolean;
@@ -293,6 +295,9 @@ function ReceiptBody({
         <Row label="Payment" value={receipt.paymentMethod} />
         {receipt.customerName ? (
           <Row label="Customer" value={receipt.customerName} />
+        ) : null}
+        {receipt.contactName ? (
+          <Row label="Contact" value={receipt.contactName} />
         ) : null}
         {receipt.customerPhone ? (
           <Row label="Phone" value={receipt.customerPhone} />

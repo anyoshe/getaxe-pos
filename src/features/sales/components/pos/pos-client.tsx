@@ -43,6 +43,7 @@ import {
 } from "@/lib/offline/outbox";
 import {
   ensurePosCustomerAction,
+  listPosCustomersAction,
   lookupCustomerByPhoneAction,
   previewLoyaltyEarnAction,
 } from "../../actions/pos-customer";
@@ -204,6 +205,19 @@ export function PosClient({
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerLabel, setCustomerLabel] = useState<string | null>(null);
   const [customerPoints, setCustomerPoints] = useState<number | null>(null);
+  const [customerContactName, setCustomerContactName] = useState<string | null>(null);
+  const [posCustomers, setPosCustomers] = useState<
+    Array<{
+      id: string;
+      displayName: string;
+      contactName: string | null;
+      phone: string | null;
+      allowCredit: boolean;
+      creditLimit: number;
+      loyaltyPoints: number;
+      isBusiness: boolean;
+    }>
+  >([]);
   const [earnPreview, setEarnPreview] = useState<number | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -213,6 +227,12 @@ export function PosClient({
 
   useEffect(() => {
     scanRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    void listPosCustomersAction().then((r) => {
+      if (r.success) setPosCustomers(r.customers as any);
+    });
   }, []);
 
   useEffect(() => {
@@ -564,7 +584,13 @@ export function PosClient({
       if (result.found) {
         setCustomerId(result.customer.id);
         setCustomerLabel(result.customer.displayName);
-        setCustomerName(result.customer.displayName);
+        setCustomerContactName(
+          (result.customer as { contactName?: string | null }).contactName ?? null,
+        );
+        setCustomerName(
+          (result.customer as { contactName?: string | null }).contactName ||
+            result.customer.displayName,
+        );
         setCustomerPhone(result.customer.phone ?? customerPhone);
         setCustomerPoints(result.customer.loyaltyPoints ?? 0);
         toast.success(
@@ -668,6 +694,12 @@ export function PosClient({
           resolvedCustomerId = ensured.customerId;
           setCustomerId(ensured.customerId);
           setCustomerLabel(ensured.displayName);
+          setCustomerContactName((ensured as any).contactName ?? null);
+          if (ensured.created) {
+            void listPosCustomersAction().then((r) => {
+              if (r.success) setPosCustomers(r.customers as any);
+            });
+          }
           receiptNote = `Customer: ${ensured.displayName} (${ensured.phone})`;
         }
       } else if (customerName.trim()) {
@@ -792,8 +824,19 @@ export function PosClient({
           timeZone: "Africa/Nairobi",
         }),
         cashierName: cashierName ?? null,
-        customerName: customerLabel || customerName.trim() || null,
-        customerPhone: customerPhone.trim() || null,
+        customerName:
+          (res as { customerDisplayName?: string }).customerDisplayName ||
+          customerLabel ||
+          customerName.trim() ||
+          null,
+        contactName:
+          (res as { customerContactName?: string | null }).customerContactName ||
+          customerContactName ||
+          null,
+        customerPhone:
+          (res as { customerPhone?: string | null }).customerPhone ||
+          customerPhone.trim() ||
+          null,
         paymentMethod: res.paymentMethod ?? effectiveMethod,
         isCredit: Boolean(res.isCredit ?? saleMode === "CREDIT"),
         amountPaid: paidNum,
@@ -1599,16 +1642,59 @@ export function PosClient({
                   · optional
                 </span>
               </div>
+              <div className="space-y-2">
+                <select
+                  className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm text-foreground"
+                  value={customerId ?? ""}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (!id) {
+                      setCustomerId(null);
+                      setCustomerLabel(null);
+                      setCustomerContactName(null);
+                      setCustomerPoints(null);
+                      return;
+                    }
+                    const c = posCustomers.find((x) => x.id === id);
+                    if (!c) return;
+                    if (saleMode === "CREDIT" && !c.allowCredit) {
+                      toast.error("This customer is not enabled for credit.");
+                      return;
+                    }
+                    setCustomerId(c.id);
+                    setCustomerLabel(c.displayName);
+                    setCustomerContactName(c.contactName);
+                    setCustomerPhone(c.phone ?? "");
+                    setCustomerPoints(c.loyaltyPoints);
+                  }}
+                >
+                  <option value="">
+                    {saleMode === "CREDIT"
+                      ? "Select credit customer…"
+                      : "Select customer (optional)…"}
+                  </option>
+                  {(saleMode === "CREDIT"
+                    ? posCustomers.filter((c) => c.allowCredit)
+                    : posCustomers
+                  ).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.displayName}
+                      {c.phone ? ` · ${c.phone}` : ""}
+                      {c.allowCredit ? " · credit" : ""}
+                    </option>
+                  ))}
+                </select>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Input
                   className="h-9 rounded-xl"
                   inputMode="tel"
-                  placeholder="Phone (loyalty)"
+                  placeholder="Phone (loyalty / new customer)"
                   value={customerPhone}
                   onChange={(e) => {
                     setCustomerPhone(e.target.value);
                     setCustomerId(null);
                     setCustomerLabel(null);
+                    setCustomerContactName(null);
                     setCustomerPoints(null);
                   }}
                   onKeyDown={(e) => {

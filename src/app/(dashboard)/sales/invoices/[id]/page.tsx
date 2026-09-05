@@ -53,16 +53,23 @@ export default async function InvoiceDetailPage({
     sale.paymentStatus === "PARTIAL" ||
     Number(sale.balanceDue ?? 0) > 0.001;
 
+  const isBizCustomer = customerRow?.customerType === "BUSINESS";
+  const personName = customerRow
+    ? [customerRow.firstName, customerRow.lastName].filter(Boolean).join(" ")
+    : "";
   const customerName = customerRow
-    ? [customerRow.firstName, customerRow.lastName].filter(Boolean).join(" ") ||
-      customerRow.companyName
+    ? isBizCustomer
+      ? customerRow.companyName || personName
+      : personName || customerRow.companyName
     : null;
+  const contactName = isBizCustomer && personName ? personName : null;
 
   const receipt = {
     invoiceNumber: sale.invoiceNumber,
     soldAt: sale.soldAt ? formatDateTimeNairobi(sale.soldAt) : "—",
     cashierName: null as string | null,
     customerName,
+    contactName,
     customerPhone: customerRow?.phone ?? null,
     paymentMethod: isCredit ? "CREDIT" : "CASH",
     isCredit,

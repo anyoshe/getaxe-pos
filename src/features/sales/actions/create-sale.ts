@@ -8,7 +8,8 @@ import { journalPostingService } from "@/features/finance/services/journal-posti
 import { loyaltyService } from "@/features/sales/services/loyalty.service";
 import { db } from "@/db";
 import { customers } from "@/db/schema/sales/customers";
-import { eq, sql } from "drizzle-orm";
+import { sales } from "@/db/schema/sales/sales";
+import { and, eq, sql } from "drizzle-orm";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -221,6 +222,12 @@ export async function createSaleAction(input: unknown) {
           id: customers.id,
           active: customers.active,
           allowCredit: customers.allowCredit,
+          creditLimit: customers.creditLimit,
+          customerType: customers.customerType,
+          companyName: customers.companyName,
+          firstName: customers.firstName,
+          lastName: customers.lastName,
+          phone: customers.phone,
         })
         .from(customers)
         .where(eq(customers.id, data.customerId))
@@ -237,6 +244,26 @@ export async function createSaleAction(input: unknown) {
           success: false as const,
           message:
             "This customer is not enabled for credit. Under Customers, enable credit account and complete KYC.",
+        };
+      }
+      const [bal] = await db
+        .select({
+          open: sql<string>`coalesce(sum(${sales.balanceDue}::numeric), 0)`,
+        })
+        .from(sales)
+        .where(
+          and(
+            eq(sales.businessId, user.businessId),
+            eq(sales.customerId, data.customerId),
+            sql`${sales.paymentStatus} in ('PENDING','PARTIAL')`,
+          ),
+        );
+      const openBalance = Number(bal?.open ?? 0);
+      const limit = Number(cust.creditLimit ?? 0);
+      if (limit > 0 && openBalance + subtotal > limit + 0.001) {
+        return {
+          success: false as const,
+          message: `Credit limit exceeded. Limit KES ${limit.toLocaleString()}, open balance KES ${openBalance.toLocaleString()}, this sale KES ${subtotal.toLocaleString()}. Available KES ${Math.max(0, limit - openBalance).toLocaleString()}.`,
         };
       }
     }
@@ -358,6 +385,37 @@ export async function createSaleAction(input: unknown) {
       description: `${isCredit ? "Credit invoice" : "Cash sale"} ${(result as any).sale?.invoiceNumber} total ${(result as any).sale?.total}`,
     });
 
+    
+    let customerSnap: {
+      displayName: string | null;
+      contactName: string | null;
+      phone: string | null;
+      isBusiness: boolean;
+    } = { displayName: null, contactName: null, phone: null, isBusiness: false };
+    if (data.customerId) {
+      const [c] = await db
+        .select({
+          customerType: customers.customerType,
+          companyName: customers.companyName,
+          firstName: customers.firstName,
+          lastName: customers.lastName,
+          phone: customers.phone,
+        })
+        .from(customers)
+        .where(eq(customers.id, data.customerId))
+        .limit(1);
+      if (c) {
+        const isBiz = c.customerType === "BUSINESS";
+        const person = [c.firstName, c.lastName].filter(Boolean).join(" ");
+        customerSnap = {
+          isBusiness: isBiz,
+          displayName: isBiz && c.companyName ? c.companyName : person || c.companyName,
+          contactName: isBiz ? person || null : null,
+          phone: c.phone,
+        };
+      }
+    }
+
     const sale = (result as any).sale;
     return {
       success: true as const,
@@ -374,6 +432,10 @@ export async function createSaleAction(input: unknown) {
         ? formatDateTimeNairobi(sale.soldAt)
         : formatDateTimeNairobi(nowNairobiWallClock()),
       customerId: data.customerId ?? null,
+      customerDisplayName: customerSnap.displayName,
+      customerContactName: customerSnap.contactName,
+      customerPhone: customerSnap.phone,
+      customerIsBusiness: customerSnap.isBusiness,
       notes: data.notes ?? null,
       lines: lines.map((l) => ({
         productId: l.productId,
