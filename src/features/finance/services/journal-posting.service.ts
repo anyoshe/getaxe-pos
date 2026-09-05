@@ -206,6 +206,41 @@ export class JournalPostingService {
     });
   }
 
+
+  /** Customer pays credit invoice: Dr Cash, Cr Accounts Receivable */
+  async postArCollection(input: {
+    businessId: string;
+    saleId: string;
+    invoiceNumber: string;
+    amount: number;
+    paymentId?: string;
+    postedBy?: string | null;
+    cashAccountCode?: string;
+  }) {
+    if (input.amount <= 0) return null;
+    const cashCode = input.cashAccountCode ?? "1000";
+    return this.post({
+      businessId: input.businessId,
+      sourceType: "PAYMENT",
+      sourceId: input.paymentId ?? input.saleId,
+      description: `AR collection ${input.invoiceNumber}`,
+      reference: input.invoiceNumber,
+      postedBy: input.postedBy,
+      lines: [
+        {
+          accountCode: cashCode,
+          debit: input.amount.toFixed(2),
+          description: `Payment received ${input.invoiceNumber}`,
+        },
+        {
+          accountCode: "1300",
+          credit: input.amount.toFixed(2),
+          description: `Clear AR ${input.invoiceNumber}`,
+        },
+      ],
+    });
+  }
+
   /** GRN / purchase receive: Dr Inventory, Cr Accounts Payable (or Cash if paid) */
   async postPurchaseReceive(input: {
     businessId: string;

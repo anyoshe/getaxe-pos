@@ -80,6 +80,12 @@ export const navigation: NavigationItem[] = [
         permission: "sales.view",
       },
       {
+        label: "Credit collections",
+        href: "/sales/receivables",
+        icon: Wallet,
+        permission: "sales.create",
+      },
+      {
         label: "Returns",
         href: "/sales/returns",
         icon: RotateCcw,
