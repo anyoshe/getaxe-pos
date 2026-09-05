@@ -11,10 +11,13 @@ import { Label } from "@/components/ui/label";
 import {
   updateBusinessProfileAction,
   updateBusinessSettingsAction,
+  uploadBusinessLogoAction,
+  removeBusinessLogoAction,
 } from "../actions/settings-ui";
 
 type Profile = {
   name: string;
+  logo: string | null;
   legalName: string | null;
   registrationNumber: string | null;
   kraPin: string | null;
@@ -64,6 +67,83 @@ export function BusinessProfileClient({
           Legal identity and operational defaults for this organisation.
         </p>
       </div>
+
+      <section className="space-y-4 rounded-xl border border-primary/20 bg-card p-4 shadow-sm">
+        <div>
+          <h2 className="font-semibold">Receipt logo</h2>
+          <p className="text-sm text-muted-foreground">
+            Shown on POS and invoice receipts. Use a clear PNG or JPG under 500&nbsp;KB.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border bg-muted/40">
+            {form.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={form.logo}
+                alt="Business logo"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <span className="px-2 text-center text-xs text-muted-foreground">
+                No logo
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              disabled={pending}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const fd = new FormData();
+                fd.set("logo", file);
+                start(async () => {
+                  const r = await uploadBusinessLogoAction(fd);
+                  if (r.success) {
+                    toast.success(r.message);
+                    // Preview from local file immediately
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setForm((f) => ({
+                        ...f,
+                        logo: typeof reader.result === "string" ? reader.result : f.logo,
+                      }));
+                    };
+                    reader.readAsDataURL(file);
+                    router.refresh();
+                  } else {
+                    toast.error(r.message);
+                  }
+                });
+              }}
+            />
+            {form.logo ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pending}
+                onClick={() =>
+                  start(async () => {
+                    const r = await removeBusinessLogoAction();
+                    if (r.success) {
+                      setForm((f) => ({ ...f, logo: null }));
+                      toast.success(r.message);
+                      router.refresh();
+                    } else toast.error(r.message);
+                  })
+                }
+              >
+                Remove logo
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
 
       <section className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
         <h2 className="font-semibold">Identity</h2>

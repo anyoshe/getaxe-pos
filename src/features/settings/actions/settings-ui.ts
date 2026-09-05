@@ -213,3 +213,72 @@ export async function createPaymentMethodAction(input: unknown) {
     };
   }
 }
+
+
+const MAX_LOGO_BYTES = 600_000; // ~600KB after base64
+
+export async function uploadBusinessLogoAction(formData: FormData) {
+  const user = await requireAuthorizedUser("business.view");
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) {
+    return { success: false as const, message: "Choose an image file (PNG or JPG)." };
+  }
+  if (file.size > MAX_LOGO_BYTES) {
+    return {
+      success: false as const,
+      message: "Logo is too large. Use an image under 500 KB.",
+    };
+  }
+  const type = file.type || "image/png";
+  if (!type.startsWith("image/")) {
+    return { success: false as const, message: "Only image files are allowed." };
+  }
+
+  try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    const dataUrl = `data:${type};base64,${buf.toString("base64")}`;
+    await db
+      .update(businesses)
+      .set({ logo: dataUrl, updatedAt: new Date() })
+      .where(eq(businesses.id, user.businessId));
+
+    void logActivity({
+      businessId: user.businessId,
+      userId: user.id,
+      action: "UPDATE",
+      entity: "BUSINESS",
+      entityId: user.businessId,
+      description: "Business logo updated for receipts",
+    });
+
+    revalidatePath("/settings/business");
+    revalidatePath("/sales/pos");
+    revalidatePath("/sales/invoices");
+    return { success: true as const, message: "Logo saved. It will appear on receipts." };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to upload logo.",
+    };
+  }
+}
+
+export async function removeBusinessLogoAction() {
+  const user = await requireAuthorizedUser("business.view");
+  try {
+    await db
+      .update(businesses)
+      .set({ logo: null, updatedAt: new Date() })
+      .where(eq(businesses.id, user.businessId));
+    revalidatePath("/settings/business");
+    revalidatePath("/sales/pos");
+    revalidatePath("/sales/invoices");
+    return { success: true as const, message: "Logo removed." };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to remove logo.",
+    };
+  }
+}
+
