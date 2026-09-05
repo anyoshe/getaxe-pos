@@ -275,8 +275,6 @@ export class JournalPostingService {
       ],
     });
   }
-}
-
 
   /** Operating expense: Dr Operating Expense, Cr Cash */
   async postExpense(input: {
@@ -343,5 +341,6 @@ export class JournalPostingService {
       ],
     });
   }
+}
 
 export const journalPostingService = new JournalPostingService();
