@@ -17,21 +17,27 @@ function normalizePhone(phone: string) {
 function customerDisplay(c: {
   customerType?: string | null;
   companyName?: string | null;
+  tradingName?: string | null;
   firstName?: string | null;
   lastName?: string | null;
   contactPersonTitle?: string | null;
 }) {
   const isBiz = c.customerType === "BUSINESS";
   const person = [c.firstName, c.lastName].filter(Boolean).join(" ");
-  if (isBiz && c.companyName) {
+  // Prefer legal company name, then trading name — never registration number
+  const company =
+    (c.companyName && c.companyName.trim()) ||
+    (c.tradingName && c.tradingName.trim()) ||
+    "";
+  if (isBiz) {
     return {
-      displayName: c.companyName,
+      displayName: company || person || "Business customer",
       contactName: person || null,
       isBusiness: true as const,
     };
   }
   return {
-    displayName: person || c.companyName || "Customer",
+    displayName: person || company || "Customer",
     contactName: null as string | null,
     isBusiness: false as const,
   };
@@ -45,6 +51,7 @@ export async function listPosCustomersAction() {
       id: customers.id,
       customerType: customers.customerType,
       companyName: customers.companyName,
+      tradingName: customers.tradingName,
       firstName: customers.firstName,
       lastName: customers.lastName,
       phone: customers.phone,

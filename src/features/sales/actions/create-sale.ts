@@ -397,6 +397,7 @@ export async function createSaleAction(input: unknown) {
         .select({
           customerType: customers.customerType,
           companyName: customers.companyName,
+          tradingName: customers.tradingName,
           firstName: customers.firstName,
           lastName: customers.lastName,
           phone: customers.phone,
@@ -407,9 +408,15 @@ export async function createSaleAction(input: unknown) {
       if (c) {
         const isBiz = c.customerType === "BUSINESS";
         const person = [c.firstName, c.lastName].filter(Boolean).join(" ");
+        const company =
+          (c.companyName && c.companyName.trim()) ||
+          (c.tradingName && c.tradingName.trim()) ||
+          "";
         customerSnap = {
           isBusiness: isBiz,
-          displayName: isBiz && c.companyName ? c.companyName : person || c.companyName,
+          displayName: isBiz
+            ? company || person || "Business customer"
+            : person || company || "Customer",
           contactName: isBiz ? person || null : null,
           phone: c.phone,
         };

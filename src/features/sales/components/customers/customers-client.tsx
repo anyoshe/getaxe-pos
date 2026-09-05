@@ -9,19 +9,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { createCustomerAction } from "../../actions/create-customer";
+import { updateCustomerAction } from "../../actions/update-customer";
 
 export type CustomerRow = {
   id: string;
   customerNumber: string | null;
+  customerType?: "INDIVIDUAL" | "BUSINESS" | string | null;
   firstName: string;
   lastName: string | null;
   companyName: string | null;
+  tradingName?: string | null;
+  registrationNumber?: string | null;
+  businessNature?: string | null;
+  contactPersonTitle?: string | null;
   phone: string | null;
   email: string | null;
+  idType?: string | null;
   idNumber?: string | null;
+  taxPin?: string | null;
+  dateOfBirth?: string | null;
+  gender?: "MALE" | "FEMALE" | "OTHER" | string | null;
+  address?: string | null;
+  city?: string | null;
+  county?: string | null;
+  postalCode?: string | null;
+  occupation?: string | null;
+  employer?: string | null;
+  emergencyContact?: string | null;
+  emergencyPhone?: string | null;
   allowCredit?: boolean | null;
   creditLimit?: string | number | null;
+  creditTermsDays?: number | null;
+  creditNotes?: string | null;
   loyaltyPoints?: number | null;
+  active?: boolean | null;
 };
 
 const empty = {
@@ -58,6 +79,7 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [form, setForm] = useState(empty);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -76,10 +98,44 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function loadForEdit(c: CustomerRow) {
+    setEditingId(c.id);
+    setForm({
+      customerType: (c.customerType === "BUSINESS" ? "BUSINESS" : "INDIVIDUAL"),
+      firstName: c.firstName || "",
+      lastName: c.lastName || "",
+      companyName: c.companyName || "",
+      tradingName: c.tradingName || "",
+      registrationNumber: c.registrationNumber || "",
+      businessNature: c.businessNature || "",
+      contactPersonTitle: c.contactPersonTitle || "",
+      phone: c.phone || "",
+      email: c.email || "",
+      idType: c.idType || "NATIONAL_ID",
+      idNumber: c.idNumber || "",
+      taxPin: c.taxPin || "",
+      dateOfBirth: c.dateOfBirth ? String(c.dateOfBirth).slice(0, 10) : "",
+      gender: (c.gender as "" | "MALE" | "FEMALE" | "OTHER") || "",
+      address: c.address || "",
+      city: c.city || "",
+      county: c.county || "",
+      postalCode: c.postalCode || "",
+      occupation: c.occupation || "",
+      employer: c.employer || "",
+      emergencyContact: c.emergencyContact || "",
+      emergencyPhone: c.emergencyPhone || "",
+      allowCredit: Boolean(c.allowCredit),
+      creditLimit: c.creditLimit != null ? String(c.creditLimit) : "",
+      creditTermsDays: String(c.creditTermsDays ?? 30),
+      creditNotes: c.creditNotes || "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await createCustomerAction({
+      const payload = {
         ...form,
         lastName: form.lastName || null,
         companyName: form.companyName || null,
@@ -104,10 +160,14 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
         creditLimit: form.creditLimit ? Number(form.creditLimit) : 0,
         creditTermsDays: form.creditTermsDays ? Number(form.creditTermsDays) : 30,
         creditNotes: form.creditNotes || null,
-      });
+      };
+      const result = editingId
+        ? await updateCustomerAction({ ...payload, id: editingId })
+        : await createCustomerAction(payload);
       if (result.success) {
         toast.success(result.message);
         setForm({ ...empty });
+        setEditingId(null);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -128,20 +188,35 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
 
       <form onSubmit={onSubmit} className="space-y-6 rounded-xl border bg-card p-4 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">New customer (KYC)</h2>
+          <h2 className="text-sm font-semibold">
+            {editingId ? "Edit customer (KYC)" : "New customer (KYC)"}
+          </h2>
           <div className="flex gap-2">
-            {(["INDIVIDUAL", "BUSINESS"] as const).map((t) => (
-              <button
-                key={t}
+            {editingId ? (
+              <Button
                 type="button"
-                onClick={() => set("customerType", t)}
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm({ ...empty });
+                }}
+              >
+                Cancel edit
+              </Button>
+            ) : null}
+            {(["INDIVIDUAL", "BUSINESS"] as const).map((typ) => (
+              <button
+                key={typ}
+                type="button"
+                onClick={() => set("customerType", typ)}
                 className={
-                  form.customerType === t
+                  form.customerType === typ
                     ? "rounded-lg border-2 border-primary bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary"
                     : "rounded-lg border px-3 py-1.5 text-xs text-muted-foreground"
                 }
               >
-                {t === "INDIVIDUAL" ? "Individual (person)" : "Business (B2B)"}
+                {typ === "INDIVIDUAL" ? "Individual (person)" : "Business (B2B)"}
               </button>
             ))}
           </div>
@@ -354,7 +429,13 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
         </section>
 
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : form.allowCredit ? "Save credit customer" : "Save customer"}
+          {pending
+            ? "Saving…"
+            : editingId
+              ? "Update customer"
+              : form.allowCredit
+                ? "Save credit customer"
+                : "Save customer"}
         </Button>
       </form>
 
@@ -373,27 +454,48 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
               <th className="p-3">Credit</th>
               <th className="p-3">Limit</th>
               <th className="p-3">#</th>
+              <th className="p-3" />
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-muted-foreground">No customers yet.</td>
+                <td colSpan={7} className="p-6 text-center text-muted-foreground">No customers yet.</td>
               </tr>
             ) : (
-              filtered.map((c) => (
+              filtered.map((c) => {
+                const isBiz = c.customerType === "BUSINESS";
+                const person = [c.firstName, c.lastName].filter(Boolean).join(" ");
+                const company =
+                  (c.companyName && c.companyName.trim()) ||
+                  (c.tradingName && c.tradingName.trim()) ||
+                  "";
+                return (
                 <tr key={c.id} className="border-t">
                   <td className="p-3 font-medium">
-                    {[c.firstName, c.lastName].filter(Boolean).join(" ")}
-                    {c.companyName ? (
-                      <span className="block text-xs text-muted-foreground">
-                        {c.companyName}
-                        <span className="text-primary"> · Business</span>
-                      </span>
-                    ) : null}
+                    {isBiz ? (
+                      <>
+                        <span>{company || "Business customer"}</span>
+                        {person ? (
+                          <span className="block text-xs text-muted-foreground">
+                            Contact: {person}
+                            {c.contactPersonTitle ? ` · ${c.contactPersonTitle}` : ""}
+                          </span>
+                        ) : null}
+                        <span className="mt-0.5 inline-block rounded bg-primary/10 px-1.5 text-[10px] text-primary">
+                          Business
+                        </span>
+                      </>
+                    ) : (
+                      person || company || "—"
+                    )}
                   </td>
                   <td className="p-3 text-muted-foreground">{c.phone ?? "—"}</td>
-                  <td className="p-3 font-mono text-xs">{c.idNumber ?? "—"}</td>
+                  <td className="p-3 font-mono text-xs">
+                    {isBiz
+                      ? c.registrationNumber || c.taxPin || "—"
+                      : c.idNumber ?? "—"}
+                  </td>
                   <td className="p-3">
                     {c.allowCredit ? (
                       <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">Credit</span>
@@ -405,8 +507,20 @@ export function CustomersClient({ customers }: { customers: CustomerRow[] }) {
                     {c.allowCredit ? Number(c.creditLimit ?? 0).toLocaleString() : "—"}
                   </td>
                   <td className="p-3 text-muted-foreground">{c.customerNumber ?? "—"}</td>
+                  <td className="p-3 text-right">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => loadForEdit(c)}
+                    >
+                      Edit
+                    </Button>
+                  </td>
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>
