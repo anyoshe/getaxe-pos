@@ -12,6 +12,7 @@ import { sales } from "@/db/schema/sales/sales";
 import { saleItems } from "@/db/schema/sales/sale_items";
 import { products } from "@/db/schema/inventory/products";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
+import { productBatches } from "@/db/schema/inventory/product_batches";
 import { goodsReceipts } from "@/db/schema/purchasing/goods_receipts";
 import { goodsReceiptItems } from "@/db/schema/purchasing/goods_receipt_items";
 import { supplierInvoices } from "@/db/schema/purchasing/supplier_invoices";
@@ -579,7 +580,30 @@ export class FinancialStatementsService {
     }
 
     // --- Inventory at cost ---
-    const [invRow] = await db
+    // Prefer batch remaining × batch cost (from GRN). Product.costPrice × qty
+    // overstates when cost is per pack but qty is pieces, or costs were mistyped.
+    const [batchVal] = await db
+      .select({
+        value: sql<string>`coalesce(sum(
+          coalesce(${productBatches.quantityRemaining}::numeric, 0) *
+          coalesce(${productBatches.costPrice}::numeric, 0)
+        ), 0)`,
+        qty: sql<string>`coalesce(sum(${productBatches.quantityRemaining}::numeric), 0)`,
+      })
+      .from(productBatches)
+      .where(
+        and(
+          eq(productBatches.businessId, businessId),
+          sql`coalesce(${productBatches.quantityRemaining}::numeric, 0) > 0`,
+          eq(productBatches.active, true),
+        ),
+      );
+
+    const batchInventoryValue = Number(batchVal?.value ?? 0);
+    const batchInventoryQty = Number(batchVal?.qty ?? 0);
+
+    // Products without active batch stock: balances × product cost
+    const [plainVal] = await db
       .select({
         value: sql<string>`coalesce(sum(
           coalesce(${inventoryBalances.quantity}::numeric, 0) *
@@ -589,10 +613,24 @@ export class FinancialStatementsService {
       })
       .from(inventoryBalances)
       .innerJoin(products, eq(inventoryBalances.productId, products.id))
-      .where(eq(inventoryBalances.businessId, businessId));
+      .where(
+        and(
+          eq(inventoryBalances.businessId, businessId),
+          sql`coalesce(${inventoryBalances.quantity}::numeric, 0) > 0`,
+        ),
+      );
 
-    const inventoryValue = Number(invRow?.value ?? 0);
-    const inventoryQty = Number(invRow?.qty ?? 0);
+    const plainInventoryValue = Number(plainVal?.value ?? 0);
+    const plainInventoryQty = Number(plainVal?.qty ?? 0);
+
+    // Pharmacy / batched stock: value only from batches (GRN unit cost × remaining).
+    // Avoid product.costPrice × piece qty which often overstates (wrong unit cost).
+    const useBatches = batchInventoryValue > 0.01 || batchInventoryQty > 0.01;
+    const inventoryValue = useBatches ? batchInventoryValue : plainInventoryValue;
+    const inventoryQty = useBatches ? batchInventoryQty : plainInventoryQty;
+    const inventorySource = useBatches
+      ? "batch_cost_x_remaining"
+      : "product_cost_x_on_hand";
 
     // --- AR: open credit invoices ---
     const [arRow] = await db
@@ -611,10 +649,11 @@ export class FinancialStatementsService {
       );
     const arTotal = Number(arRow?.total ?? 0);
 
-    // --- AP: supplier invoices, else GRN totals not cleared ---
+    // --- AP: open supplier invoices (pay via Purchases → Supplier invoices) ---
     const [apInv] = await db
       .select({
         total: sql<string>`coalesce(sum(${supplierInvoices.balanceDue}::numeric), 0)`,
+        count: sql<number>`count(*)::int`,
       })
       .from(supplierInvoices)
       .where(
@@ -626,9 +665,11 @@ export class FinancialStatementsService {
       );
     let apTotal = Number(apInv?.total ?? 0);
     let apSource = "supplier_invoices";
+    let apOpenCount = Number(apInv?.count ?? 0);
 
     if (apTotal < 0.01) {
-      // Fall back: value of goods received (GRN) as AP if invoices not used
+      // No open invoices: estimate unpaid purchases as sum of GRN line totals
+      // (you still owe suppliers until you record invoices + payments).
       const [grn] = await db
         .select({
           total: sql<string>`coalesce(sum(${goodsReceiptItems.total}::numeric), 0)`,
@@ -641,11 +682,12 @@ export class FinancialStatementsService {
         .where(
           and(
             eq(goodsReceipts.businessId, businessId),
-            lt(goodsReceipts.createdAt, end),
+            lt(goodsReceipts.receivedAt, end),
           ),
         );
       apTotal = Number(grn?.total ?? 0);
-      apSource = "goods_receipts";
+      apSource = "goods_receipts_estimate";
+      apOpenCount = 0;
     }
 
     const totalAssets = cashTotal + inventoryValue + arTotal;
@@ -691,8 +733,8 @@ export class FinancialStatementsService {
         accountCode: "2000",
         accountName:
           apSource === "supplier_invoices"
-            ? "Accounts payable (supplier invoices)"
-            : "Accounts payable (goods received not fully invoiced/paid)",
+            ? `Accounts payable (${apOpenCount} open supplier invoice(s))`
+            : "Accounts payable (est. from goods received — create & pay supplier invoices to clear)",
         categoryCode: "CL",
         categoryName: "Current Liabilities",
         statementClass: "LIABILITY",
@@ -742,9 +784,9 @@ export class FinancialStatementsService {
       notes: [
         "Built from live app data: POS payments, expenses, stock on hand × cost, open credit sales, supplier invoices / GRNs.",
         `Cash = till openings (${openingCash.toFixed(2)}) + collections (${paymentsTotal.toFixed(2)}) + other income (${otherIncomeTotal.toFixed(2)}) − expenses (${expensesTotal.toFixed(2)}).`,
-        `Inventory = on-hand qty × product cost price (${inventoryValue.toFixed(2)}).`,
+        `Inventory = batch remaining × GRN cost (${inventorySource}, ${inventoryValue.toFixed(2)}; ${inventoryQty} units).`,
         `AR = unpaid credit invoices (${arTotal.toFixed(2)}).`,
-        `AP source: ${apSource} (${apTotal.toFixed(2)}).`,
+        `AP source: ${apSource} (${apTotal.toFixed(2)}). Pay via Purchases → Supplier invoices.`,
         "Equity = Net assets; split into retained earnings (P&L) and capital residual so the statement balances.",
       ],
     };
@@ -771,6 +813,7 @@ export class FinancialStatementsService {
         openingCash,
         inventoryValue,
         inventoryQty,
+        inventorySource,
         arTotal,
         apTotal,
         apSource,
