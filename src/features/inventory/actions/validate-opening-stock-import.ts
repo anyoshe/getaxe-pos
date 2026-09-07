@@ -40,15 +40,37 @@ function norm(s: string | undefined | null) {
 
 function parseDate(v: string | undefined): string | null {
   if (!v || !String(v).trim()) return null;
-  const s = String(v).trim();
-  // Accept YYYY-MM-DD
+  let s = String(v).trim();
+  // ISO datetime → date part
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) s = s.slice(0, 10);
+  // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // DD/MM/YYYY
-  const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  // DD/MM/YYYY or DD-MM-YYYY
+  let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
   if (m) {
     const d = m[1].padStart(2, "0");
     const mo = m[2].padStart(2, "0");
     return `${m[3]}-${mo}-${d}`;
+  }
+  // MM/DD/YYYY (US Excel)
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const mo = m[1].padStart(2, "0");
+    const d = m[2].padStart(2, "0");
+    // Ambiguous: prefer day>12 as DD/MM already handled; if both <=12 keep US
+    return `${m[3]}-${mo}-${d}`;
+  }
+  // Excel serial day number (e.g. 45901)
+  if (/^\d{4,5}(\.\d+)?$/.test(s)) {
+    const serial = Math.floor(Number(s));
+    if (serial > 20000 && serial < 80000) {
+      const epoch = Date.UTC(1899, 11, 30);
+      const dt = new Date(epoch + serial * 86400000);
+      const y = dt.getUTCFullYear();
+      const mo = String(dt.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(dt.getUTCDate()).padStart(2, "0");
+      return `${y}-${mo}-${d}`;
+    }
   }
   return null;
 }
