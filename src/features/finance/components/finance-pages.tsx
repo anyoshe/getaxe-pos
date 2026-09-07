@@ -139,7 +139,18 @@ export function CashAccountsClient({
   accounts,
   ledgerAccounts,
 }: {
-  accounts: { id: string; name: string; type: string; currency: string; openingBalance?: string }[];
+  accounts: {
+    id: string;
+    name: string;
+    type: string;
+    currency: string;
+    openingBalance?: string;
+    accountCode?: string;
+    accountName?: string;
+    movementIn?: number;
+    movementOut?: number;
+    currentBalance?: number;
+  }[];
   ledgerAccounts: { id: string; accountCode: string; accountName: string }[];
 }) {
   const router = useRouter();
@@ -221,8 +232,10 @@ export function CashAccountsClient({
             <tr>
               <th className="p-3">Name</th>
               <th className="p-3">Type</th>
-              <th className="p-3">Currency</th>
-              <th className="p-3">Opening balance</th>
+              <th className="p-3">Ledger</th>
+              <th className="p-3 text-right">In (debits)</th>
+              <th className="p-3 text-right">Out (credits)</th>
+              <th className="p-3 text-right">Current balance</th>
             </tr>
           </thead>
           <tbody>
@@ -230,8 +243,19 @@ export function CashAccountsClient({
               <tr key={a.id} className="border-t">
                 <td className="p-3 font-medium">{a.name}</td>
                 <td className="p-3">{a.type}</td>
-                <td className="p-3">{a.currency}</td>
-                <td className="p-3 tabular-nums">{a.openingBalance ?? "0"}</td>
+                <td className="p-3 text-xs text-muted-foreground">
+                  {a.accountCode ? `${a.accountCode} · ${a.accountName ?? ""}` : "—"}
+                </td>
+                <td className="p-3 text-right tabular-nums text-emerald-700 dark:text-emerald-400">
+                  {(a.movementIn ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </td>
+                <td className="p-3 text-right tabular-nums text-red-700 dark:text-red-400">
+                  {(a.movementOut ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </td>
+                <td className="p-3 text-right tabular-nums font-semibold">
+                  {(a.currentBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}{" "}
+                  {a.currency}
+                </td>
               </tr>
             ))}
           </tbody>

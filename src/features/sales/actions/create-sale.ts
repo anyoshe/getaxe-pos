@@ -361,6 +361,25 @@ export async function createSaleAction(input: unknown) {
         );
         if (cost > 0 && stockQty > 0) cogs += cost * stockQty;
       }
+      let cashAccountCode: string | undefined;
+      if (!isCredit) {
+        try {
+          const method = String(
+            (data as { paymentMethod?: string }).paymentMethod ?? "CASH",
+          );
+          const caId = await financeService.resolveCashAccountIdForMethod(
+            user.businessId,
+            method,
+          );
+          const code = await financeService.getCashAccountGlCode(
+            user.businessId,
+            caId,
+          );
+          if (code) cashAccountCode = code;
+        } catch {
+          /* default 1000 in postSale */
+        }
+      }
       await journalPostingService.postSale({
         businessId: user.businessId,
         saleId: (result as any).sale.id,
@@ -369,6 +388,7 @@ export async function createSaleAction(input: unknown) {
         cogs: cogs > 0 ? cogs : undefined,
         postedBy: user.id,
         isCredit,
+        cashAccountCode,
       });
     } catch (e) {
       console.error("[create-sale] journal", e);

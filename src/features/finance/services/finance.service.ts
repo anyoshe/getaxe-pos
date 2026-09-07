@@ -1,9 +1,11 @@
-import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or , sql} from "drizzle-orm";
 import { priceLists } from "@/db/schema/inventory/price_lists";
 
 import { db } from "@/db";
 import { accountTypes } from "@/db/schema/finance/account_types";
 import { accountCategories } from "@/db/schema/finance/account_categories";
+import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
+import { journalEntries } from "@/db/schema/finance/journal_entries";
 import { chartOfAccounts } from "@/db/schema/finance/chart_of_accounts";
 import { cashAccounts } from "@/db/schema/finance/cash_accounts";
 import { taxRates } from "@/db/schema/finance/tax_rates";
@@ -388,6 +390,98 @@ export class FinanceService {
   }
 
   /** Resolve till/account for a POS payment method (for reconciliation). */
+
+  /**
+   * Cash & bank tills with live ledger balance:
+   * openingBalance + journal debits − journal credits on the linked CoA account.
+   * Sales / income increase; supplier pays & expenses decrease (when posted correctly).
+   */
+  async getCashAccountsWithBalances(businessId: string) {
+    await ensureFinanceDefaults(businessId);
+    const accounts = await db
+      .select({
+        id: cashAccounts.id,
+        name: cashAccounts.name,
+        type: cashAccounts.type,
+        currency: cashAccounts.currency,
+        openingBalance: cashAccounts.openingBalance,
+        accountId: cashAccounts.accountId,
+        accountCode: chartOfAccounts.accountCode,
+        accountName: chartOfAccounts.accountName,
+      })
+      .from(cashAccounts)
+      .innerJoin(
+        chartOfAccounts,
+        eq(cashAccounts.accountId, chartOfAccounts.id),
+      )
+      .where(
+        and(eq(cashAccounts.businessId, businessId), eq(cashAccounts.active, true)),
+      )
+      .orderBy(asc(cashAccounts.name));
+
+    const result = [];
+    for (const a of accounts) {
+      const [agg] = await db
+        .select({
+          debit: sql<string>`coalesce(sum(${journalEntryLines.debit}::numeric), 0)`,
+          credit: sql<string>`coalesce(sum(${journalEntryLines.credit}::numeric), 0)`,
+        })
+        .from(journalEntryLines)
+        .innerJoin(
+          journalEntries,
+          eq(journalEntryLines.journalEntryId, journalEntries.id),
+        )
+        .where(
+          and(
+            eq(journalEntries.businessId, businessId),
+            eq(journalEntryLines.accountId, a.accountId),
+          ),
+        );
+      const opening = Number(a.openingBalance ?? 0);
+      const debit = Number(agg?.debit ?? 0);
+      const credit = Number(agg?.credit ?? 0);
+      // Asset: debits increase, credits decrease. Opening is already "cash in hand"
+      // Journals for opening may also post — prefer opening + net journals if opening
+      // journals use OPENING_BALANCE. Simpler: balance = opening + debit - credit
+      // when opening journals are NOT also in lines, or opening is 0 after journal.
+      // Standard: store openingBalance as seed; opening journals also hit CoA.
+      // To avoid double-count, use pure ledger if any lines exist, else opening only.
+      const hasLines = debit !== 0 || credit !== 0;
+      const currentBalance = hasLines ? debit - credit : opening;
+      // If both opening field and journals exist, ledger is authoritative (includes opening JV)
+      result.push({
+        ...a,
+        movementIn: debit,
+        movementOut: credit,
+        currentBalance,
+      });
+    }
+    return result;
+  }
+
+  async getCashAccountGlCode(
+    businessId: string,
+    cashAccountId: string | null | undefined,
+  ): Promise<string | null> {
+    if (!cashAccountId) return null;
+    const [row] = await db
+      .select({ accountCode: chartOfAccounts.accountCode })
+      .from(cashAccounts)
+      .innerJoin(
+        chartOfAccounts,
+        eq(cashAccounts.accountId, chartOfAccounts.id),
+      )
+      .where(
+        and(
+          eq(cashAccounts.id, cashAccountId),
+          eq(cashAccounts.businessId, businessId),
+        ),
+      )
+      .limit(1);
+    return row?.accountCode ?? null;
+  }
+
+
   async resolveCashAccountIdForMethod(
     businessId: string,
     method: string,

@@ -90,12 +90,17 @@ export async function createExpenseAction(input: unknown) {
 
     try {
       if (row) {
+        const cashCode = await financeService.getCashAccountGlCode(
+          user.businessId,
+          parsed.data.cashAccountId,
+        );
         await journalPostingService.postExpense({
           businessId: user.businessId,
           expenseId: row.id,
           amount: parsed.data.amount,
           description: parsed.data.description,
           postedBy: user.id,
+          cashAccountCode: cashCode ?? undefined,
         });
       }
     } catch (je) {
@@ -145,12 +150,17 @@ export async function createIncomeAction(input: unknown) {
       .returning();
     try {
       if (row) {
+        const cashCode = await financeService.getCashAccountGlCode(
+          user.businessId,
+          parsed.data.cashAccountId,
+        );
         await journalPostingService.postIncome({
           businessId: user.businessId,
           incomeId: row.id,
           amount: parsed.data.amount,
           description: parsed.data.description,
           postedBy: user.id,
+          cashAccountCode: cashCode ?? undefined,
         });
       }
     } catch (je) {

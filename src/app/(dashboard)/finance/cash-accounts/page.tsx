@@ -6,7 +6,7 @@ export default async function CashAccountsPage() {
   const user = await getCurrentUser();
   if (!user) return null;
   const [accounts, ledger] = await Promise.all([
-    financeService.getCashAccounts(user.businessId).catch(() => []),
+    financeService.getCashAccountsWithBalances(user.businessId).catch(() => []),
     financeService.getChartOfAccounts(user.businessId).catch(() => []),
   ]);
   return (
@@ -17,6 +17,11 @@ export default async function CashAccountsPage() {
         type: a.type,
         currency: a.currency,
         openingBalance: String(a.openingBalance ?? "0"),
+        accountCode: a.accountCode,
+        accountName: a.accountName,
+        movementIn: Number(a.movementIn ?? 0),
+        movementOut: Number(a.movementOut ?? 0),
+        currentBalance: Number(a.currentBalance ?? 0),
       }))}
       ledgerAccounts={ledger.map((a) => ({
         id: a.id,
