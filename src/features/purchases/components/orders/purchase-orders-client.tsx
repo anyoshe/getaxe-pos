@@ -576,7 +576,7 @@ export function PurchaseOrdersClient({
                       variant="outline"
                       disabled={pending}
                       onClick={() =>
-                        start(async () => {
+                        startTransition(async () => {
                           await printPurchaseOrder(o.id, o.orderNumber);
                         })
                       }

@@ -432,7 +432,7 @@ export function GoodsReceivingClient({
                       variant="outline"
                       disabled={pending}
                       onClick={() =>
-                        start(async () => {
+                        startTransition(async () => {
                           const res = await getGoodsReceiptPrintDataAction(r.id);
                           if (!res.success || !res.data) {
                             toast.error(res.message ?? "Print failed");
