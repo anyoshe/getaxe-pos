@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { receivePurchaseOrderAction } from "../../actions/purchasing-ui";
+import { getGoodsReceiptPrintDataAction } from "../../actions/print-documents";
+import { printHtmlDocument } from "@/lib/print-document";
+import { buildGoodsReceiptHtml } from "../../lib/build-print-html";
+
 
 export type ProductUnitOpt = {
   unitId: string;
@@ -403,12 +407,13 @@ export function GoodsReceivingClient({
               <th className="p-3">Status</th>
               <th className="p-3">Total</th>
               <th className="p-3">Received</th>
+              <th className="p-3">Documents</th>
             </tr>
           </thead>
           <tbody>
             {receipts.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                <td colSpan={6} className="p-6 text-center text-muted-foreground">
                   No goods receipts yet.
                 </td>
               </tr>
@@ -420,6 +425,35 @@ export function GoodsReceivingClient({
                   <td className="p-3">{r.status}</td>
                   <td className="p-3">{Number(r.total).toLocaleString()}</td>
                   <td className="p-3 text-muted-foreground">{r.receivedAt}</td>
+                  <td className="p-3">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={pending}
+                      onClick={() =>
+                        start(async () => {
+                          const res = await getGoodsReceiptPrintDataAction(r.id);
+                          if (!res.success || !res.data) {
+                            toast.error(res.message ?? "Print failed");
+                            return;
+                          }
+                          try {
+                            printHtmlDocument(
+                              `GRN ${r.receiptNumber}`,
+                              buildGoodsReceiptHtml(res.data),
+                            );
+                          } catch (e) {
+                            toast.error(
+                              e instanceof Error ? e.message : "Print failed",
+                            );
+                          }
+                        })
+                      }
+                    >
+                      Print / PDF
+                    </Button>
+                  </td>
                 </tr>
               ))
             )}

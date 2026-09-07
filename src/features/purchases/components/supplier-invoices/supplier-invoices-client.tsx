@@ -1,4 +1,8 @@
 import { formatDateNairobi } from "@/lib/timezone";
+import { getSupplierInvoicePrintDataAction } from "../../actions/print-documents";
+import { printHtmlDocument } from "@/lib/print-document";
+import { buildSupplierInvoiceHtml } from "../../lib/build-print-html";
+
 "use client";
 
 import { useState, useTransition } from "react";
@@ -183,12 +187,13 @@ export function SupplierInvoicesClient({
               <th className="p-3">Status</th>
               <th className="p-3">Total</th>
               <th className="p-3">Balance</th>
+              <th className="p-3">Documents</th>
             </tr>
           </thead>
           <tbody>
             {invoices.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                <td colSpan={7} className="p-6 text-center text-muted-foreground">
                   No supplier invoices yet.
                 </td>
               </tr>
@@ -206,6 +211,35 @@ export function SupplierInvoicesClient({
                   </td>
                   <td className="p-3 tabular-nums font-medium">
                     {i.balanceDue} {i.currency}
+                  </td>
+                  <td className="p-3">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={pending}
+                      onClick={() =>
+                        start(async () => {
+                          const r = await getSupplierInvoicePrintDataAction(i.id);
+                          if (!r.success || !r.data) {
+                            toast.error(r.message ?? "Print failed");
+                            return;
+                          }
+                          try {
+                            printHtmlDocument(
+                              `Invoice ${i.invoiceNumber}`,
+                              buildSupplierInvoiceHtml(r.data),
+                            );
+                          } catch (e) {
+                            toast.error(
+                              e instanceof Error ? e.message : "Print failed",
+                            );
+                          }
+                        })
+                      }
+                    >
+                      Print / PDF
+                    </Button>
                   </td>
                 </tr>
               ))

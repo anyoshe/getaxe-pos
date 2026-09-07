@@ -13,6 +13,9 @@ import {
   cancelPurchaseOrderAction,
   createPurchaseOrderAction,
 } from "../../actions/purchasing-ui";
+import { getPurchaseOrderPrintDataAction } from "../../actions/print-documents";
+import { printHtmlDocument } from "@/lib/print-document";
+import { buildPurchaseOrderHtml } from "../../lib/build-print-html";
 
 export type PoRow = {
   id: string;
@@ -83,6 +86,22 @@ function money(n: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 4,
   });
+}
+
+async function printPurchaseOrder(orderId: string, orderNumber: string) {
+  const res = await getPurchaseOrderPrintDataAction(orderId);
+  if (!res.success || !res.data) {
+    toast.error(res.message ?? "Could not load purchase order.");
+    return;
+  }
+  try {
+    printHtmlDocument(
+      `PO ${orderNumber}`,
+      buildPurchaseOrderHtml(res.data),
+    );
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "Print failed");
+  }
 }
 
 export function PurchaseOrdersClient({
@@ -527,6 +546,7 @@ export function PurchaseOrdersClient({
               <th className="p-3">Order</th>
               <th className="p-3">Supplier</th>
               <th className="p-3">Status</th>
+                <th className="p-3">Documents</th>
               <th className="p-3">Total</th>
               <th className="p-3">Date</th>
               <th className="p-3">Actions</th>
@@ -535,7 +555,7 @@ export function PurchaseOrdersClient({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                <td colSpan={7} className="p-6 text-center text-muted-foreground">
                   No purchase orders yet.
                 </td>
               </tr>
@@ -548,6 +568,21 @@ export function PurchaseOrdersClient({
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                       {o.status}
                     </span>
+                  </td>
+                  <td className="p-3">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={pending}
+                      onClick={() =>
+                        start(async () => {
+                          await printPurchaseOrder(o.id, o.orderNumber);
+                        })
+                      }
+                    >
+                      Print / PDF
+                    </Button>
                   </td>
                   <td className="p-3">{Number(o.total).toLocaleString()}</td>
                   <td className="p-3 text-muted-foreground">{o.orderedAt}</td>
