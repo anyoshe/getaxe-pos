@@ -68,14 +68,31 @@ export function buildPurchaseOrderHtml(data: {
     )
     .join("");
 
+  const isDraft = String(data.status).toUpperCase() === "DRAFT";
+  const statusClass = isDraft
+    ? "doc-status-draft"
+    : String(data.status).toUpperCase() === "APPROVED"
+      ? "doc-status-approved"
+      : "doc-status-other";
+  const statusLabel = isDraft ? "DRAFT — not for supplier" : escapeHtmlText(data.status);
+
   return `
+  ${isDraft ? `<div class="watermark-draft">DRAFT</div>` : ""}
+  <div class="print-content">
   ${header(
     data.business,
     data.documentTitle,
     `<strong>${escapeHtmlText(data.orderNumber)}</strong><br/>
-     Status: ${escapeHtmlText(data.status)}<br/>
+     <span class="doc-status ${statusClass}">${statusLabel}</span><br/>
      Date: ${escapeHtmlText(data.orderedAt)}`,
   )}
+  ${
+    isDraft
+      ? `<p style="color:#92400e;background:#fffbeb;border:1px solid #f59e0b;padding:8px 12px;border-radius:8px;">
+           <strong>Draft purchase order</strong> — approve in GetAxe before sending to the supplier.
+         </p>`
+      : ""
+  }
   <div class="row">
     <div class="box">
       <strong>Supplier</strong><br/>
@@ -109,7 +126,12 @@ export function buildPurchaseOrderHtml(data: {
       : ""
   }
   <div class="footer">
-    Please supply the items above as ordered. Generated from GetAxe POS.
+    ${
+      isDraft
+        ? "DRAFT only — not a firm order until approved."
+        : "Please supply the items above as ordered. Generated from GetAxe POS."
+    }
+  </div>
   </div>`;
 }
 
