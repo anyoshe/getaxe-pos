@@ -113,26 +113,44 @@ export async function receiveStockAction(input: unknown) {
       product.id,
     );
     if (productUnits.length > 0) {
-      const resolved = resolveToStock({
-        productUnits: productUnits.map((u) => ({
-          unitId: u.unitId,
-          factorToStock: Number(u.factorToStock),
-          isStockUnit: u.isStockUnit,
-          allowSale: u.allowSale,
-          allowPurchase: u.allowPurchase,
-          active: u.active,
-          validTo: u.validTo,
-        })),
-        unitId: data.unitId ?? product.purchaseUnitId ?? undefined,
-        quantityEntered: Number(data.quantity),
-        requirePurchase: true,
-      });
-      quantityStock = resolved.quantityStock;
-      quantityEntered = resolved.quantityEntered;
-      conversionFactor = resolved.factorToStock;
-      enteredUnitId = resolved.unitId;
-      if (data.unitCost != null) {
-        unitCostStock = costPerStockUnit(Number(data.unitCost), conversionFactor);
+      const isOpening = data.movementType === "OPENING_STOCK";
+      // Opening stock is always in stock units; do not force purchase unit (BOX).
+      const preferredUnit = isOpening
+        ? (data.unitId ?? product.stockUnitId ?? null)
+        : (data.unitId ?? product.purchaseUnitId ?? product.stockUnitId ?? null);
+      try {
+        const resolved = resolveToStock({
+          productUnits: productUnits.map((u) => ({
+            unitId: u.unitId,
+            factorToStock: Number(u.factorToStock),
+            isStockUnit: u.isStockUnit,
+            allowSale: u.allowSale,
+            allowPurchase: u.allowPurchase,
+            active: u.active,
+            validTo: u.validTo,
+          })),
+          unitId: preferredUnit ?? undefined,
+          quantityEntered: Number(data.quantity),
+          requirePurchase: !isOpening,
+          allowDecimals: true,
+        });
+        quantityStock = resolved.quantityStock;
+        quantityEntered = resolved.quantityEntered;
+        conversionFactor = resolved.factorToStock;
+        enteredUnitId = resolved.unitId;
+        if (data.unitCost != null) {
+          unitCostStock = costPerStockUnit(
+            Number(data.unitCost),
+            conversionFactor,
+          );
+        }
+      } catch {
+        // Packaging matrix incomplete — treat entered qty as stock units
+        quantityStock = Math.round(Number(data.quantity));
+        quantityEntered = Number(data.quantity);
+        conversionFactor = 1;
+        enteredUnitId = product.stockUnitId ?? preferredUnit ?? null;
+        if (data.unitCost != null) unitCostStock = Number(data.unitCost);
       }
     }
   } catch (err) {

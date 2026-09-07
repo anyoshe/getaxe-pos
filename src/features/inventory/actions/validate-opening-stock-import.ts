@@ -204,23 +204,34 @@ export async function validateOpeningStockImportAction(
           allowSale: u.allowSale,
           allowPurchase: u.allowPurchase,
           active: u.active !== false,
+          validTo: u.validTo,
         }));
+        // Prefer stock unit for opening; skip hard fail if packaging incomplete
+        const openUnitId =
+          unitId ?? product.stockUnitId ?? product.purchaseUnitId ?? null;
         const unitConfigured =
-          unitId && factors.some((f) => f.unitId === unitId);
+          openUnitId && factors.some((f) => f.unitId === openUnitId);
         if (factors.length > 0 && unitConfigured) {
-          const resolved = resolveToStock({
-            productUnits: factors,
-            unitId,
-            quantityEntered: qty,
-          });
-          quantityStock = resolved.quantityStock;
+          try {
+            const resolved = resolveToStock({
+              productUnits: factors,
+              unitId: openUnitId,
+              quantityEntered: qty,
+              allowDecimals: true,
+            });
+            quantityStock = resolved.quantityStock;
+            unitId = resolved.unitId;
+          } catch {
+            quantityStock = qty;
+            unitId = product.stockUnitId ?? openUnitId;
+          }
+        } else {
+          quantityStock = qty;
+          unitId = product.stockUnitId ?? openUnitId;
         }
-      } catch (e) {
-        errors.push(
-          e instanceof Error
-            ? e.message
-            : "Could not convert quantity to stock units.",
-        );
+      } catch {
+        quantityStock = qty;
+        unitId = product.stockUnitId ?? unitId;
       }
     }
 
