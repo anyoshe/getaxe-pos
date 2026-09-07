@@ -121,6 +121,8 @@ export async function ensureFinanceDefaults(businessId: string) {
   const needAccounts = [
     { code: "1000", name: "Cash on Hand", cat: "CA" },
     { code: "1100", name: "Bank", cat: "CA" },
+    { code: "1110", name: "M-Pesa / Mobile Money", cat: "CA" },
+    { code: "1120", name: "Card Clearing", cat: "CA" },
     { code: "1200", name: "Inventory Asset", cat: "INV" },
     { code: "1300", name: "Accounts Receivable", cat: "CA" },
     { code: "2000", name: "Accounts Payable", cat: "CL" },
@@ -173,9 +175,17 @@ export async function ensureFinanceDefaults(businessId: string) {
     });
   }
 
-  // Cash / tender channels used by POS (reconcile each at end of day)
-  const cashCoa = byCode.get("1000");
-  if (cashCoa) {
+  // Cash / tender channels — each type maps to its own ledger account
+  const ledgerForChannel = (type: string, name: string): string => {
+    const n = name.toLowerCase();
+    if (type === "CASH" || type === "PETTY_CASH") return "1000";
+    if (type === "MPESA" || type === "MOBILE_MONEY") return "1110";
+    if (type === "BANK" && (n.includes("card") || n.includes("terminal"))) return "1120";
+    if (type === "BANK") return "1100";
+    return "1000";
+  };
+
+  {
     const existingCash = await db
       .select()
       .from(cashAccounts)
@@ -196,25 +206,13 @@ export async function ensureFinanceDefaults(businessId: string) {
     for (const ch of channels) {
       const key = `${ch.type}::${ch.name.toLowerCase()}`;
       if (byTypeName.has(key)) continue;
-      // Skip only when an equivalent channel already exists
-      if (
-        ch.type === "CASH" &&
-        existingCash.some((a) => a.type === "CASH")
-      ) {
-        continue;
-      }
-      if (
-        ch.type === "MPESA" &&
-        existingCash.some((a) => a.type === "MPESA")
-      ) {
-        continue;
-      }
+      if (ch.type === "CASH" && existingCash.some((a) => a.type === "CASH")) continue;
+      if (ch.type === "MPESA" && existingCash.some((a) => a.type === "MPESA")) continue;
       if (
         ch.type === "MOBILE_MONEY" &&
         existingCash.some((a) => a.type === "MOBILE_MONEY")
-      ) {
+      )
         continue;
-      }
       if (
         ch.name === "Card Terminal" &&
         existingCash.some(
@@ -222,9 +220,8 @@ export async function ensureFinanceDefaults(businessId: string) {
             a.name.toLowerCase().includes("card") ||
             (a.type === "BANK" && a.name.toLowerCase().includes("terminal")),
         )
-      ) {
+      )
         continue;
-      }
       if (
         ch.name === "Bank Account" &&
         existingCash.some(
@@ -233,20 +230,45 @@ export async function ensureFinanceDefaults(businessId: string) {
             !a.name.toLowerCase().includes("card") &&
             !a.name.toLowerCase().includes("terminal"),
         )
-      ) {
+      )
         continue;
-      }
+
+      const code = ledgerForChannel(ch.type, ch.name);
+      const coa = byCode.get(code) ?? byCode.get("1000");
+      if (!coa) continue;
       await db.insert(cashAccounts).values({
         businessId,
-        accountId: cashCoa.id,
+        accountId: coa.id,
         name: ch.name,
         type: ch.type,
         currency: "KES",
         openingBalance: "0",
         active: true,
       });
-      existingCash.push({ type: ch.type, name: ch.name } as any);
+      existingCash.push({ type: ch.type, name: ch.name } as never);
       byTypeName.add(key);
+    }
+
+    // Repair: if several tills still share Cash on Hand (1000), re-link by type
+    const cashOnHand = byCode.get("1000");
+    if (cashOnHand) {
+      const allCash = await db
+        .select()
+        .from(cashAccounts)
+        .where(eq(cashAccounts.businessId, businessId));
+      for (const row of allCash) {
+        const wantCode = ledgerForChannel(String(row.type), row.name);
+        const want = byCode.get(wantCode);
+        if (!want) continue;
+        if (row.accountId === want.id) continue;
+        // Only auto-fix when currently on 1000 (mis-seeded shared ledger)
+        if (row.accountId !== cashOnHand.id) continue;
+        if (wantCode === "1000") continue;
+        await db
+          .update(cashAccounts)
+          .set({ accountId: want.id, updatedAt: new Date() })
+          .where(eq(cashAccounts.id, row.id));
+      }
     }
   }
 
