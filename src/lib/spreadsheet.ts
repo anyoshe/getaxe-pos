@@ -137,6 +137,53 @@ function sheetToRows(
   return { rows, headers };
 }
 
+function splitCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === "," && !inQuotes) {
+      out.push(cur);
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+/** Parse plain CSV without XLSX so dates stay as typed (YYYY-MM-DD). */
+function parseCsvText(text: string): { rows: SpreadsheetRow[]; headers: string[] } {
+  const lines = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  if (lines.length === 0) return { rows: [], headers: [] };
+  const headers = splitCsvLine(lines[0]).map(normalizeSpreadsheetHeader);
+  const rows: SpreadsheetRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = splitCsvLine(lines[i]);
+    const row: SpreadsheetRow = {};
+    headers.forEach((h, idx) => {
+      row[h] = (cells[idx] ?? "").trim();
+    });
+    if (Object.values(row).some((v) => v.length > 0)) rows.push(row);
+  }
+  return { rows, headers };
+}
+
 /** Parse .csv / .xlsx / .xls into normalized string row objects. */
 export async function parseSpreadsheetFile(
   file: File,
@@ -148,19 +195,25 @@ export async function parseSpreadsheetFile(
     file.type.includes("spreadsheet") ||
     file.type.includes("excel");
 
+  // CSV: do not use SheetJS — it rewrites dates and breaks YYYY-MM-DD validation
+  if (!isExcel && (name.endsWith(".csv") || file.type.includes("csv") || name.endsWith(".txt"))) {
+    const text = await file.text();
+    return parseCsvText(text);
+  }
+
   if (isExcel) {
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
-    const sheetName = workbook.SheetNames[0];
+    // Prefer first sheet named Opening* if present
+    const sheetName =
+      workbook.SheetNames.find((n) => /opening/i.test(n)) ??
+      workbook.SheetNames[0];
     if (!sheetName) return { rows: [], headers: [] };
     return sheetToRows(workbook.Sheets[sheetName]);
   }
 
   const text = await file.text();
-  const workbook = XLSX.read(text, { type: "string" });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) return { rows: [], headers: [] };
-  return sheetToRows(workbook.Sheets[sheetName]);
+  return parseCsvText(text);
 }
 
 export function downloadCsv(filename: string, csvContent: string) {
