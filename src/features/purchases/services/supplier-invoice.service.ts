@@ -2,6 +2,9 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { supplierInvoices } from "@/db/schema/purchasing/supplier_invoices";
+import { cashAccounts } from "@/db/schema/finance/cash_accounts";
+import { chartOfAccounts } from "@/db/schema/finance/chart_of_accounts";
+
 import { suppliers } from "@/db/schema/inventory/suppliers";
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 
@@ -18,6 +21,7 @@ export class SupplierInvoiceService {
         amountPaid: supplierInvoices.amountPaid,
         balanceDue: supplierInvoices.balanceDue,
         currency: supplierInvoices.currency,
+        notes: supplierInvoices.notes,
         supplierId: supplierInvoices.supplierId,
         supplierName: suppliers.name,
       })
@@ -98,6 +102,8 @@ export class SupplierInvoiceService {
     businessId: string;
     invoiceId: string;
     amount: number;
+    /** Till / bank / M-Pesa cash account to pay from */
+    cashAccountId?: string | null;
     createdBy?: string | null;
   }) {
     const [inv] = await db
@@ -113,11 +119,46 @@ export class SupplierInvoiceService {
 
     if (!inv) throw new Error("Invoice not found");
 
+    let cashCode = "1000";
+    let cashLabel = "Cash on Hand";
+    if (input.cashAccountId) {
+      const [ca] = await db
+        .select({
+          name: cashAccounts.name,
+          type: cashAccounts.type,
+          accountCode: chartOfAccounts.accountCode,
+          accountName: chartOfAccounts.accountName,
+        })
+        .from(cashAccounts)
+        .innerJoin(
+          chartOfAccounts,
+          eq(cashAccounts.accountId, chartOfAccounts.id),
+        )
+        .where(
+          and(
+            eq(cashAccounts.id, input.cashAccountId),
+            eq(cashAccounts.businessId, input.businessId),
+            eq(cashAccounts.active, true),
+          ),
+        )
+        .limit(1);
+      if (!ca) throw new Error("Selected pay-from account not found or inactive.");
+      cashCode = ca.accountCode;
+      cashLabel = `${ca.name} (${ca.type}) · ${ca.accountCode} ${ca.accountName}`;
+    }
+
     const paid = Number(inv.amountPaid) + input.amount;
     const total = Number(inv.total);
     const balance = Math.max(0, total - paid);
     const status =
       balance <= 0.009 ? "PAID" : paid > 0 ? "PARTIAL" : inv.status;
+
+    const noteBit = `Paid ${input.amount.toFixed(2)} from ${cashLabel}`;
+    const prevNotes = inv.notes ? String(inv.notes) : "";
+    const notes = prevNotes
+      ? `${prevNotes}
+${noteBit}`
+      : noteBit;
 
     const [updated] = await db
       .update(supplierInvoices)
@@ -125,6 +166,7 @@ export class SupplierInvoiceService {
         amountPaid: paid.toFixed(2),
         balanceDue: balance.toFixed(2),
         status,
+        notes,
         updatedAt: new Date(),
       })
       .where(eq(supplierInvoices.id, inv.id))
@@ -134,7 +176,7 @@ export class SupplierInvoiceService {
       businessId: input.businessId,
       sourceType: "PAYMENT",
       sourceId: inv.id,
-      description: `AP payment ${inv.invoiceNumber}`,
+      description: `AP payment ${inv.invoiceNumber} via ${cashLabel}`,
       reference: inv.invoiceNumber,
       postedBy: input.createdBy,
       lines: [
@@ -144,9 +186,9 @@ export class SupplierInvoiceService {
           description: `Pay AP ${inv.invoiceNumber}`,
         },
         {
-          accountCode: "1000",
+          accountCode: cashCode,
           credit: input.amount.toFixed(2),
-          description: `Cash out ${inv.invoiceNumber}`,
+          description: `Out ${cashLabel} · ${inv.invoiceNumber}`,
         },
       ],
     });

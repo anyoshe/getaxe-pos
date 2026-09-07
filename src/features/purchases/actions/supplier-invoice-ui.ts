@@ -55,11 +55,15 @@ export async function paySupplierInvoiceAction(input: unknown) {
     .object({
       invoiceId: z.uuid(),
       amount: z.coerce.number().positive(),
+      cashAccountId: z.uuid(),
     })
     .safeParse(input);
 
   if (!parsed.success) {
-    return { success: false as const, message: "Invalid payment." };
+    return {
+      success: false as const,
+      message: "Select invoice, amount, and pay-from account (cash / bank / M-Pesa).",
+    };
   }
 
   try {
@@ -67,11 +71,14 @@ export async function paySupplierInvoiceAction(input: unknown) {
       businessId: user.businessId,
       invoiceId: parsed.data.invoiceId,
       amount: parsed.data.amount,
+      cashAccountId: parsed.data.cashAccountId,
       createdBy: user.id,
     });
     revalidatePath("/purchases/supplier-invoices");
     revalidatePath("/finance/ap-aging");
-    return { success: true as const, message: "Payment recorded." };
+    revalidatePath("/finance/journals");
+    revalidatePath("/finance/cash-accounts");
+    return { success: true as const, message: "Payment recorded from selected account." };
   } catch (e) {
     return {
       success: false as const,

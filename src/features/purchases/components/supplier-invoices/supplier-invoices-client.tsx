@@ -27,14 +27,25 @@ type Inv = {
   balanceDue: string;
   currency: string;
   invoiceDate: Date | string;
+  notes?: string | null;
+};
+
+type PayFromAccount = {
+  id: string;
+  name: string;
+  type: string;
+  accountCode: string;
+  accountName: string;
 };
 
 export function SupplierInvoicesClient({
   invoices,
   suppliers,
+  payFromAccounts,
 }: {
   invoices: Inv[];
   suppliers: { id: string; name: string }[];
+  payFromAccounts: PayFromAccount[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -44,6 +55,7 @@ export function SupplierInvoicesClient({
   const [dueDate, setDueDate] = useState("");
   const [payId, setPayId] = useState("");
   const [payAmt, setPayAmt] = useState("");
+  const [payAccountId, setPayAccountId] = useState(payFromAccounts[0]?.id ?? "");
 
   return (
     <div className="space-y-8">
@@ -125,13 +137,21 @@ export function SupplierInvoicesClient({
 
       <section className="space-y-3 rounded-xl border p-4">
         <h2 className="font-semibold">Record payment</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <p className="text-sm text-muted-foreground">
+          Choose which till, bank, or M-Pesa account the money leaves. The journal
+          credits that ledger account and debits Accounts Payable.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1">
             <Label>Invoice</Label>
             <select
               className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
               value={payId}
-              onChange={(e) => setPayId(e.target.value)}
+              onChange={(e) => {
+                setPayId(e.target.value);
+                const inv = invoices.find((x) => x.id === e.target.value);
+                if (inv) setPayAmt(String(inv.balanceDue));
+              }}
             >
               <option value="">Select…</option>
               {invoices
@@ -141,6 +161,24 @@ export function SupplierInvoicesClient({
                     {i.invoiceNumber} · due {i.balanceDue} {i.currency}
                   </option>
                 ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label>Pay from account</Label>
+            <select
+              className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+              value={payAccountId}
+              onChange={(e) => setPayAccountId(e.target.value)}
+            >
+              {payFromAccounts.length === 0 ? (
+                <option value="">No cash accounts — set up under Finance</option>
+              ) : (
+                payFromAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.type}) · {a.accountCode}
+                  </option>
+                ))
+              )}
             </select>
           </div>
           <div className="space-y-1">
@@ -155,12 +193,13 @@ export function SupplierInvoicesClient({
             <Button
               type="button"
               variant="outline"
-              disabled={pending || !payId}
+              disabled={pending || !payId || !payAccountId}
               onClick={() =>
                 start(async () => {
                   const r = await paySupplierInvoiceAction({
                     invoiceId: payId,
                     amount: Number(payAmt),
+                    cashAccountId: payAccountId,
                   });
                   if (!r.success) toast.error(r.message);
                   else {
@@ -187,6 +226,7 @@ export function SupplierInvoicesClient({
               <th className="p-3">Status</th>
               <th className="p-3">Total</th>
               <th className="p-3">Balance</th>
+              <th className="p-3">Payment trail</th>
               <th className="p-3">Documents</th>
             </tr>
           </thead>
@@ -211,6 +251,15 @@ export function SupplierInvoicesClient({
                   </td>
                   <td className="p-3 tabular-nums font-medium">
                     {i.balanceDue} {i.currency}
+                  </td>
+                  <td className="p-3 max-w-[220px] text-xs text-muted-foreground whitespace-pre-wrap">
+                    {i.notes?.includes("Paid ")
+                      ? i.notes
+                          .split("\n")
+                          .filter((l: string) => l.includes("Paid "))
+                          .slice(-3)
+                          .join(" · ") || "—"
+                      : "—"}
                   </td>
                   <td className="p-3">
                     <Button
