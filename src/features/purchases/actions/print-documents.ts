@@ -10,6 +10,29 @@ import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { formatDateTimeNairobi, formatDateNairobi } from "@/lib/timezone";
 import { purchasesQueryService } from "../services";
 
+/** Accept any of several purchase-related view permissions. */
+async function requirePurchaseDocUser() {
+  const codes = [
+    "goods_receipts.view",
+    "goods_receipts.create",
+    "goods_receipts.print",
+    "purchase_orders.view",
+    "purchase_orders.print",
+  ] as const;
+  let lastErr: unknown;
+  for (const code of codes) {
+    try {
+      return await requireAuthorizedUser(code);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error("Missing permission to view purchase documents.");
+}
+
+
 async function businessLetterhead(businessId: string) {
   const [b] = await db
     .select({
@@ -28,7 +51,7 @@ async function businessLetterhead(businessId: string) {
 
 export async function getPurchaseOrderPrintDataAction(purchaseOrderId: string) {
   try {
-    const user = await requireAuthorizedUser("purchase_orders.view");
+    const user = await requirePurchaseDocUser();
     const po = await purchasesQueryService.getPurchaseOrder(purchaseOrderId);
     if (!po || po.businessId !== user.businessId) {
       return { success: false as const, message: "Purchase order not found." };
@@ -108,7 +131,7 @@ export async function getPurchaseOrderPrintDataAction(purchaseOrderId: string) {
 
 export async function getGoodsReceiptPrintDataAction(goodsReceiptId: string) {
   try {
-    const user = await requireAuthorizedUser("purchases.view");
+    const user = await requirePurchaseDocUser();
     const grn = await purchasesQueryService.getGoodsReceipt(goodsReceiptId);
     if (!grn || grn.businessId !== user.businessId) {
       return { success: false as const, message: "Goods receipt not found." };
@@ -176,7 +199,7 @@ export async function getGoodsReceiptPrintDataAction(goodsReceiptId: string) {
 
 export async function getSupplierInvoicePrintDataAction(invoiceId: string) {
   try {
-    const user = await requireAuthorizedUser("purchases.view");
+    const user = await requirePurchaseDocUser();
     const [row] = await db
       .select()
       .from(supplierInvoices)
