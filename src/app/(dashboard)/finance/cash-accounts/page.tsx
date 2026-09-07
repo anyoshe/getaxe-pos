@@ -16,6 +16,7 @@ export default async function CashAccountsPage() {
         name: a.name,
         type: a.type,
         currency: a.currency,
+        openingBalance: String(a.openingBalance ?? "0"),
       }))}
       ledgerAccounts={ledger.map((a) => ({
         id: a.id,

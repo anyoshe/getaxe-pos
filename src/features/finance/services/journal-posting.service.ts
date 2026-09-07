@@ -341,6 +341,72 @@ export class JournalPostingService {
       ],
     });
   }
+
+  /** Opening cash on a till: Dr Cash (1000/1100), Cr Owner Equity (3000) */
+  async postOpeningCash(input: {
+    businessId: string;
+    sourceId: string;
+    amount: number;
+    cashAccountCode?: string;
+    description?: string;
+    postedBy?: string | null;
+  }) {
+    if (input.amount <= 0) return null;
+    const cashCode = input.cashAccountCode ?? "1000";
+    return this.post({
+      businessId: input.businessId,
+      sourceType: "OPENING_BALANCE",
+      sourceId: input.sourceId,
+      description: input.description ?? "Opening cash balance",
+      reference: "OPENING-CASH",
+      postedBy: input.postedBy,
+      lines: [
+        {
+          accountCode: cashCode,
+          debit: input.amount.toFixed(2),
+          description: "Opening cash",
+        },
+        {
+          accountCode: "3000",
+          credit: input.amount.toFixed(2),
+          description: "Owner capital (opening cash)",
+        },
+      ],
+    });
+  }
+
+  /** Opening stock already owned: Dr Inventory (1200), Cr Owner Equity (3000) */
+  async postOpeningStock(input: {
+    businessId: string;
+    sourceId: string;
+    amount: number;
+    description?: string;
+    reference?: string | null;
+    postedBy?: string | null;
+  }) {
+    if (input.amount <= 0) return null;
+    return this.post({
+      businessId: input.businessId,
+      sourceType: "OPENING_BALANCE",
+      sourceId: input.sourceId,
+      description: input.description ?? "Opening inventory",
+      reference: input.reference ?? "OPENING-STOCK",
+      postedBy: input.postedBy,
+      lines: [
+        {
+          accountCode: "1200",
+          debit: input.amount.toFixed(2),
+          description: "Opening inventory",
+        },
+        {
+          accountCode: "3000",
+          credit: input.amount.toFixed(2),
+          description: "Owner capital (opening stock)",
+        },
+      ],
+    });
+  }
+
 }
 
 export const journalPostingService = new JournalPostingService();

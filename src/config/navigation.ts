@@ -297,6 +297,12 @@ export const navigation: NavigationItem[] = [
         permission: "accounts.view",
       },
       {
+        label: "Opening balances",
+        href: "/finance/opening-balances",
+        icon: CircleDollarSign,
+        permission: "accounts.view",
+      },
+      {
         label: "Daily reconciliation",
         href: "/finance/reconciliation",
         icon: ClipboardList,

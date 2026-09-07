@@ -166,6 +166,15 @@ export async function getSetupReadiness(
       priority: 8,
     },
     {
+      id: "opening_balances",
+      label: "Opening balances (existing business)",
+      description: "Set till opening cash and load owned stock — not a PO for old stock",
+      done: stockLines > 0,
+      href: "/finance/opening-balances",
+      priority: 8.5,
+      optional: true,
+    },
+    {
       id: "stock",
       label: "Opening stock or GRN",
       description: "Positive on-hand balances for sellable items",

@@ -19,6 +19,12 @@ const cards = [
     icon: ClipboardList,
   },
   {
+    href: "/finance/opening-balances",
+    title: "Opening balances",
+    desc: "Opening cash + owned stock for existing businesses",
+    icon: ClipboardList,
+  },
+  {
     href: "/settings/business",
     title: "Business profile",
     desc: "Name, KRA, contact, operational defaults",

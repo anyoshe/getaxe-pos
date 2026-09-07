@@ -87,6 +87,7 @@ export async function ensureFinanceDefaults(businessId: string) {
     { code: "REV", name: "Operating Revenue", type: "REV", order: 3 },
     { code: "COGS", name: "Cost of Sales", type: "EXP", order: 4 },
     { code: "OPEX", name: "Operating Expenses", type: "EXP", order: 5 },
+    { code: "EQ", name: "Equity", type: "EQT", order: 7 },
   ];
   for (const c of needCats) {
     if (catMap[c.code]) continue;
@@ -121,6 +122,7 @@ export async function ensureFinanceDefaults(businessId: string) {
     { code: "1200", name: "Inventory Asset", cat: "INV" },
     { code: "1300", name: "Accounts Receivable", cat: "CA" },
     { code: "2000", name: "Accounts Payable", cat: "CL" },
+    { code: "3000", name: "Owner Equity / Capital", cat: "EQ" },
     { code: "4000", name: "Sales Revenue", cat: "REV" },
     { code: "5000", name: "Cost of Goods Sold", cat: "COGS" },
     { code: "6000", name: "Operating Expense", cat: "OPEX" },

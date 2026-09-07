@@ -1,5 +1,7 @@
 "use server";
 
+import { journalPostingService } from "@/features/finance/services/journal-posting.service";
+
 import { qtyStr } from "@/lib/quantity";
 import { revalidatePath } from "next/cache";
 
@@ -224,6 +226,31 @@ export async function receiveStockAction(input: unknown) {
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
     revalidatePath("/inventory/products");
+
+    // Opening stock: book inventory against owner equity (not AP)
+    if (data.movementType === "OPENING_STOCK") {
+      try {
+        const cost =
+          unitCostStock != null
+            ? unitCostStock
+            : data.unitCost != null
+              ? Number(data.unitCost)
+              : Number(product.costPrice ?? 0);
+        const value = cost * Number(quantityStock);
+        if (value > 0) {
+          await journalPostingService.postOpeningStock({
+            businessId: user.businessId,
+            sourceId: String((result as { movement?: { id?: string } }).movement?.id ?? product.id),
+            amount: value,
+            description: `Opening stock — ${product.name}`,
+            reference: data.reference ?? "OPENING",
+            postedBy: user.id,
+          });
+        }
+      } catch (e) {
+        console.error("[opening stock journal]", e);
+      }
+    }
 
     return {
       success: true as const,

@@ -138,7 +138,7 @@ export function CashAccountsClient({
   accounts,
   ledgerAccounts,
 }: {
-  accounts: { id: string; name: string; type: string; currency: string }[];
+  accounts: { id: string; name: string; type: string; currency: string; openingBalance?: string }[];
   ledgerAccounts: { id: string; accountCode: string; accountName: string }[];
 }) {
   const router = useRouter();
@@ -153,6 +153,11 @@ export function CashAccountsClient({
         <h1 className="text-2xl font-semibold tracking-tight">Cash & bank accounts</h1>
         <p className="text-sm text-muted-foreground">
           POS payments, expenses, and other cash movements post against these drawers/accounts.
+          Set starting till amounts under{" "}
+          <a href="/finance/opening-balances" className="text-primary underline">
+            Opening balances
+          </a>
+          .
         </p>
       </div>
       <div className="grid max-w-lg gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
@@ -216,6 +221,7 @@ export function CashAccountsClient({
               <th className="p-3">Name</th>
               <th className="p-3">Type</th>
               <th className="p-3">Currency</th>
+              <th className="p-3">Opening balance</th>
             </tr>
           </thead>
           <tbody>
@@ -224,6 +230,7 @@ export function CashAccountsClient({
                 <td className="p-3 font-medium">{a.name}</td>
                 <td className="p-3">{a.type}</td>
                 <td className="p-3">{a.currency}</td>
+                <td className="p-3 tabular-nums">{a.openingBalance ?? "0"}</td>
               </tr>
             ))}
           </tbody>
