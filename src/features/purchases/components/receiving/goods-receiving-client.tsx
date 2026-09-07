@@ -75,10 +75,13 @@ export function GoodsReceivingClient({
   purchaseOrders,
   warehouses,
   receipts,
+  initialPoId,
 }: {
   purchaseOrders: ReceivePo[];
   warehouses: Warehouse[];
   receipts: ReceiptRow[];
+  /** Pre-select PO when opening from Orders → Receive stock */
+  initialPoId?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -97,7 +100,12 @@ export function GoodsReceivingClient({
       }),
     [purchaseOrders],
   );
-  const [poId, setPoId] = useState(receivable[0]?.id ?? "");
+  const [poId, setPoId] = useState(() => {
+    if (initialPoId && receivable.some((p) => p.id === initialPoId)) {
+      return initialPoId;
+    }
+    return receivable[0]?.id ?? "";
+  });
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [invoice, setInvoice] = useState("");
   const [notes, setNotes] = useState("");
@@ -190,6 +198,12 @@ export function GoodsReceivingClient({
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+        Select an <strong>approved</strong> purchase order, enter quantities
+        received (batch/expiry if required), then post the GRN. Stock is updated
+        and the PO moves to <strong>Partially received</strong> or{" "}
+        <strong>Received</strong>. Fully received POs leave this list.
+      </div>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Goods received</h1>
         <p className="text-sm text-muted-foreground">

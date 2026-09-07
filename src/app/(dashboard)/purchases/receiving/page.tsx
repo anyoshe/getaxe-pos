@@ -11,9 +11,20 @@ import { purchaseOrderRepository } from "@/repositories/purchasing/purchase-orde
 import { GoodsReceivingClient } from "@/features/purchases/components/receiving/goods-receiving-client";
 import { formatDateTimeNairobi } from "@/lib/timezone";
 
-export default async function GoodsReceivingPage() {
+export default async function GoodsReceivingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ po?: string }> | { po?: string };
+}) {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  const sp =
+    searchParams &&
+    typeof (searchParams as Promise<{ po?: string }>).then === "function"
+      ? await (searchParams as Promise<{ po?: string }>)
+      : ((searchParams as { po?: string } | undefined) ?? {});
+  const initialPoId = sp?.po ?? null;
 
   const [orderList, warehouses, receipts, products, unitRows] = await Promise.all([
     purchasesQueryService.getPurchaseOrders(user.businessId).catch(() => []),
@@ -137,6 +148,7 @@ export default async function GoodsReceivingPage() {
 
   return (
     <GoodsReceivingClient
+      initialPoId={initialPoId}
       purchaseOrders={purchaseOrders}
       warehouses={(warehouses as Array<{ id: string; name: string }>).map((w) => ({
         id: w.id,

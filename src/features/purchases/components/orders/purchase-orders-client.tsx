@@ -274,6 +274,12 @@ export function PurchaseOrdersClient({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Purchase orders</h1>
           <p className="text-sm text-muted-foreground">
+          After you <strong>approve</strong> a PO, receive goods under{" "}
+          <a href="/purchases/receiving" className="text-primary underline">
+            Purchases → Receiving
+          </a>
+          . Status becomes Partially received / Received when the GRN is posted.
+          {" "}
             Order in pieces, strips, or boxes. Stock is always stored in pieces;
             packs only multiply qty × pieces-per-pack.
           </p>
@@ -609,10 +615,21 @@ export function PurchaseOrdersClient({
                       </>
                     )}
                     {(o.status === "APPROVED" ||
-                      o.status === "PARTIALLY_RECEIVED") && (
-                      <Button type="button" size="sm" variant="secondary">
-                        <a href="/purchases/receiving">Receive</a>
-                      </Button>
+                      o.status === "PARTIALLY_RECEIVED" ||
+                      o.status === "PARTIAL") && (
+                      <a
+                        href={`/purchases/receiving?po=${o.id}`}
+                        className="inline-flex h-8 items-center rounded-md bg-secondary px-3 text-xs font-medium text-secondary-foreground hover:bg-secondary/80"
+                      >
+                        {o.status === "APPROVED"
+                          ? "Receive stock →"
+                          : "Continue receiving →"}
+                      </a>
+                    )}
+                    {o.status === "RECEIVED" && (
+                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        Fully received
+                      </span>
                     )}
                   </td>
                 </tr>
