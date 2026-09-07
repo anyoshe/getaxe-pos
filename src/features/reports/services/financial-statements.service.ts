@@ -499,6 +499,29 @@ export class FinancialStatementsService {
         ),
       );
 
+    const [supplierPayments] = await db
+      .select({
+        total: sql<string>`coalesce(sum(${journalEntryLines.debit}::numeric), 0)`,
+      })
+      .from(journalEntryLines)
+      .innerJoin(
+        journalEntries,
+        eq(journalEntryLines.journalEntryId, journalEntries.id),
+      )
+      .innerJoin(
+        chartOfAccounts,
+        eq(journalEntryLines.accountId, chartOfAccounts.id),
+      )
+      .where(
+        and(
+          eq(journalEntries.businessId, businessId),
+          eq(journalEntries.status, "POSTED"),
+          eq(journalEntries.sourceType, "PAYMENT"),
+          eq(chartOfAccounts.accountCode, "2000"),
+          lt(journalEntries.transactionDate, end),
+        ),
+      );
+
     // Other income cash in
     const [incIn] = await db
       .select({
@@ -525,8 +548,14 @@ export class FinancialStatementsService {
     );
     const paymentsTotal = payRows.reduce((s, r) => s + Number(r.total ?? 0), 0);
     const expensesTotal = Number(expPaid?.total ?? 0);
+    const supplierPaymentsTotal = Number(supplierPayments?.total ?? 0);
     const otherIncomeTotal = Number(incIn?.total ?? 0);
-    const cashTotal = openingCash + paymentsTotal + otherIncomeTotal - expensesTotal;
+    const cashTotal =
+      openingCash +
+      paymentsTotal +
+      otherIncomeTotal -
+      expensesTotal -
+      supplierPaymentsTotal;
 
     const cashLines = payRows.map((r) => ({
       accountId: `pay-${r.method}`,
@@ -576,6 +605,19 @@ export class FinancialStatementsService {
         debit: 0,
         credit: expensesTotal,
         balance: -expensesTotal,
+      });
+    }
+    if (supplierPaymentsTotal > 0.001) {
+      cashLines.push({
+        accountId: "supplier-payments",
+        accountCode: "AP-PAY",
+        accountName: "Less: supplier invoices paid",
+        categoryCode: "CA",
+        categoryName: "Current Assets",
+        statementClass: "ASSET",
+        debit: 0,
+        credit: supplierPaymentsTotal,
+        balance: -supplierPaymentsTotal,
       });
     }
 
@@ -649,7 +691,36 @@ export class FinancialStatementsService {
       );
     const arTotal = Number(arRow?.total ?? 0);
 
-    // --- AP: open supplier invoices (pay via Purchases → Supplier invoices) ---
+    // --- AP: use the posted AP control account when available ---
+    const [apLedger] = await db
+      .select({
+        debit: sql<string>`coalesce(sum(${journalEntryLines.debit}::numeric), 0)`,
+        credit: sql<string>`coalesce(sum(${journalEntryLines.credit}::numeric), 0)`,
+        lineCount: sql<number>`count(*)::int`,
+      })
+      .from(journalEntryLines)
+      .innerJoin(
+        journalEntries,
+        eq(journalEntryLines.journalEntryId, journalEntries.id),
+      )
+      .innerJoin(
+        chartOfAccounts,
+        eq(journalEntryLines.accountId, chartOfAccounts.id),
+      )
+      .where(
+        and(
+          eq(journalEntries.businessId, businessId),
+          eq(journalEntries.status, "POSTED"),
+          eq(chartOfAccounts.accountCode, "2000"),
+          lt(journalEntries.transactionDate, end),
+        ),
+      );
+
+    const apJournalLines = Number(apLedger?.lineCount ?? 0);
+    const apFromJournals =
+      Number(apLedger?.credit ?? 0) - Number(apLedger?.debit ?? 0);
+
+    // --- Operational AP fallback for legacy records without AP journals ---
     const [apInv] = await db
       .select({
         total: sql<string>`coalesce(sum(${supplierInvoices.balanceDue}::numeric), 0)`,
@@ -663,11 +734,12 @@ export class FinancialStatementsService {
           lt(supplierInvoices.invoiceDate, end),
         ),
       );
-    let apTotal = Number(apInv?.total ?? 0);
-    let apSource = "supplier_invoices";
+    let apTotal =
+      apJournalLines > 0 ? Math.max(0, apFromJournals) : Number(apInv?.total ?? 0);
+    let apSource = apJournalLines > 0 ? "posted_ap_ledger" : "supplier_invoices";
     let apOpenCount = Number(apInv?.count ?? 0);
 
-    if (apTotal < 0.01) {
+    if (apJournalLines === 0 && apTotal < 0.01) {
       // No open invoices: estimate unpaid purchases as sum of GRN line totals
       // (you still owe suppliers until you record invoices + payments).
       const [grn] = await db
@@ -783,10 +855,10 @@ export class FinancialStatementsService {
       differenceAssetsVsLiabEquity: 0,
       notes: [
         "Built from live app data: POS payments, expenses, stock on hand × cost, open credit sales, supplier invoices / GRNs.",
-        `Cash = till openings (${openingCash.toFixed(2)}) + collections (${paymentsTotal.toFixed(2)}) + other income (${otherIncomeTotal.toFixed(2)}) − expenses (${expensesTotal.toFixed(2)}).`,
+        `Cash = till openings (${openingCash.toFixed(2)}) + collections (${paymentsTotal.toFixed(2)}) + other income (${otherIncomeTotal.toFixed(2)}) − expenses (${expensesTotal.toFixed(2)}) − supplier payments (${supplierPaymentsTotal.toFixed(2)}).`,
         `Inventory = batch remaining × GRN cost (${inventorySource}, ${inventoryValue.toFixed(2)}; ${inventoryQty} units).`,
         `AR = unpaid credit invoices (${arTotal.toFixed(2)}).`,
-        `AP source: ${apSource} (${apTotal.toFixed(2)}). Pay via Purchases → Supplier invoices.`,
+        `AP source: ${apSource} (${apTotal.toFixed(2)}). AP is increased by posted purchases/GRNs and reduced by posted supplier payments.`,
         "Equity = Net assets; split into retained earnings (P&L) and capital residual so the statement balances.",
       ],
     };
@@ -809,6 +881,7 @@ export class FinancialStatementsService {
         cashTotal,
         paymentsTotal,
         expensesTotal,
+        supplierPaymentsTotal,
         otherIncomeTotal,
         openingCash,
         inventoryValue,

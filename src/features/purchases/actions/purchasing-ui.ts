@@ -429,6 +429,7 @@ export async function receivePurchaseOrderAction(input: unknown) {
     revalidatePath("/purchases/supplier-invoices");
     revalidatePath("/finance/ap-aging");
     revalidatePath("/finance/journals");
+    revalidatePath("/reports/finance");
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
 

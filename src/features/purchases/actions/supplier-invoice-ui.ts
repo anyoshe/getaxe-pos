@@ -40,6 +40,7 @@ export async function createSupplierInvoiceAction(input: unknown) {
     });
     revalidatePath("/purchases/supplier-invoices");
     revalidatePath("/finance/ap-aging");
+    revalidatePath("/reports/finance");
     return { success: true as const, message: "Supplier invoice recorded." };
   } catch (e) {
     return {
@@ -78,6 +79,7 @@ export async function paySupplierInvoiceAction(input: unknown) {
     revalidatePath("/finance/ap-aging");
     revalidatePath("/finance/journals");
     revalidatePath("/finance/cash-accounts");
+    revalidatePath("/reports/finance");
     return { success: true as const, message: "Payment recorded from selected account." };
   } catch (e) {
     return {
