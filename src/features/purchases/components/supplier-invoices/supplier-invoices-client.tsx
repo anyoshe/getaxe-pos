@@ -1,9 +1,9 @@
+"use client";
+
 import { formatDateNairobi } from "@/lib/timezone";
 import { getSupplierInvoicePrintDataAction } from "../../actions/print-documents";
 import { printHtmlDocument } from "@/lib/print-document";
 import { buildSupplierInvoiceHtml } from "../../lib/build-print-html";
-
-"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
