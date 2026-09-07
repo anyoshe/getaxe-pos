@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { activityLogs } from "@/db/schema/infrastructure/activity_logs";
 import { users } from "@/db/schema/users/users";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 export default async function AuditReportsPage() {
   const user = await getCurrentUser();
@@ -59,7 +60,7 @@ export default async function AuditReportsPage() {
                 <tr key={r.id} className="border-t">
                   <td className="p-3 whitespace-nowrap text-muted-foreground">
                     {r.createdAt
-                      ? new Date(r.createdAt).toLocaleString()
+                      ? formatDateTimeNairobi(r.createdAt)
                       : "—"}
                   </td>
                   <td className="p-3">{r.userName || r.userEmail || "—"}</td>

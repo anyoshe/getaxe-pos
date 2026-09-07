@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 import {
   getStockOnHand,
@@ -32,14 +33,6 @@ function formatCurrency(value: number) {
     currency: "KES",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function formatDate(value: Date | string) {
-  return new Intl.DateTimeFormat("en-KE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 export default async function InventoryPage() {
@@ -406,7 +399,7 @@ export default async function InventoryPage() {
 
                   <div className="text-right">
                     <p className="text-sm font-semibold text-orange-600">
-                      {item.expiryDate ? formatDate(item.expiryDate) : "—"}
+                      {item.expiryDate ? formatDateTimeNairobi(item.expiryDate) : "—"}
                     </p>
 
                     <p className="text-xs text-muted-foreground">
@@ -488,7 +481,7 @@ export default async function InventoryPage() {
                     </p>
 
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(movement.createdAt)}
+                      {formatDateTimeNairobi(movement.createdAt)}
                     </p>
                   </div>
                 </div>

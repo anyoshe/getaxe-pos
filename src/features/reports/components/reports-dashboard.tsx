@@ -19,6 +19,7 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 export type ReportsOverviewData = {
   period: string;
@@ -327,7 +328,7 @@ export function ReportsDashboard({ data }: { data: ReportsOverviewData }) {
                     {data.audit.map((a, i) => (
                       <tr key={i} className="border-t">
                         <td className="p-1 whitespace-nowrap">
-                          {new Date(a.createdAt).toLocaleString()}
+                          {formatDateTimeNairobi(a.createdAt)}
                         </td>
                         <td className="p-1">
                           {a.action}/{a.entity}

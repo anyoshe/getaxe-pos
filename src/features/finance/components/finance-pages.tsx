@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import {
+import { formatDateTimeNairobi } from "@/lib/timezone";
   createCashAccountAction,
   createExpenseAction,
   createIncomeAction,
@@ -347,7 +348,7 @@ export function ExpensesClient({
             {expenses.map((e) => (
               <tr key={e.id} className="border-t">
                 <td className="p-3 text-muted-foreground">
-                  {new Date(e.expenseDate).toLocaleString()}
+                  {formatDateTimeNairobi(e.expenseDate)}
                 </td>
                 <td className="p-3">{e.description}</td>
                 <td className="p-3 font-medium">{Number(e.amount).toLocaleString()}</td>
@@ -468,7 +469,7 @@ export function IncomesClient({
             {incomes.map((e) => (
               <tr key={e.id} className="border-t">
                 <td className="p-3 text-muted-foreground">
-                  {new Date(e.incomeDate).toLocaleString()}
+                  {formatDateTimeNairobi(e.incomeDate)}
                 </td>
                 <td className="p-3">{e.description}</td>
                 <td className="p-3 font-medium">{Number(e.amount).toLocaleString()}</td>
@@ -528,7 +529,7 @@ export function PaymentsList({
                   <td className="p-3">{Number(p.amount).toLocaleString()}</td>
                   <td className="p-3">{p.status}</td>
                   <td className="p-3 text-muted-foreground">
-                    {p.paidAt ? new Date(p.paidAt).toLocaleString() : "—"}
+                    {p.paidAt ? formatDateTimeNairobi(p.paidAt) : "—"}
                   </td>
                 </tr>
               ))

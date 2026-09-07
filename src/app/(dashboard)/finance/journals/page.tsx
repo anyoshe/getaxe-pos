@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { listJournals } from "@/features/finance/services/ap-aging.service";
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 function money(n: number) {
   return n.toLocaleString(undefined, {
@@ -77,7 +78,7 @@ export default async function JournalsPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {j.transactionDate
-                      ? new Date(j.transactionDate).toLocaleString()
+                      ? formatDateTimeNairobi(j.transactionDate)
                       : "—"}
                     {" · "}
                     <span className="font-medium text-foreground">

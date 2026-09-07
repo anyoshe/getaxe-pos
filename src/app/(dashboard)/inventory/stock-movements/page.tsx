@@ -4,16 +4,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { getStockMovements } from "@/features/inventory/queries";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-function formatDate(value: Date | string) {
-  return new Intl.DateTimeFormat("en-KE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 export default async function StockMovementsPage() {
   const user = await getCurrentUser();
@@ -84,7 +75,7 @@ export default async function StockMovementsPage() {
               movements.map((m) => (
                 <tr key={m.id} className="border-t">
                   <td className="p-3 text-muted-foreground whitespace-nowrap">
-                    {formatDate(m.createdAt)}
+                    {formatDateTimeNairobi(m.createdAt)}
                   </td>
                   <td className="p-3">
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">

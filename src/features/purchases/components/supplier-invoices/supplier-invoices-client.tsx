@@ -1,3 +1,4 @@
+import { formatDateNairobi } from "@/lib/timezone";
 "use client";
 
 import { useState, useTransition } from "react";
@@ -197,7 +198,7 @@ export function SupplierInvoicesClient({
                   <td className="p-3 font-mono text-xs">{i.invoiceNumber}</td>
                   <td className="p-3">{i.supplierName}</td>
                   <td className="p-3">
-                    {new Date(i.invoiceDate).toLocaleDateString()}
+                    {formatDateNairobi(i.invoiceDate)}
                   </td>
                   <td className="p-3">{i.status}</td>
                   <td className="p-3 tabular-nums">

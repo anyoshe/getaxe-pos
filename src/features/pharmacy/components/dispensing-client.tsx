@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { completeDispenseAction } from "../actions/dispensing";
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 type Warehouse = { id: string; name: string };
 type Medicine = {
@@ -331,7 +332,7 @@ export function DispensingClient({
                   history.slice(0, 20).map((h) => (
                     <tr key={h.id} className="border-t">
                       <td className="py-2 text-xs text-muted-foreground">
-                        {new Date(h.dispensedAt ?? h.createdAt).toLocaleString()}
+                        {formatDateTimeNairobi(h.dispensedAt ?? h.createdAt)}
                       </td>
                       <td className="py-2">{h.patientName || "—"}</td>
                       <td className="py-2 text-xs">{h.prescriptionRef || "—"}</td>

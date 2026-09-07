@@ -1,3 +1,4 @@
+import { nowNairobiWallClock } from "@/lib/timezone";
 import {
   and,
   asc,
@@ -75,7 +76,10 @@ export class StockMovementRepository
     const [movement] =
       await this.database
         .insert(stockMovements)
-        .values(data)
+        .values({
+          ...data,
+          createdAt: data.createdAt ?? nowNairobiWallClock(),
+        })
         .returning();
 
     return movement;

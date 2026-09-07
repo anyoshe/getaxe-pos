@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import {
+import { formatDateTimeNairobi } from "@/lib/timezone";
   adjustCustomerLoyaltyAction,
   updateLoyaltyProgramAction,
 } from "../../actions/loyalty-ui";
@@ -252,7 +253,7 @@ export function LoyaltyClient({
                 transactions.map((t) => (
                   <tr key={t.id} className="border-t">
                     <td className="p-3 whitespace-nowrap text-muted-foreground">
-                      {new Date(t.createdAt).toLocaleString()}
+                      {formatDateTimeNairobi(t.createdAt)}
                     </td>
                     <td className="p-3">{t.type}</td>
                     <td className="p-3 tabular-nums">

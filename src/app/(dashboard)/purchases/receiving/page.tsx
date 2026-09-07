@@ -9,6 +9,7 @@ import { warehousesService } from "@/features/settings/services/warehouses.servi
 import { purchasesQueryService } from "@/features/purchases/services";
 import { purchaseOrderRepository } from "@/repositories/purchasing/purchase-orders.repository";
 import { GoodsReceivingClient } from "@/features/purchases/components/receiving/goods-receiving-client";
+import { formatDateTimeNairobi } from "@/lib/timezone";
 
 export default async function GoodsReceivingPage() {
   const user = await getCurrentUser();
@@ -150,7 +151,7 @@ export default async function GoodsReceivingPage() {
           (r.supplier as { name?: string } | null)?.name ?? "—",
         ),
         receivedAt: r.receivedAt
-          ? new Date(r.receivedAt as string | Date).toLocaleString()
+          ? formatDateTimeNairobi(r.receivedAt as string | Date)
           : "—",
       }))}
     />
