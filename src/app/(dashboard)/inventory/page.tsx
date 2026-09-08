@@ -83,6 +83,7 @@ export default async function InventoryPage() {
 
   const recentMovements = movements.slice(0, 8);
 
+  const lowStockProductCount = new Set(lowStock.map((i) => i.productId)).size;
   const criticalLowStock = lowStock.slice(0, 6);
 
   const upcomingExpiry = expiringStock.slice(0, 6);
@@ -162,7 +163,7 @@ export default async function InventoryPage() {
               <p className="text-sm font-medium text-muted-foreground">Low Stock</p>
 
               <p className="mt-2 text-2xl font-bold text-foreground">
-                {lowStock.length}
+                {lowStockProductCount}
               </p>
             </div>
 
@@ -285,7 +286,7 @@ export default async function InventoryPage() {
                 </div>
 
                 <span className="text-xl font-bold text-amber-600">
-                  {lowStock.length}
+                  {lowStockProductCount}
                 </span>
               </div>
             </div>

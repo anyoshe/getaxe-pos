@@ -4,6 +4,7 @@ export {
 
 export {
   getLowStockProducts,
+  countLowStockProducts,
 } from "./low-stock.query";
 
 export {

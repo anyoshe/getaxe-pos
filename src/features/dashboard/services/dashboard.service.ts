@@ -18,6 +18,8 @@ import { supplierRepository } from "@/repositories/inventory/suppliers.repositor
 import { customerRepository } from "@/repositories/sales/customer.repository";
 import { nairobiDayBounds } from "@/lib/timezone";
 import { financeService } from "@/features/finance/services/finance.service";
+import { countLowStockProducts } from "@/features/inventory/queries/low-stock.query";
+
 
 class DashboardService {
   async getOwnerDashboard(businessId: string): Promise<OwnerDashboard> {
@@ -59,25 +61,7 @@ class DashboardService {
             lt(sales.soldAt, tomorrow),
           ),
         ),
-      db
-        .select({
-          count: sql<number>`count(*)::int`,
-        })
-        .from(products)
-        .where(
-          and(
-            eq(products.businessId, businessId),
-            eq(products.active, true),
-            eq(products.trackInventory, true),
-            sql`coalesce(${products.reorderLevel}, 0) > 0`,
-            sql`(
-              select coalesce(sum(${inventoryBalances.quantity}), 0)
-              from ${inventoryBalances}
-              where ${inventoryBalances.productId} = ${products.id}
-                and ${inventoryBalances.businessId} = ${businessId}
-            ) <= ${products.reorderLevel}`,
-          ),
-        ),
+      countLowStockProducts(businessId).catch(() => 0),
       db
         .select({
           method: payments.method,
@@ -151,7 +135,7 @@ class DashboardService {
 
     const todaySales = Number(todaySalesRow[0]?.total ?? 0);
     const todayCount = Number(todaySalesRow[0]?.count ?? 0);
-    const lowStock = Number(lowStockRow[0]?.count ?? 0);
+    const lowStock = Number(lowStockRow ?? 0);
 
     const seen = new Set<string>();
     let cashTotal = 0;
