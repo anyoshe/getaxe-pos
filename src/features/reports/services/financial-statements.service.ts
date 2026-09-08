@@ -22,15 +22,13 @@ import {
   ensureFinanceDefaults,
   financeService,
 } from "@/features/finance/services/finance.service";
+import { nairobiDateRangeBounds } from "@/lib/timezone";
 
 function dayStart(d: string) {
-  // Nairobi midnight; widen ±3h so UTC server timestamps still fall in-range
-  return new Date(new Date(`${d}T00:00:00+03:00`).getTime() - 3 * 60 * 60 * 1000);
+  return nairobiDateRangeBounds(d, d).start;
 }
 function dayEndEx(d: string) {
-  const x = new Date(`${d}T00:00:00+03:00`);
-  x.setDate(x.getDate() + 1);
-  return new Date(x.getTime() + 3 * 60 * 60 * 1000);
+  return nairobiDateRangeBounds(d, d).end;
 }
 
 type AccountBalance = {

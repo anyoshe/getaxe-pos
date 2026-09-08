@@ -1,3 +1,4 @@
+import { nairobiDateBounds } from "@/lib/timezone";
 import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -11,17 +12,9 @@ import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
 
 
 function dayBounds(dateStr: string) {
-  // dateStr = YYYY-MM-DD in Africa/Nairobi. Payments may be stored as:
-  // - Nairobi wall-clock in timestamp without tz, or
-  // - true UTC from defaultNow().
-  // Use an inclusive window from previous UTC evening through next Nairobi midnight+buffer.
-  const start = new Date(`${dateStr}T00:00:00+03:00`);
-  const end = new Date(`${dateStr}T00:00:00+03:00`);
-  end.setDate(end.getDate() + 1);
-  // Widen by 3h each side so UTC "now" still falls on the intended business day
-  const startWide = new Date(start.getTime() - 3 * 60 * 60 * 1000);
-  const endWide = new Date(end.getTime() + 3 * 60 * 60 * 1000);
-  return { start: startWide, end: endWide, dayStart: start, dayEnd: end };
+  // Match nowNairobiWallClock / paidAt / soldAt storage (EAT wall clock in UTC fields)
+  const { start, end } = nairobiDateBounds(dateStr);
+  return { start, end, dayStart: start, dayEnd: end };
 }
 
 /** Map POS payment method → cash account channel type / name hint */

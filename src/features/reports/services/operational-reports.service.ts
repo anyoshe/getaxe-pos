@@ -7,16 +7,8 @@ import { warehouses } from "@/db/schema/settings/warehouses";
 import { saleItems } from "@/db/schema/sales/sale_items";
 import { sales } from "@/db/schema/sales/sales";
 import { payments } from "@/db/schema/sales/payments";
+import { nairobiDateRangeBounds } from "@/lib/timezone";
 
-function parseDayStart(dateStr: string) {
-  return new Date(`${dateStr}T00:00:00+03:00`);
-}
-
-function parseDayEndExclusive(dateStr: string) {
-  const d = new Date(`${dateStr}T00:00:00+03:00`);
-  d.setDate(d.getDate() + 1);
-  return d;
-}
 
 export class OperationalReportsService {
   /**
@@ -28,8 +20,7 @@ export class OperationalReportsService {
     fromDate: string,
     toDate: string,
   ) {
-    const start = parseDayStart(fromDate);
-    const end = parseDayEndExclusive(toDate);
+    const { start, end } = nairobiDateRangeBounds(fromDate, toDate);
 
     const lines = await db
       .select({
@@ -152,8 +143,7 @@ export class OperationalReportsService {
     fromDate: string,
     toDate: string,
   ) {
-    const start = parseDayStart(fromDate);
-    const end = parseDayEndExclusive(toDate);
+    const { start, end } = nairobiDateRangeBounds(fromDate, toDate);
 
     // Opening stock at start = sum of all movements before the period
     const openings = await db

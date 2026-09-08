@@ -114,3 +114,35 @@ export function nairobiPeriodBounds(
     label: `${p.year}-${String(p.month).padStart(2, "0")}`,
   };
 }
+
+/**
+ * Inclusive calendar days in Africa/Nairobi as naive timestamps matching
+ * nowNairobiWallClock() / soldAt storage (UTC fields = EAT wall clock).
+ * end is exclusive (start of day after toDate).
+ */
+export function nairobiDateRangeBounds(
+  fromDate: string,
+  toDate: string,
+): { start: Date; end: Date } {
+  const fp = fromDate.split("-").map(Number);
+  const tp = toDate.split("-").map(Number);
+  if (fp.length < 3 || tp.length < 3) {
+    throw new Error("Dates must be YYYY-MM-DD");
+  }
+  const start = new Date(Date.UTC(fp[0], fp[1] - 1, fp[2], 0, 0, 0, 0));
+  // exclusive end = midnight at start of the day after toDate
+  const end = new Date(Date.UTC(tp[0], tp[1] - 1, tp[2] + 1, 0, 0, 0, 0));
+  return { start, end };
+}
+
+/** Single Nairobi calendar day [start, end). */
+export function nairobiDateBounds(dateStr: string): { start: Date; end: Date } {
+  return nairobiDateRangeBounds(dateStr, dateStr);
+}
+
+/** Today YYYY-MM-DD in Africa/Nairobi. */
+export function todayNairobiDateString(reference = new Date()): string {
+  const p = partsInZone(reference, BUSINESS_TIMEZONE);
+  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+}
+
