@@ -50,6 +50,19 @@ function money(n: number) {
   });
 }
 
+/** full_till = opening + day in − day out; day_only = day in − day out */
+type ReconMode = "full_till" | "day_only";
+
+function expectedForMode(
+  mode: ReconMode,
+  opening: number,
+  inflows: number,
+  outflows: number,
+) {
+  if (mode === "day_only") return inflows - outflows;
+  return opening + inflows - outflows;
+}
+
 export function CashReconciliationClient({
   accounts,
   history,
@@ -60,6 +73,7 @@ export function CashReconciliationClient({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [cashAccountId, setCashAccountId] = useState(accounts[0]?.id ?? "");
+  const [mode, setMode] = useState<ReconMode>("full_till");
   const [date, setDate] = useState(todayNairobi());
   const [counted, setCounted] = useState("");
   const [notes, setNotes] = useState("");
@@ -78,6 +92,7 @@ export function CashReconciliationClient({
       cashAccountId: string;
       name: string;
       type: string;
+      openingBalance: number;
       paymentInflows: number;
       systemInflows: number;
       systemOutflows: number;
@@ -89,6 +104,16 @@ export function CashReconciliationClient({
     () => accounts.find((a) => a.id === cashAccountId),
     [accounts, cashAccountId],
   );
+
+  const displayExpected = useMemo(() => {
+    if (!summary) return null;
+    return expectedForMode(
+      mode,
+      summary.openingBalance,
+      summary.systemInflows,
+      summary.systemOutflows,
+    );
+  }, [mode, summary]);
 
   function loadOverview() {
     if (!date) return;
@@ -113,18 +138,22 @@ export function CashReconciliationClient({
         toast.error(r.message);
         return;
       }
+      const opening = r.summary.openingBalance;
+      const inflows = r.summary.systemInflows;
+      const outflows = r.summary.systemOutflows;
+      const expected = expectedForMode(mode, opening, inflows, outflows);
       setSummary({
-        openingBalance: r.summary.openingBalance,
-        systemInflows: r.summary.systemInflows,
-        systemOutflows: r.summary.systemOutflows,
-        expectedBalance: r.summary.expectedBalance,
+        openingBalance: opening,
+        systemInflows: inflows,
+        systemOutflows: outflows,
+        expectedBalance: expected,
         paymentInflows: r.summary.paymentInflows,
         otherInflows: r.summary.otherInflows,
         methodsMatched: (r.summary as { methodsMatched?: string[] })
           .methodsMatched,
         openingSource: (r.summary as { openingSource?: string }).openingSource,
       });
-      setCounted(String(r.summary.expectedBalance));
+      setCounted(String(expected));
     });
   }
 
@@ -146,21 +175,52 @@ export function CashReconciliationClient({
   }
 
   const diff =
-    summary && counted !== ""
-      ? Number(counted) - summary.expectedBalance
+    summary && counted !== "" && displayExpected != null
+      ? Number(counted) - displayExpected
       : null;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Daily reconciliation
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Reconcile each tender channel used at POS — cash drawer, M-Pesa,
-          mobile money, card terminal, and bank. System totals come from POS
-          payments (by method), other income, and expenses for the day.
-        </p>
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Daily reconciliation
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            End-of-day check per till. POS in and outflows are always for the
+            selected date only. Choose how Expected is calculated below.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 rounded-xl border bg-card p-2">
+          <button
+            type="button"
+            onClick={() => setMode("full_till")}
+            className={`rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+              mode === "full_till"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            <span className="font-medium">Full till balance</span>
+            <span className="mt-0.5 block text-xs opacity-90">
+              Opening + today in − today out (count physical drawer)
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("day_only")}
+            className={`rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+              mode === "day_only"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            <span className="font-medium">Today only</span>
+            <span className="mt-0.5 block text-xs opacity-90">
+              Today in − today out (ignore opening / other days)
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2 rounded-xl border p-4">
@@ -189,15 +249,28 @@ export function CashReconciliationClient({
                 <tr>
                   <th className="p-2">Channel</th>
                   <th className="p-2">Type</th>
-                  <th className="p-2 text-right">POS inflows</th>
+                  <th className="p-2 text-right">POS in</th>
                   <th className="p-2 text-right">Total in</th>
                   <th className="p-2 text-right">Out</th>
-                  <th className="p-2 text-right">Expected</th>
+                  {mode === "full_till" ? (
+                    <th className="p-2 text-right">Opening</th>
+                  ) : null}
+                  <th className="p-2 text-right">
+                    {mode === "day_only" ? "Day net" : "Expected close"}
+                  </th>
                   <th className="p-2" />
                 </tr>
               </thead>
               <tbody>
-                {overview.map((row) => (
+                {overview.map((row) => {
+                  const opening = Number(row.openingBalance ?? 0);
+                  const expected = expectedForMode(
+                    mode,
+                    opening,
+                    row.systemInflows,
+                    row.systemOutflows,
+                  );
+                  return (
                   <tr key={row.cashAccountId} className="border-t">
                     <td className="p-2 font-medium">{row.name}</td>
                     <td className="p-2 text-muted-foreground">{row.type}</td>
@@ -210,8 +283,13 @@ export function CashReconciliationClient({
                     <td className="p-2 text-right tabular-nums">
                       {money(row.systemOutflows)}
                     </td>
+                    {mode === "full_till" ? (
+                      <td className="p-2 text-right tabular-nums text-muted-foreground">
+                        {money(opening)}
+                      </td>
+                    ) : null}
                     <td className="p-2 text-right font-semibold tabular-nums">
-                      {money(row.expectedBalance)}
+                      {money(expected)}
                     </td>
                     <td className="p-2 text-right">
                       <Button
@@ -228,7 +306,8 @@ export function CashReconciliationClient({
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -310,17 +389,26 @@ export function CashReconciliationClient({
                     ? "Last saved count"
                     : "Opening balances setup (not live ledger)"}
                 </strong>
-                . Expected close = opening + today&apos;s POS/income − expenses −
-                supplier pays. Click Refresh after sales. Saving a count rolls
-                opening forward for the next day.
+                .{" "}
+                {mode === "full_till"
+                  ? "Full till: expected = opening + today in − today out. Saving a count sets next day’s opening."
+                  : "Today only: day net = today in − today out (opening ignored). Best for “how much did this channel move today?”"}{" "}
+                Click Refresh after sales.
               </p>
             </div>
           ) : null}
 
-          {summary && (
+          {summary && displayExpected != null && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border bg-card p-3 text-sm">
-                <div className="text-xs text-muted-foreground">Opening</div>
+              <div
+                className={`rounded-lg border bg-card p-3 text-sm ${
+                  mode === "day_only" ? "opacity-50" : ""
+                }`}
+              >
+                <div className="text-xs text-muted-foreground">
+                  Opening
+                  {mode === "day_only" ? " (ignored)" : ""}
+                </div>
                 <div className="text-lg font-semibold tabular-nums">
                   {money(summary.openingBalance)}
                 </div>
@@ -342,10 +430,12 @@ export function CashReconciliationClient({
                   −{money(summary.systemOutflows)}
                 </div>
               </div>
-              <div className="rounded-lg border bg-card p-3 text-sm">
-                <div className="text-xs text-muted-foreground">Expected close</div>
+              <div className="rounded-lg border border-primary/30 bg-card p-3 text-sm">
+                <div className="text-xs text-muted-foreground">
+                  {mode === "day_only" ? "Day net (today only)" : "Expected close"}
+                </div>
                 <div className="text-lg font-semibold tabular-nums">
-                  {money(summary.expectedBalance)}
+                  {money(displayExpected)}
                 </div>
               </div>
             </div>
@@ -378,9 +468,11 @@ export function CashReconciliationClient({
                     ? "Last saved count"
                     : "Opening balances setup (not live ledger)"}
                 </strong>
-                . Expected close = opening + today&apos;s POS/income − expenses −
-                supplier pays. Click Refresh after sales. Saving a count rolls
-                opening forward for the next day.
+                .{" "}
+                {mode === "full_till"
+                  ? "Full till: expected = opening + today in − today out. Saving a count sets next day’s opening."
+                  : "Today only: day net = today in − today out (opening ignored). Best for “how much did this channel move today?”"}{" "}
+                Click Refresh after sales.
               </p>
             </div>
           ) : null}
@@ -448,9 +540,11 @@ export function CashReconciliationClient({
                     ? "Last saved count"
                     : "Opening balances setup (not live ledger)"}
                 </strong>
-                . Expected close = opening + today&apos;s POS/income − expenses −
-                supplier pays. Click Refresh after sales. Saving a count rolls
-                opening forward for the next day.
+                .{" "}
+                {mode === "full_till"
+                  ? "Full till: expected = opening + today in − today out. Saving a count sets next day’s opening."
+                  : "Today only: day net = today in − today out (opening ignored). Best for “how much did this channel move today?”"}{" "}
+                Click Refresh after sales.
               </p>
             </div>
           ) : null}
