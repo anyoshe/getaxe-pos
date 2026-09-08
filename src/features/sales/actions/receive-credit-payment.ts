@@ -189,6 +189,11 @@ export async function receiveCreditPaymentAction(input: unknown) {
 
     const payment = result.payments[0];
     try {
+      const cashAccountCode = tillAccountId
+        ? await financeService
+            .getCashAccountGlCode(user.businessId, tillAccountId)
+            .catch(() => null)
+        : null;
       await journalPostingService.postArCollection({
         businessId: user.businessId,
         saleId,
@@ -196,6 +201,7 @@ export async function receiveCreditPaymentAction(input: unknown) {
         invoiceNumber: String(sale.invoiceNumber),
         amount,
         postedBy: user.id,
+        cashAccountCode: cashAccountCode ?? undefined,
       });
     } catch (e) {
       console.error("[receive-credit-payment] journal", e);
@@ -213,6 +219,9 @@ export async function receiveCreditPaymentAction(input: unknown) {
     revalidatePath("/sales/receivables");
     revalidatePath("/sales/invoices");
     revalidatePath("/finance/payments");
+    revalidatePath("/finance/cash-accounts");
+    revalidatePath("/finance/journals");
+    revalidatePath("/dashboard");
     revalidatePath("/reports");
 
     const updated = result.sale;
