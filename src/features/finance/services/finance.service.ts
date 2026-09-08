@@ -413,13 +413,12 @@ export class FinanceService {
       .orderBy(asc(cashAccounts.name));
   }
 
-  /** Resolve till/account for a POS payment method (for reconciliation). */
-
   /**
-   * Cash & bank tills with live ledger balance:
-   * openingBalance + journal debits − journal credits on the linked CoA account.
-   * Sales / income increase; supplier pays & expenses decrease (when posted correctly).
-    async getCashAccountsWithBalances(
+   * Cash & bank tills with live ledger balance.
+   * Prefer journal debits − credits on the linked CoA; openingBalance field
+   * only when the ledger has no lines yet.
+   */
+  async getCashAccountsWithBalances(
     businessId: string,
     asOfExclusive?: Date,
   ) {
@@ -467,8 +466,6 @@ export class FinanceService {
         .where(and(...conditions));
       const debit = Number(agg?.debit ?? 0);
       const credit = Number(agg?.credit ?? 0);
-      // Single truth: ledger only (opening must be posted as journal).
-      // Field openingBalance is display/seed only when ledger is empty.
       const ledgerNet = debit - credit;
       const opening = Number(a.openingBalance ?? 0);
       const currentBalance = debit !== 0 || credit !== 0 ? ledgerNet : opening;
@@ -482,8 +479,6 @@ export class FinanceService {
     }
     return result;
   }
-
- }
 
   async getCashAccountGlCode(
     businessId: string,
