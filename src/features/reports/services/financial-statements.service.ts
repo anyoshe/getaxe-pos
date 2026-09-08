@@ -18,7 +18,10 @@ import { goodsReceiptItems } from "@/db/schema/purchasing/goods_receipt_items";
 import { supplierInvoices } from "@/db/schema/purchasing/supplier_invoices";
 import { payments } from "@/db/schema/sales/payments";
 import { cashAccounts } from "@/db/schema/finance/cash_accounts";
-import { ensureFinanceDefaults } from "@/features/finance/services/finance.service";
+import {
+  ensureFinanceDefaults,
+  financeService,
+} from "@/features/finance/services/finance.service";
 
 function dayStart(d: string) {
   // Nairobi midnight; widen ±3h so UTC server timestamps still fall in-range
@@ -393,7 +396,10 @@ export class FinancialStatementsService {
       .select({
         total: sql<string>`coalesce(sum(
           coalesce(${products.costPrice}::numeric, 0) *
-          coalesce(${saleItems.quantity}::numeric, 0)
+          coalesce(
+            nullif(${saleItems.quantityStock}::numeric, 0),
+            ${saleItems.quantity}::numeric
+          )
         ), 0)`,
       })
       .from(saleItems)
@@ -467,170 +473,42 @@ export class FinancialStatementsService {
     await ensureFinanceDefaults(businessId);
     const end = dayEndEx(asOfDate);
 
-    // --- Cash by payment method (all completed payments up to as-of) ---
-    const payRows = await db
-      .select({
-        method: payments.method,
-        total: sql<string>`coalesce(sum(${payments.amount}::numeric), 0)`,
-      })
-      .from(payments)
-      .where(
-        and(
-          eq(payments.businessId, businessId),
-          eq(payments.status, "COMPLETED"),
-          lt(payments.paidAt, end),
-        ),
-      )
-      .groupBy(payments.method);
-
-    // Expenses paid up to as-of
-    const [expPaid] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${expenses.amount}::numeric), 0)`,
-      })
-      .from(expenses)
-      .where(
-        and(
-          eq(expenses.businessId, businessId),
-          or(
-            lt(expenses.expenseDate, end),
-            lt(expenses.createdAt, end),
-          ),
-        ),
-      );
-
-    const [supplierPayments] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${journalEntryLines.debit}::numeric), 0)`,
-      })
-      .from(journalEntryLines)
-      .innerJoin(
-        journalEntries,
-        eq(journalEntryLines.journalEntryId, journalEntries.id),
-      )
-      .innerJoin(
-        chartOfAccounts,
-        eq(journalEntryLines.accountId, chartOfAccounts.id),
-      )
-      .where(
-        and(
-          eq(journalEntries.businessId, businessId),
-          eq(journalEntries.status, "POSTED"),
-          eq(journalEntries.sourceType, "PAYMENT"),
-          eq(chartOfAccounts.accountCode, "2000"),
-          lt(journalEntries.transactionDate, end),
-        ),
-      );
-
-    // Other income cash in
-    const [incIn] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${incomes.amount}::numeric), 0)`,
-      })
-      .from(incomes)
-      .where(
-        and(eq(incomes.businessId, businessId), lt(incomes.incomeDate, end)),
-      );
-
-    const cashAccountsRows = await db
-      .select()
-      .from(cashAccounts)
-      .where(
-        and(
-          eq(cashAccounts.businessId, businessId),
-          eq(cashAccounts.active, true),
-        ),
-      );
-
-    const openingCash = cashAccountsRows.reduce(
-      (s, a) => s + Number(a.openingBalance ?? 0),
-      0,
+    // --- P0: Cash = Cash & bank till ledgers (same as Finance → Cash accounts) ---
+    const tills = await financeService.getCashAccountsWithBalances(
+      businessId,
+      end,
     );
-    const paymentsTotal = payRows.reduce((s, r) => s + Number(r.total ?? 0), 0);
-    const expensesTotal = Number(expPaid?.total ?? 0);
-    const supplierPaymentsTotal = Number(supplierPayments?.total ?? 0);
-    const otherIncomeTotal = Number(incIn?.total ?? 0);
-    const cashTotal =
-      openingCash +
-      paymentsTotal +
-      otherIncomeTotal -
-      expensesTotal -
-      supplierPaymentsTotal;
-
-    const cashLines = payRows.map((r) => ({
-      accountId: `pay-${r.method}`,
-      accountCode: String(r.method),
-      accountName: `Collections — ${r.method}`,
-      categoryCode: "CA",
-      categoryName: "Current Assets",
-      statementClass: "ASSET",
-      debit: Number(r.total ?? 0),
-      credit: 0,
-      balance: Number(r.total ?? 0),
-    }));
-    if (openingCash > 0.001) {
-      cashLines.unshift({
-        accountId: "cash-opening",
-        accountCode: "OPEN",
-        accountName: "Till opening balances",
-        categoryCode: "CA",
-        categoryName: "Current Assets",
-        statementClass: "ASSET",
-        debit: openingCash,
-        credit: 0,
-        balance: openingCash,
-      });
-    }
-    if (otherIncomeTotal > 0.001) {
+    const seenGl = new Set<string>();
+    const cashLines: AccountBalance[] = [];
+    let cashTotal = 0;
+    for (const till of tills) {
+      // One line per GL account so shared ledgers are not double-counted
+      if (seenGl.has(till.accountId)) continue;
+      seenGl.add(till.accountId);
+      const bal = Number(till.currentBalance ?? 0);
+      cashTotal += bal;
       cashLines.push({
-        accountId: "other-income-cash",
-        accountCode: "INC",
-        accountName: "Other income received",
+        accountId: till.id,
+        accountCode: till.accountCode,
+        accountName: `${till.name} (${till.type})`,
         categoryCode: "CA",
         categoryName: "Current Assets",
         statementClass: "ASSET",
-        debit: otherIncomeTotal,
-        credit: 0,
-        balance: otherIncomeTotal,
-      });
-    }
-    if (expensesTotal > 0.001) {
-      cashLines.push({
-        accountId: "cash-expenses",
-        accountCode: "OUT",
-        accountName: "Less: expenses paid",
-        categoryCode: "CA",
-        categoryName: "Current Assets",
-        statementClass: "ASSET",
-        debit: 0,
-        credit: expensesTotal,
-        balance: -expensesTotal,
-      });
-    }
-    if (supplierPaymentsTotal > 0.001) {
-      cashLines.push({
-        accountId: "supplier-payments",
-        accountCode: "AP-PAY",
-        accountName: "Less: supplier invoices paid",
-        categoryCode: "CA",
-        categoryName: "Current Assets",
-        statementClass: "ASSET",
-        debit: 0,
-        credit: supplierPaymentsTotal,
-        balance: -supplierPaymentsTotal,
+        debit: bal > 0 ? bal : 0,
+        credit: bal < 0 ? -bal : 0,
+        balance: bal,
       });
     }
 
-    // --- Inventory at cost ---
-    // Prefer batch remaining × batch cost (from GRN). Product.costPrice × qty
-    // overstates when cost is per pack but qty is pieces, or costs were mistyped.
-    const [batchVal] = await db
+    // --- P1: Inventory = batch value for products with batch stock + plain for the rest ---
+    const batchRows = await db
       .select({
+        productId: productBatches.productId,
         value: sql<string>`coalesce(sum(
           coalesce(${productBatches.quantityRemaining}::numeric, 0) *
           coalesce(${productBatches.costPrice}::numeric, 0)
         ), 0)`,
-        qty: sql<string>`coalesce(sum(${productBatches.quantityRemaining}::numeric), 0)`,
+        qty: sql<string>`coalesce(sum(coalesce(${productBatches.quantityRemaining}::numeric, 0)), 0)`,
       })
       .from(productBatches)
       .where(
@@ -639,19 +517,21 @@ export class FinancialStatementsService {
           sql`coalesce(${productBatches.quantityRemaining}::numeric, 0) > 0`,
           eq(productBatches.active, true),
         ),
-      );
+      )
+      .groupBy(productBatches.productId);
 
-    const batchInventoryValue = Number(batchVal?.value ?? 0);
-    const batchInventoryQty = Number(batchVal?.qty ?? 0);
+    const batchByProduct = new Map(
+      batchRows.map((r) => [
+        r.productId,
+        { value: Number(r.value), qty: Number(r.qty) },
+      ]),
+    );
 
-    // Products without active batch stock: balances × product cost
-    const [plainVal] = await db
+    const balanceRows = await db
       .select({
-        value: sql<string>`coalesce(sum(
-          coalesce(${inventoryBalances.quantity}::numeric, 0) *
-          coalesce(${products.costPrice}::numeric, 0)
-        ), 0)`,
+        productId: inventoryBalances.productId,
         qty: sql<string>`coalesce(sum(${inventoryBalances.quantity}::numeric), 0)`,
+        cost: sql<string>`coalesce(max(${products.costPrice}::numeric), 0)`,
       })
       .from(inventoryBalances)
       .innerJoin(products, eq(inventoryBalances.productId, products.id))
@@ -660,19 +540,32 @@ export class FinancialStatementsService {
           eq(inventoryBalances.businessId, businessId),
           sql`coalesce(${inventoryBalances.quantity}::numeric, 0) > 0`,
         ),
-      );
+      )
+      .groupBy(inventoryBalances.productId);
 
-    const plainInventoryValue = Number(plainVal?.value ?? 0);
-    const plainInventoryQty = Number(plainVal?.qty ?? 0);
-
-    // Pharmacy / batched stock: value only from batches (GRN unit cost × remaining).
-    // Avoid product.costPrice × piece qty which often overstates (wrong unit cost).
-    const useBatches = batchInventoryValue > 0.01 || batchInventoryQty > 0.01;
-    const inventoryValue = useBatches ? batchInventoryValue : plainInventoryValue;
-    const inventoryQty = useBatches ? batchInventoryQty : plainInventoryQty;
-    const inventorySource = useBatches
-      ? "batch_cost_x_remaining"
-      : "product_cost_x_on_hand";
+    let inventoryValue = 0;
+    let inventoryQty = 0;
+    const productSeen = new Set<string>();
+    for (const row of balanceRows) {
+      productSeen.add(row.productId);
+      const batch = batchByProduct.get(row.productId);
+      if (batch && batch.qty > 0.0001) {
+        inventoryValue += batch.value;
+        inventoryQty += batch.qty;
+      } else {
+        const q = Number(row.qty);
+        const c = Number(row.cost);
+        inventoryValue += q * c;
+        inventoryQty += q;
+      }
+    }
+    // Batches for products with no inventory_balances row (edge)
+    for (const [pid, batch] of batchByProduct) {
+      if (productSeen.has(pid)) continue;
+      inventoryValue += batch.value;
+      inventoryQty += batch.qty;
+    }
+    const inventorySource = "batch_or_product_cost_union";
 
     // --- AR: open credit invoices ---
     const [arRow] = await db
@@ -691,37 +584,22 @@ export class FinancialStatementsService {
       );
     const arTotal = Number(arRow?.total ?? 0);
 
-    // --- AP: use the posted AP control account when available ---
-    const [apLedger] = await db
+    // --- P1: AP = open supplier invoices first; journals cross-check only ---
+    const [apInv] = await db
       .select({
-        debit: sql<string>`coalesce(sum(${journalEntryLines.debit}::numeric), 0)`,
-        credit: sql<string>`coalesce(sum(${journalEntryLines.credit}::numeric), 0)`,
-        lineCount: sql<number>`count(*)::int`,
+        total: sql<string>`coalesce(sum(${supplierInvoices.balanceDue}::numeric), 0)`,
+        count: sql<number>`count(*)::int`,
+        anyCount: sql<number>`count(*)::int`,
       })
-      .from(journalEntryLines)
-      .innerJoin(
-        journalEntries,
-        eq(journalEntryLines.journalEntryId, journalEntries.id),
-      )
-      .innerJoin(
-        chartOfAccounts,
-        eq(journalEntryLines.accountId, chartOfAccounts.id),
-      )
+      .from(supplierInvoices)
       .where(
         and(
-          eq(journalEntries.businessId, businessId),
-          eq(journalEntries.status, "POSTED"),
-          eq(chartOfAccounts.accountCode, "2000"),
-          lt(journalEntries.transactionDate, end),
+          eq(supplierInvoices.businessId, businessId),
+          lt(supplierInvoices.invoiceDate, end),
         ),
       );
 
-    const apJournalLines = Number(apLedger?.lineCount ?? 0);
-    const apFromJournals =
-      Number(apLedger?.credit ?? 0) - Number(apLedger?.debit ?? 0);
-
-    // --- Operational AP fallback for legacy records without AP journals ---
-    const [apInv] = await db
+    const [apOpen] = await db
       .select({
         total: sql<string>`coalesce(sum(${supplierInvoices.balanceDue}::numeric), 0)`,
         count: sql<number>`count(*)::int`,
@@ -730,55 +608,65 @@ export class FinancialStatementsService {
       .where(
         and(
           eq(supplierInvoices.businessId, businessId),
-          sql`coalesce(${supplierInvoices.balanceDue}::numeric, 0) > 0`,
+          sql`coalesce(${supplierInvoices.balanceDue}::numeric, 0) > 0.009`,
           lt(supplierInvoices.invoiceDate, end),
         ),
       );
-    let apTotal =
-      apJournalLines > 0 ? Math.max(0, apFromJournals) : Number(apInv?.total ?? 0);
-    let apSource = apJournalLines > 0 ? "posted_ap_ledger" : "supplier_invoices";
-    let apOpenCount = Number(apInv?.count ?? 0);
 
-    if (apJournalLines === 0 && apTotal < 0.01) {
-      // No open invoices: estimate unpaid purchases as sum of GRN line totals
-      // (you still owe suppliers until you record invoices + payments).
-      const [grn] = await db
+    const invoiceRowsEver = Number(apInv?.anyCount ?? 0);
+    let apTotal = Number(apOpen?.total ?? 0);
+    let apSource = "supplier_invoices";
+    let apOpenCount = Number(apOpen?.count ?? 0);
+
+    if (invoiceRowsEver === 0) {
+      // No AP bills yet: optional journal net on 2000 only (no GRN total fallback)
+      const [apLedger] = await db
         .select({
-          total: sql<string>`coalesce(sum(${goodsReceiptItems.total}::numeric), 0)`,
+          debit: sql<string>`coalesce(sum(${journalEntryLines.debit}::numeric), 0)`,
+          credit: sql<string>`coalesce(sum(${journalEntryLines.credit}::numeric), 0)`,
         })
-        .from(goodsReceiptItems)
+        .from(journalEntryLines)
         .innerJoin(
-          goodsReceipts,
-          eq(goodsReceiptItems.goodsReceiptId, goodsReceipts.id),
+          journalEntries,
+          eq(journalEntryLines.journalEntryId, journalEntries.id),
+        )
+        .innerJoin(
+          chartOfAccounts,
+          eq(journalEntryLines.accountId, chartOfAccounts.id),
         )
         .where(
           and(
-            eq(goodsReceipts.businessId, businessId),
-            lt(goodsReceipts.receivedAt, end),
+            eq(journalEntries.businessId, businessId),
+            eq(journalEntries.status, "POSTED"),
+            eq(chartOfAccounts.accountCode, "2000"),
+            lt(journalEntries.transactionDate, end),
           ),
         );
-      apTotal = Number(grn?.total ?? 0);
-      apSource = "goods_receipts_estimate";
-      apOpenCount = 0;
+      const net = Number(apLedger?.credit ?? 0) - Number(apLedger?.debit ?? 0);
+      if (net > 0.009) {
+        apTotal = net;
+        apSource = "posted_ap_ledger";
+      } else {
+        apTotal = 0;
+        apSource = "none";
+      }
     }
 
     const totalAssets = cashTotal + inventoryValue + arTotal;
     const totalLiabilities = apTotal;
     const netAssets = totalAssets - totalLiabilities;
 
-    // Retained earnings from operational P&L to as-of
     const ytd = await this.profitAndLoss(businessId, "2000-01-01", asOfDate);
     const retained = ytd.netProfit;
-    // Capital / balancing equity so Assets = Liabilities + Equity always
     const capitalResidual = netAssets - retained;
     const totalEquity = retained + capitalResidual;
 
-    const assetLines = [
+    const assetLines: AccountBalance[] = [
       ...cashLines.filter((l) => Math.abs(l.balance) > 0.0001),
       {
         accountId: "inv-at-cost",
         accountCode: "1200",
-        accountName: `Inventory at cost (${inventoryQty.toLocaleString()} units)`,
+        accountName: "Inventory at cost",
         categoryCode: "INV",
         categoryName: "Inventory",
         statementClass: "ASSET",
@@ -789,7 +677,7 @@ export class FinancialStatementsService {
       {
         accountId: "ar-open",
         accountCode: "1300",
-        accountName: `Accounts receivable (${Number(arRow?.count ?? 0)} open invoices)`,
+        accountName: "Accounts receivable (open invoices)",
         categoryCode: "CA",
         categoryName: "Current Assets",
         statementClass: "ASSET",
@@ -799,14 +687,11 @@ export class FinancialStatementsService {
       },
     ].filter((l) => Math.abs(l.balance) > 0.0001);
 
-    const liabilityLines = [
+    const liabilityLines: AccountBalance[] = [
       {
         accountId: "ap-open",
         accountCode: "2000",
-        accountName:
-          apSource === "supplier_invoices"
-            ? `Accounts payable (${apOpenCount} open supplier invoice(s))`
-            : "Accounts payable (est. from goods received — create & pay supplier invoices to clear)",
+        accountName: "Accounts payable (open supplier bills)",
         categoryCode: "CL",
         categoryName: "Current Liabilities",
         statementClass: "LIABILITY",
@@ -816,80 +701,86 @@ export class FinancialStatementsService {
       },
     ].filter((l) => Math.abs(l.balance) > 0.0001);
 
-    const equityLines = [
+    const equityLines: AccountBalance[] = [
       {
         accountId: "re-ytd",
         accountCode: "3100",
-        accountName: "Retained earnings (YTD profit / loss)",
+        accountName: "Retained earnings (YTD P&L)",
         categoryCode: "EQ",
         categoryName: "Equity",
         statementClass: "EQUITY",
-        debit: retained < 0 ? Math.abs(retained) : 0,
+        debit: retained < 0 ? -retained : 0,
         credit: retained > 0 ? retained : 0,
         balance: retained,
       },
       {
-        accountId: "capital",
+        accountId: "capital-residual",
         accountCode: "3000",
-        accountName:
-          capitalResidual >= 0
-            ? "Capital & other equity (balancing)"
-            : "Drawings / equity adjustment (balancing)",
+        accountName: "Owner equity / capital (balancing)",
         categoryCode: "EQ",
         categoryName: "Equity",
         statementClass: "EQUITY",
-        debit: capitalResidual < 0 ? Math.abs(capitalResidual) : 0,
+        debit: capitalResidual < 0 ? -capitalResidual : 0,
         credit: capitalResidual > 0 ? capitalResidual : 0,
         balance: capitalResidual,
       },
     ];
 
-    const bridge = {
-      totalAssets,
-      totalLiabilities,
-      netAssets,
-      equityShown: totalEquity,
-      retainedEarningsOperational: retained,
-      retainedEarningsJournalsOnly: retained,
-      gapNetAssetsVsEquity: 0,
-      differenceAssetsVsLiabEquity: 0,
-      notes: [
-        "Built from live app data: POS payments, expenses, stock on hand × cost, open credit sales, supplier invoices / GRNs.",
-        `Cash = till openings (${openingCash.toFixed(2)}) + collections (${paymentsTotal.toFixed(2)}) + other income (${otherIncomeTotal.toFixed(2)}) − expenses (${expensesTotal.toFixed(2)}) − supplier payments (${supplierPaymentsTotal.toFixed(2)}).`,
-        `Inventory = batch remaining × GRN cost (${inventorySource}, ${inventoryValue.toFixed(2)}; ${inventoryQty} units).`,
-        `AR = unpaid credit invoices (${arTotal.toFixed(2)}).`,
-        `AP source: ${apSource} (${apTotal.toFixed(2)}). AP is increased by posted purchases/GRNs and reduced by posted supplier payments.`,
-        "Equity = Net assets; split into retained earnings (P&L) and capital residual so the statement balances.",
-      ],
-    };
-
+    const liabPlusEquity = totalLiabilities + totalEquity;
     return {
       asOfDate,
-      assets: { total: totalAssets, lines: assetLines },
-      liabilities: { total: totalLiabilities, lines: liabilityLines },
-      equity: {
-        total: totalEquity,
-        bookEquity: capitalResidual,
-        retainedEarnings: retained,
-        lines: equityLines,
-      },
-      totalLiabilitiesAndEquity: totalLiabilities + totalEquity,
-      balanced: true,
-      difference: 0,
-      bridge,
-      sources: {
-        cashTotal,
-        paymentsTotal,
-        expensesTotal,
-        supplierPaymentsTotal,
-        otherIncomeTotal,
-        openingCash,
-        inventoryValue,
+      assets: {
+        total: totalAssets,
+        cash: cashTotal,
+        inventory: inventoryValue,
         inventoryQty,
         inventorySource,
-        arTotal,
-        apTotal,
+        ar: arTotal,
+        lines: assetLines,
+        cashSource: "cash_account_ledgers",
+      },
+      liabilities: {
+        total: totalLiabilities,
+        ap: apTotal,
         apSource,
+        apOpenCount,
+        lines: liabilityLines,
+      },
+      equity: {
+        total: totalEquity,
+        retainedEarnings: retained,
+        capitalResidual,
+        lines: equityLines,
+      },
+      totalLiabilitiesAndEquity: liabPlusEquity,
+      balanced: Math.abs(totalAssets - liabPlusEquity) < 0.02,
+      difference: totalAssets - liabPlusEquity,
+      equation: {
+        assets: totalAssets,
+        liabilitiesAndEquity: liabPlusEquity,
+        difference: totalAssets - liabPlusEquity,
+      },
+      bridge: {
+        totalAssets,
+        totalLiabilities,
+        netAssets,
+        equityShown: totalEquity,
+        gapNetAssetsVsEquity: netAssets - totalEquity,
+        retainedEarningsOperational: retained,
+        retainedEarningsJournalsOnly: retained,
+        notes: [
+          "Cash lines = Finance → Cash & bank (unique GL per till).",
+          "Inventory = batch cost × remaining where batches exist, else on-hand × product cost.",
+          "AP = open supplier invoice balances (no GRN-total fallback when invoices exist).",
+          "Equity balancing plug holds Assets = Liabilities + Equity.",
+        ],
+      },
+      dataSources: {
+        cash: "Finance → Cash & bank ledger balances (per till GL)",
+        inventory: inventorySource,
+        ap: apSource,
+        ar: "open sales balanceDue",
+        equity: "YTD P&L residual + capital plug",
       },
     };
   }

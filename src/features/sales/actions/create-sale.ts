@@ -345,6 +345,7 @@ export async function createSaleAction(input: unknown) {
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
     revalidatePath("/finance/payments");
+    revalidatePath("/dashboard");
 
 
     // Double-entry journal (non-blocking)

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, or , sql} from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or , sql, lt} from "drizzle-orm";
 import { priceLists } from "@/db/schema/inventory/price_lists";
 
 import { db } from "@/db";
@@ -123,6 +123,7 @@ export async function ensureFinanceDefaults(businessId: string) {
     { code: "1100", name: "Bank", cat: "CA" },
     { code: "1110", name: "M-Pesa / Mobile Money", cat: "CA" },
     { code: "1120", name: "Card Clearing", cat: "CA" },
+    { code: "1130", name: "Other Mobile Money", cat: "CA" },
     { code: "1200", name: "Inventory Asset", cat: "INV" },
     { code: "1300", name: "Accounts Receivable", cat: "CA" },
     { code: "2000", name: "Accounts Payable", cat: "CL" },
@@ -179,7 +180,8 @@ export async function ensureFinanceDefaults(businessId: string) {
   const ledgerForChannel = (type: string, name: string): string => {
     const n = name.toLowerCase();
     if (type === "CASH" || type === "PETTY_CASH") return "1000";
-    if (type === "MPESA" || type === "MOBILE_MONEY") return "1110";
+    if (type === "MPESA") return "1110";
+    if (type === "MOBILE_MONEY") return "1130";
     if (type === "BANK" && (n.includes("card") || n.includes("terminal"))) return "1120";
     if (type === "BANK") return "1100";
     return "1000";
@@ -417,8 +419,10 @@ export class FinanceService {
    * Cash & bank tills with live ledger balance:
    * openingBalance + journal debits − journal credits on the linked CoA account.
    * Sales / income increase; supplier pays & expenses decrease (when posted correctly).
-   */
-  async getCashAccountsWithBalances(businessId: string) {
+    async getCashAccountsWithBalances(
+    businessId: string,
+    asOfExclusive?: Date,
+  ) {
     await ensureFinanceDefaults(businessId);
     const accounts = await db
       .select({
@@ -443,6 +447,13 @@ export class FinanceService {
 
     const result = [];
     for (const a of accounts) {
+      const conditions = [
+        eq(journalEntries.businessId, businessId),
+        eq(journalEntryLines.accountId, a.accountId),
+      ];
+      if (asOfExclusive) {
+        conditions.push(lt(journalEntries.transactionDate, asOfExclusive));
+      }
       const [agg] = await db
         .select({
           debit: sql<string>`coalesce(sum(${journalEntryLines.debit}::numeric), 0)`,
@@ -453,33 +464,26 @@ export class FinanceService {
           journalEntries,
           eq(journalEntryLines.journalEntryId, journalEntries.id),
         )
-        .where(
-          and(
-            eq(journalEntries.businessId, businessId),
-            eq(journalEntryLines.accountId, a.accountId),
-          ),
-        );
-      const opening = Number(a.openingBalance ?? 0);
+        .where(and(...conditions));
       const debit = Number(agg?.debit ?? 0);
       const credit = Number(agg?.credit ?? 0);
-      // Asset: debits increase, credits decrease. Opening is already "cash in hand"
-      // Journals for opening may also post — prefer opening + net journals if opening
-      // journals use OPENING_BALANCE. Simpler: balance = opening + debit - credit
-      // when opening journals are NOT also in lines, or opening is 0 after journal.
-      // Standard: store openingBalance as seed; opening journals also hit CoA.
-      // To avoid double-count, use pure ledger if any lines exist, else opening only.
-      const hasLines = debit !== 0 || credit !== 0;
-      const currentBalance = hasLines ? debit - credit : opening;
-      // If both opening field and journals exist, ledger is authoritative (includes opening JV)
+      // Single truth: ledger only (opening must be posted as journal).
+      // Field openingBalance is display/seed only when ledger is empty.
+      const ledgerNet = debit - credit;
+      const opening = Number(a.openingBalance ?? 0);
+      const currentBalance = debit !== 0 || credit !== 0 ? ledgerNet : opening;
       result.push({
         ...a,
         movementIn: debit,
         movementOut: credit,
         currentBalance,
+        source: debit !== 0 || credit !== 0 ? ("ledger" as const) : ("opening_field" as const),
       });
     }
     return result;
   }
+
+ }
 
   async getCashAccountGlCode(
     businessId: string,

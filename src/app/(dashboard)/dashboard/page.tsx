@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import {
   ShoppingCart,
   Package,
@@ -110,6 +113,47 @@ export default async function DashboardPage() {
           </ul>
         </div>
       )}
+
+      <SectionHeader
+        title="Live money"
+        description="Same sources as Cash & bank, AR, AP, and inventory valuation"
+      />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          title="Cash & bank (all tills)"
+          value={`KES ${Number(summary.cashTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          description="Ledger balances"
+          icon={ShoppingCart}
+        />
+        <StatCard
+          title="Today cash in"
+          value={`KES ${Number(summary.todayCashIn ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          description={
+            (summary.todayCashByMethod ?? [])
+              .map((m: { method: string; total: number }) => `${m.method} ${m.total.toLocaleString()}`)
+              .join(" · ") || "No collections yet today"
+          }
+          icon={ShoppingCart}
+        />
+        <StatCard
+          title="Open receivables"
+          value={`KES ${Number(summary.openAr ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          description="Credit invoices due"
+          icon={Users}
+        />
+        <StatCard
+          title="Open payables"
+          value={`KES ${Number(summary.openAp ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          description="Supplier bills unpaid"
+          icon={Package}
+        />
+        <StatCard
+          title="Stock at cost"
+          value={`KES ${Number(summary.stockValue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+          description="Inventory valuation"
+          icon={Package}
+        />
+      </div>
 
       <SectionHeader
         title="Quick Actions"

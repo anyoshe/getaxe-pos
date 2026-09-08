@@ -10,7 +10,7 @@ import { journalEntries } from "@/db/schema/finance/journal_entries";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
-import { ensureFinanceDefaults } from "@/features/finance/services/finance.service";
+import { ensureFinanceDefaults, financeService } from "@/features/finance/services/finance.service";
 
 async function authFinance() {
   try {
@@ -129,10 +129,12 @@ export async function saveOpeningCashBalancesAction(input: unknown) {
 
       if (parsed.data.postJournal && next > prev + 0.001) {
         const delta = next - prev;
+        // Post to the till's linked ledger (1000/1100/1110/1120/1130…), not a type guess
         const code =
-          existing.type === "BANK" || String(existing.type).includes("BANK")
-            ? "1100"
-            : "1000";
+          (await financeService.getCashAccountGlCode(
+            user.businessId,
+            existing.id,
+          )) ?? "1000";
         try {
           await journalPostingService.postOpeningCash({
             businessId: user.businessId,

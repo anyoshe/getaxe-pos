@@ -79,6 +79,7 @@ export async function paySupplierInvoiceAction(input: unknown) {
     revalidatePath("/finance/ap-aging");
     revalidatePath("/finance/journals");
     revalidatePath("/finance/cash-accounts");
+    revalidatePath("/dashboard");
     revalidatePath("/reports/finance");
     return { success: true as const, message: "Payment recorded from selected account." };
   } catch (e) {

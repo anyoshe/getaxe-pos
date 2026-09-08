@@ -533,8 +533,8 @@ function BsView({
     <div className="space-y-4">
       <SectionTitle>Balance sheet as at {data.asOfDate}</SectionTitle>
       <p className="text-xs text-muted-foreground">
-        Built from live POS payments, expenses, stock on hand × cost, open credit
-        sales, and supplier invoices / goods receipts — not journals alone.
+        Cash from till ledgers (same as Cash &amp; bank). Inventory at cost.
+        AR/AP from open invoices. Equity balances the equation.
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <Kpi label="Total assets" value={`KES ${money(data.assets.total)}`} />
@@ -545,6 +545,13 @@ function BsView({
         <Kpi label="Equity" value={`KES ${money(data.equity.total)}`} />
       </div>
       <AccountBlock title="Assets" total={data.assets.total} lines={data.assets.lines} />
+      {"dataSources" in data && data.dataSources ? (
+        <p className="text-xs text-muted-foreground border-t pt-3">
+          Sources — cash: {String((data as any).dataSources.cash)}; inventory:{" "}
+          {String((data as any).dataSources.inventory)}; AP:{" "}
+          {String((data as any).dataSources.ap)}
+        </p>
+      ) : null}
       <AccountBlock
         title="Liabilities"
         total={data.liabilities.total}
