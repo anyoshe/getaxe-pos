@@ -6,6 +6,9 @@ import { cashReconciliations } from "@/db/schema/finance/cash_reconciliations";
 import { payments } from "@/db/schema/sales/payments";
 import { expenses } from "@/db/schema/finance/expenses";
 import { incomes } from "@/db/schema/finance/incomes";
+import { journalEntries } from "@/db/schema/finance/journal_entries";
+import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
+
 
 function dayBounds(dateStr: string) {
   // dateStr = YYYY-MM-DD in Africa/Nairobi. Payments may be stored as:
@@ -96,16 +99,17 @@ export class CashReconciliationService {
       .orderBy(desc(cashReconciliations.reconciliationDate))
       .limit(1);
 
+    // Opening = last saved counted balance, else setup opening field.
+    // It does NOT auto-roll from ledger until you save a reconciliation.
     const opening = prior
       ? Number(prior.countedBalance)
       : Number(account.openingBalance ?? 0);
 
     const methods = paymentMethodsForAccount(account);
-    // POS reconciliation is method-driven: CARD → Card Terminal, MPESA → M-Pesa, etc.
-    // Also include rows explicitly linked to this account with no/unknown method mapping.
+    // POS: match method for this till OR payment explicitly linked to this cash account
     const [payRow] = await db
       .select({
-        total: sql<string>`coalesce(sum(${payments.amount}), 0)`,
+        total: sql<string>`coalesce(sum(${payments.amount}::numeric), 0)`,
       })
       .from(payments)
       .where(
@@ -117,10 +121,7 @@ export class CashReconciliationService {
           methods.length
             ? or(
                 inArray(payments.method, methods as any),
-                and(
-                  eq(payments.cashAccountId, cashAccountId),
-                  sql`${payments.method}::text not in ('CASH','MPESA','MOBILE_MONEY','CARD','BANK_TRANSFER','CHEQUE')`,
-                ),
+                eq(payments.cashAccountId, cashAccountId),
               )
             : eq(payments.cashAccountId, cashAccountId),
         ),
@@ -128,7 +129,7 @@ export class CashReconciliationService {
 
     const [incRow] = await db
       .select({
-        total: sql<string>`coalesce(sum(${incomes.amount}), 0)`,
+        total: sql<string>`coalesce(sum(${incomes.amount}::numeric), 0)`,
       })
       .from(incomes)
       .where(
@@ -142,20 +143,48 @@ export class CashReconciliationService {
 
     const [expRow] = await db
       .select({
-        total: sql<string>`coalesce(sum(${expenses.amount}), 0)`,
+        total: sql<string>`coalesce(sum(${expenses.amount}::numeric), 0)`,
       })
       .from(expenses)
       .where(
         and(
           eq(expenses.businessId, businessId),
           eq(expenses.cashAccountId, cashAccountId),
-          gte(expenses.expenseDate, start),
-          lt(expenses.expenseDate, end),
+          or(
+            and(gte(expenses.expenseDate, start), lt(expenses.expenseDate, end)),
+            and(gte(expenses.createdAt, start), lt(expenses.createdAt, end)),
+          ),
         ),
       );
 
-    const systemInflows = Number(payRow?.total ?? 0) + Number(incRow?.total ?? 0);
-    const systemOutflows = Number(expRow?.total ?? 0);
+    // Supplier / AP pays: credits on this till's linked ledger for the day
+    const [apPayRow] = await db
+      .select({
+        total: sql<string>`coalesce(sum(${journalEntryLines.credit}::numeric), 0)`,
+      })
+      .from(journalEntryLines)
+      .innerJoin(
+        journalEntries,
+        eq(journalEntryLines.journalEntryId, journalEntries.id),
+      )
+      .where(
+        and(
+          eq(journalEntries.businessId, businessId),
+          eq(journalEntries.status, "POSTED"),
+          eq(journalEntries.sourceType, "PAYMENT"),
+          eq(journalEntryLines.accountId, account.accountId),
+          gte(journalEntries.transactionDate, start),
+          lt(journalEntries.transactionDate, end),
+          sql`coalesce(${journalEntryLines.credit}::numeric, 0) > 0`,
+        ),
+      );
+
+    const paymentInflows = Number(payRow?.total ?? 0);
+    const otherInflows = Number(incRow?.total ?? 0);
+    const expenseOut = Number(expRow?.total ?? 0);
+    const apOut = Number(apPayRow?.total ?? 0);
+    const systemInflows = paymentInflows + otherInflows;
+    const systemOutflows = expenseOut + apOut;
     const expectedBalance = opening + systemInflows - systemOutflows;
 
     return {
@@ -164,8 +193,12 @@ export class CashReconciliationService {
       systemInflows,
       systemOutflows,
       expectedBalance,
-      paymentInflows: Number(payRow?.total ?? 0),
-      otherInflows: Number(incRow?.total ?? 0),
+      paymentInflows,
+      otherInflows,
+      expenseOutflows: expenseOut,
+      apOutflows: apOut,
+      methodsMatched: methods,
+      openingSource: prior ? ("prior_recon" as const) : ("opening_field" as const),
     };
   }
 

@@ -69,12 +69,13 @@ class DashboardService {
             eq(products.businessId, businessId),
             eq(products.active, true),
             eq(products.trackInventory, true),
+            sql`coalesce(${products.reorderLevel}, 0) > 0`,
             sql`(
               select coalesce(sum(${inventoryBalances.quantity}), 0)
               from ${inventoryBalances}
               where ${inventoryBalances.productId} = ${products.id}
                 and ${inventoryBalances.businessId} = ${businessId}
-            ) <= coalesce(${products.reorderLevel}, 0)`,
+            ) <= ${products.reorderLevel}`,
           ),
         ),
       db

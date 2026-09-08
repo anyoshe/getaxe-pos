@@ -70,6 +70,8 @@ export function CashReconciliationClient({
     expectedBalance: number;
     paymentInflows: number;
     otherInflows: number;
+    methodsMatched?: string[];
+    openingSource?: string;
   } | null>(null);
   const [overview, setOverview] = useState<
     Array<{
@@ -118,6 +120,9 @@ export function CashReconciliationClient({
         expectedBalance: r.summary.expectedBalance,
         paymentInflows: r.summary.paymentInflows,
         otherInflows: r.summary.otherInflows,
+        methodsMatched: (r.summary as { methodsMatched?: string[] })
+          .methodsMatched,
+        openingSource: (r.summary as { openingSource?: string }).openingSource,
       });
       setCounted(String(r.summary.expectedBalance));
     });
@@ -278,21 +283,38 @@ export function CashReconciliationClient({
             </div>
           </div>
 
-          {selected ? (
-            <p className="text-xs text-muted-foreground">
-              This channel counts POS payments with method:{" "}
-              <strong>
-                {selected.type === "CASH"
-                  ? "CASH"
-                  : selected.type === "MPESA"
-                    ? "MPESA"
-                    : selected.type === "MOBILE_MONEY"
-                      ? "MOBILE_MONEY"
-                      : selected.name.toLowerCase().includes("card")
-                        ? "CARD"
-                        : "BANK_TRANSFER / CHEQUE"}
-              </strong>
-            </p>
+          {selected && summary ? (
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>
+                POS methods for this till:{" "}
+                <strong className="text-foreground">
+                  {(summary as { methodsMatched?: string[] }).methodsMatched?.join(
+                    ", ",
+                  ) ||
+                    (selected.type === "CASH"
+                      ? "CASH"
+                      : selected.type === "MPESA"
+                        ? "MPESA"
+                        : selected.type === "MOBILE_MONEY"
+                          ? "MOBILE_MONEY"
+                          : selected.name.toLowerCase().includes("card")
+                            ? "CARD"
+                            : "BANK_TRANSFER / CHEQUE")}
+                </strong>
+              </p>
+              <p>
+                Opening source:{" "}
+                <strong className="text-foreground">
+                  {(summary as { openingSource?: string }).openingSource ===
+                  "prior_recon"
+                    ? "Last saved count"
+                    : "Opening balances setup (not live ledger)"}
+                </strong>
+                . Expected close = opening + today&apos;s POS/income − expenses −
+                supplier pays. Click Refresh after sales. Saving a count rolls
+                opening forward for the next day.
+              </p>
+            </div>
           ) : null}
 
           {summary && (
@@ -313,7 +335,9 @@ export function CashReconciliationClient({
                 </div>
               </div>
               <div className="rounded-lg border bg-card p-3 text-sm">
-                <div className="text-xs text-muted-foreground">Outflows (expenses)</div>
+                <div className="text-xs text-muted-foreground">
+                  Outflows (expenses + supplier pays)
+                </div>
                 <div className="text-lg font-semibold tabular-nums">
                   −{money(summary.systemOutflows)}
                 </div>
@@ -327,21 +351,38 @@ export function CashReconciliationClient({
             </div>
           )}
 
-          {selected ? (
-            <p className="text-xs text-muted-foreground">
-              This channel counts POS payments with method:{" "}
-              <strong>
-                {selected.type === "CASH"
-                  ? "CASH"
-                  : selected.type === "MPESA"
-                    ? "MPESA"
-                    : selected.type === "MOBILE_MONEY"
-                      ? "MOBILE_MONEY"
-                      : selected.name.toLowerCase().includes("card")
-                        ? "CARD"
-                        : "BANK_TRANSFER / CHEQUE"}
-              </strong>
-            </p>
+          {selected && summary ? (
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>
+                POS methods for this till:{" "}
+                <strong className="text-foreground">
+                  {(summary as { methodsMatched?: string[] }).methodsMatched?.join(
+                    ", ",
+                  ) ||
+                    (selected.type === "CASH"
+                      ? "CASH"
+                      : selected.type === "MPESA"
+                        ? "MPESA"
+                        : selected.type === "MOBILE_MONEY"
+                          ? "MOBILE_MONEY"
+                          : selected.name.toLowerCase().includes("card")
+                            ? "CARD"
+                            : "BANK_TRANSFER / CHEQUE")}
+                </strong>
+              </p>
+              <p>
+                Opening source:{" "}
+                <strong className="text-foreground">
+                  {(summary as { openingSource?: string }).openingSource ===
+                  "prior_recon"
+                    ? "Last saved count"
+                    : "Opening balances setup (not live ledger)"}
+                </strong>
+                . Expected close = opening + today&apos;s POS/income − expenses −
+                supplier pays. Click Refresh after sales. Saving a count rolls
+                opening forward for the next day.
+              </p>
+            </div>
           ) : null}
 
           {summary && (
@@ -380,21 +421,38 @@ export function CashReconciliationClient({
             </div>
           )}
 
-          {selected ? (
-            <p className="text-xs text-muted-foreground">
-              This channel counts POS payments with method:{" "}
-              <strong>
-                {selected.type === "CASH"
-                  ? "CASH"
-                  : selected.type === "MPESA"
-                    ? "MPESA"
-                    : selected.type === "MOBILE_MONEY"
-                      ? "MOBILE_MONEY"
-                      : selected.name.toLowerCase().includes("card")
-                        ? "CARD"
-                        : "BANK_TRANSFER / CHEQUE"}
-              </strong>
-            </p>
+          {selected && summary ? (
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>
+                POS methods for this till:{" "}
+                <strong className="text-foreground">
+                  {(summary as { methodsMatched?: string[] }).methodsMatched?.join(
+                    ", ",
+                  ) ||
+                    (selected.type === "CASH"
+                      ? "CASH"
+                      : selected.type === "MPESA"
+                        ? "MPESA"
+                        : selected.type === "MOBILE_MONEY"
+                          ? "MOBILE_MONEY"
+                          : selected.name.toLowerCase().includes("card")
+                            ? "CARD"
+                            : "BANK_TRANSFER / CHEQUE")}
+                </strong>
+              </p>
+              <p>
+                Opening source:{" "}
+                <strong className="text-foreground">
+                  {(summary as { openingSource?: string }).openingSource ===
+                  "prior_recon"
+                    ? "Last saved count"
+                    : "Opening balances setup (not live ledger)"}
+                </strong>
+                . Expected close = opening + today&apos;s POS/income − expenses −
+                supplier pays. Click Refresh after sales. Saving a count rolls
+                opening forward for the next day.
+              </p>
+            </div>
           ) : null}
 
           {summary && (

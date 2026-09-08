@@ -116,43 +116,59 @@ export default async function DashboardPage() {
 
       <SectionHeader
         title="Live money"
-        description="Same sources as Cash & bank, AR, AP, and inventory valuation"
+        description="Tills, collections, and open balances — same sources as Cash & bank / AP / AR"
       />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Cash & bank (all tills)"
-          value={`KES ${Number(summary.cashTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-          description="Ledger balances"
-          icon={ShoppingCart}
-        />
-        <StatCard
-          title="Today cash in"
-          value={`KES ${Number(summary.todayCashIn ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-          description={
-            (summary.todayCashByMethod ?? [])
-              .map((m: { method: string; total: number }) => `${m.method} ${m.total.toLocaleString()}`)
-              .join(" · ") || "No collections yet today"
-          }
-          icon={ShoppingCart}
-        />
-        <StatCard
-          title="Open receivables"
-          value={`KES ${Number(summary.openAr ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-          description="Credit invoices due"
-          icon={Users}
-        />
-        <StatCard
-          title="Open payables"
-          value={`KES ${Number(summary.openAp ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-          description="Supplier bills unpaid"
-          icon={Package}
-        />
-        <StatCard
-          title="Stock at cost"
-          value={`KES ${Number(summary.stockValue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-          description="Inventory valuation"
-          icon={Package}
-        />
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {[
+          {
+            label: "Cash & bank",
+            value: Number(summary.cashTotal ?? 0),
+            hint: "All tills (ledger)",
+          },
+          {
+            label: "Today cash in",
+            value: Number(summary.todayCashIn ?? 0),
+            hint:
+              (summary.todayCashByMethod ?? [])
+                .map(
+                  (m: { method: string; total: number }) =>
+                    `${m.method} ${Number(m.total).toLocaleString()}`,
+                )
+                .join(" · ") || "No collections yet",
+          },
+          {
+            label: "Open receivables",
+            value: Number(summary.openAr ?? 0),
+            hint: "Credit invoices due",
+          },
+          {
+            label: "Open payables",
+            value: Number(summary.openAp ?? 0),
+            hint: "Supplier bills unpaid",
+          },
+          {
+            label: "Stock at cost",
+            value: Number(summary.stockValue ?? 0),
+            hint: "Inventory valuation",
+          },
+        ].map((kpi) => (
+          <div
+            key={kpi.label}
+            className="rounded-xl border border-border bg-card p-4 shadow-sm"
+          >
+            <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-foreground sm:text-xl">
+              KES{" "}
+              {kpi.value.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+            </p>
+            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+              {kpi.hint}
+            </p>
+          </div>
+        ))}
       </div>
 
       <SectionHeader
