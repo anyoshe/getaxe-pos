@@ -1064,7 +1064,12 @@ export function PosClient({
       {/* Body: on mobile products scroll; cart is a bottom sheet that also scrolls */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         {/* CATALOGUE */}
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-secondary/70 to-background">
+        <section
+          className={
+            "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-secondary/70 to-background " +
+            (mobileStep === "pay" ? "max-lg:hidden" : "")
+          }
+        >
           <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3">
             <div className="relative">
               <div className="flex gap-2">
@@ -1551,14 +1556,14 @@ export function PosClient({
 
         {/* CART + PAY — sticky Complete sale always visible on mobile */}
         <section className={
-          "flex min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem] " +
+          "flex min-h-0 w-full flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:shrink-0 lg:border-t-0 xl:w-[26rem] " +
           (cart.length === 0
-            ? "max-h-[7.5rem] lg:max-h-none"
+            ? "max-h-[7.5rem] shrink-0 lg:max-h-none"
             : mobileStep === "pay"
-              ? "max-h-[70dvh] lg:max-h-none"
+              ? "min-h-0 flex-1 shrink-0 max-lg:max-h-none lg:max-h-none"
               : posView === "scan"
-                ? "max-h-[48dvh] lg:max-h-none"
-                : "max-h-[45dvh] lg:max-h-none")
+                ? "max-h-[48dvh] shrink-0 lg:max-h-none"
+                : "max-h-[45dvh] shrink-0 lg:max-h-none")
         }>
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
             <div className="flex items-center gap-2">
@@ -1584,7 +1589,7 @@ export function PosClient({
           </div>
 
           {/* Scrollable: lines (browse) + payment options + customer */}
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 pb-4 sm:p-3">
             {/* Mobile wizard step indicator */}
             {cart.length > 0 ? (
               <div className="flex gap-2 lg:hidden">
