@@ -175,6 +175,8 @@ export function PosClient({
   const [catalogLayout, setCatalogLayout] = useState<"grid" | "list" | "compact">(
     "grid",
   );
+  /** browse = product catalogue; scan = search/scan + cart table (no product grid) */
+  const [posView, setPosView] = useState<"browse" | "scan">("browse");
   const [visibleCount, setVisibleCount] = useState(48);
   const [priceMode, setPriceMode] = useState<PriceMode>("retail");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
@@ -228,6 +230,13 @@ export function PosClient({
   useEffect(() => {
     scanRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (posView === "scan") {
+      scanRef.current?.focus();
+    }
+  }, [posView]);
+
 
   useEffect(() => {
     void listPosCustomersAction().then((r) => {
@@ -978,6 +987,22 @@ export function PosClient({
 
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
+              {(["browse", "scan"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPosView(m)}
+                  className={
+                    posView === m
+                      ? "rounded-full bg-card px-2.5 py-1.5 text-foreground shadow-sm"
+                      : "rounded-full px-2.5 py-1.5 text-white/85"
+                  }
+                >
+                  {m === "browse" ? "Browse" : "Scan"}
+                </button>
+              ))}
+            </div>
+            <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
               {(["retail", "wholesale"] as const).map((m) => (
                 <button
                   key={m}
@@ -1142,6 +1167,9 @@ export function PosClient({
               </div>
             )}
 
+
+            {posView === "browse" ? (
+              <>
             {/* Categories + layout (supermarket aisles) */}
             <div className="flex items-center gap-2">
               <div className="-mx-0.5 flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -1353,15 +1381,177 @@ export function PosClient({
               </div>
             ) : null}
           </div>
+
+              </>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <p className="shrink-0 border-b border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+                  Scan mode — use the bar above. Lines appear here as you add items.
+                  Payments stay on the side.
+                </p>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2 sm:p-3">
+                  {cart.length === 0 ? (
+                    <div className="flex min-h-[12rem] flex-col items-center justify-center rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-8 text-center">
+                      <ScanBarcode className="mb-3 h-10 w-10 text-primary/50" />
+                      <p className="text-sm font-semibold text-foreground">
+                        Ready to scan
+                      </p>
+                      <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                        Scan a barcode or type a name / SKU and press Enter. Added
+                        products will list in this table.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-border/70">
+                      <table className="w-full min-w-[520px] text-left text-sm">
+                        <thead className="bg-secondary/50 text-[11px] uppercase tracking-wide text-muted-foreground">
+                          <tr>
+                            <th className="p-2.5 font-medium">Product</th>
+                            <th className="p-2.5 font-medium">Unit</th>
+                            <th className="p-2.5 text-right font-medium">Qty</th>
+                            <th className="p-2.5 text-right font-medium">Price</th>
+                            <th className="p-2.5 text-right font-medium">Line</th>
+                            <th className="p-2.5 font-medium" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cart.map((line) => {
+                            const units =
+                              productUnitsByProduct[line.productId] ?? [];
+                            const lineTotal = line.quantity * line.unitPrice;
+                            return (
+                              <tr
+                                key={line.productId}
+                                className="border-t border-border/60 bg-card"
+                              >
+                                <td className="max-w-[14rem] p-2.5">
+                                  <div className="truncate font-semibold">
+                                    {line.name}
+                                  </div>
+                                  <div className="truncate font-mono text-[10px] text-muted-foreground">
+                                    {line.sku || "—"}
+                                  </div>
+                                </td>
+                                <td className="p-2.5">
+                                  {units.length > 1 ? (
+                                    <select
+                                      className="h-8 max-w-[7rem] rounded-md border border-input bg-background px-1 text-xs"
+                                      value={line.unitId ?? ""}
+                                      onChange={(e) =>
+                                        setLineUnit(
+                                          line.productId,
+                                          e.target.value,
+                                        )
+                                      }
+                                    >
+                                      {units.map((u) => (
+                                        <option key={u.unitId} value={u.unitId}>
+                                          {u.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">
+                                      {units[0]?.label ?? "—"}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-2.5 text-right">
+                                  <div className="inline-flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      className="h-7 w-7 rounded-md border text-xs"
+                                      onClick={() =>
+                                        setCart((c) =>
+                                          c
+                                            .map((x) =>
+                                              x.productId === line.productId
+                                                ? {
+                                                    ...x,
+                                                    quantity: Math.max(
+                                                      0,
+                                                      x.quantity - 1,
+                                                    ),
+                                                  }
+                                                : x,
+                                            )
+                                            .filter((x) => x.quantity > 0),
+                                        )
+                                      }
+                                    >
+                                      −
+                                    </button>
+                                    <span className="min-w-[1.5rem] text-center font-semibold tabular-nums">
+                                      {line.quantity}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="h-7 w-7 rounded-md border text-xs"
+                                      onClick={() =>
+                                        setCart((c) =>
+                                          c.map((x) =>
+                                            x.productId === line.productId
+                                              ? {
+                                                  ...x,
+                                                  quantity: x.quantity + 1,
+                                                }
+                                              : x,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </td>
+                                <td className="p-2.5 text-right tabular-nums">
+                                  {line.unitPrice.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </td>
+                                <td className="p-2.5 text-right font-semibold tabular-nums text-primary">
+                                  {lineTotal.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </td>
+                                <td className="p-2.5 text-right">
+                                  <button
+                                    type="button"
+                                    className="text-xs font-medium text-destructive"
+                                    onClick={() =>
+                                      setCart((c) =>
+                                        c.filter(
+                                          (x) => x.productId !== line.productId,
+                                        ),
+                                      )
+                                    }
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
         </section>
 
 
         {/* CART + PAY — sticky Complete sale always visible on mobile */}
         <section className={
           "flex min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem] " +
-          (cart.length === 0
-            ? "max-h-[7.5rem] lg:max-h-none"
-            : "max-h-[42dvh] lg:max-h-none")
+          (posView === "scan"
+            ? "max-h-[48dvh] lg:max-h-none"
+            : cart.length === 0
+              ? "max-h-[7.5rem] lg:max-h-none"
+              : "max-h-[42dvh] lg:max-h-none")
         }>
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
             <div className="flex items-center gap-2">
@@ -1386,9 +1576,18 @@ export function PosClient({
             ) : null}
           </div>
 
-          {/* Scrollable: lines + payment options + customer */}
+          {/* Scrollable: lines (browse) + payment options + customer */}
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3">
-            {cart.length === 0 ? (
+            {posView === "scan" ? (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">
+                  {cart.length} line{cart.length === 1 ? "" : "s"}
+                </span>
+                {" "}
+                on the main table · adjust qty / remove there. Use this panel for
+                tender, customer and complete sale.
+              </div>
+            ) : cart.length === 0 ? (
               <div className="flex min-h-[3rem] items-center justify-center rounded-xl border border-dashed border-chart-2/40 bg-chart-2/10 p-3 text-center text-xs text-muted-foreground">
                 Scan or tap products to start
               </div>
