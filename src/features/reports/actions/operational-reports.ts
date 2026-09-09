@@ -72,3 +72,38 @@ export async function getStockMovementsReportAction(input: unknown) {
     };
   }
 }
+
+export async function getStockMovementMatrixAction(input: unknown) {
+  let user;
+  try {
+    user = await requireAuthorizedUser("reports.view");
+  } catch {
+    try {
+      user = await requireAuthorizedUser("inventory.view");
+    } catch {
+      user = await requireAuthorizedUser("products.view");
+    }
+  }
+  const parsed = rangeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, message: "Choose a valid from/to date." };
+  }
+  if (parsed.data.fromDate > parsed.data.toDate) {
+    return { success: false as const, message: "From date must be before to date." };
+  }
+  try {
+    const data = await operationalReportsService.stockMovementMatrix(
+      user.businessId,
+      parsed.data.fromDate,
+      parsed.data.toDate,
+    );
+    return { success: true as const, data };
+  } catch (e) {
+    return {
+      success: false as const,
+      message:
+        e instanceof Error ? e.message : "Failed to load stock movement matrix.",
+    };
+  }
+}
+
