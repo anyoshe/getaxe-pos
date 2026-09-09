@@ -1619,7 +1619,6 @@ export function PosClient({
                         );
                       })}
                     </div>
-                    </div>
                   )}
                 </div>
               </div>
