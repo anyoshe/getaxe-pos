@@ -177,6 +177,8 @@ export function PosClient({
   );
   /** browse = product catalogue; scan = search/scan + cart table (no product grid) */
   const [posView, setPosView] = useState<"browse" | "scan">("browse");
+  /** Mobile checkout wizard: items → pay (desktop shows both) */
+  const [mobileStep, setMobileStep] = useState<"items" | "pay">("items");
   const [visibleCount, setVisibleCount] = useState(48);
   const [priceMode, setPriceMode] = useState<PriceMode>("retail");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
@@ -236,6 +238,10 @@ export function PosClient({
       scanRef.current?.focus();
     }
   }, [posView]);
+
+  useEffect(() => {
+    if (cart.length === 0) setMobileStep("items");
+  }, [cart.length]);
 
 
   useEffect(() => {
@@ -1546,11 +1552,13 @@ export function PosClient({
         {/* CART + PAY — sticky Complete sale always visible on mobile */}
         <section className={
           "flex min-h-0 w-full shrink-0 flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:border-t-0 xl:w-[26rem] " +
-          (posView === "scan"
-            ? "max-h-[48dvh] lg:max-h-none"
-            : cart.length === 0
-              ? "max-h-[7.5rem] lg:max-h-none"
-              : "max-h-[42dvh] lg:max-h-none")
+          (cart.length === 0
+            ? "max-h-[7.5rem] lg:max-h-none"
+            : mobileStep === "pay"
+              ? "max-h-[70dvh] lg:max-h-none"
+              : posView === "scan"
+                ? "max-h-[48dvh] lg:max-h-none"
+                : "max-h-[45dvh] lg:max-h-none")
         }>
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
             <div className="flex items-center gap-2">
@@ -1577,6 +1585,39 @@ export function PosClient({
 
           {/* Scrollable: lines (browse) + payment options + customer */}
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3">
+            {/* Mobile wizard step indicator */}
+            {cart.length > 0 ? (
+              <div className="flex gap-2 lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setMobileStep("items")}
+                  className={
+                    "flex-1 rounded-xl px-2 py-2 text-xs font-bold " +
+                    (mobileStep === "items"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground")
+                  }
+                >
+                  1 · Items
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileStep("pay")}
+                  className={
+                    "flex-1 rounded-xl px-2 py-2 text-xs font-bold " +
+                    (mobileStep === "pay"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground")
+                  }
+                >
+                  2 · Pay
+                </button>
+              </div>
+            ) : null}
+
+            <div
+              className={mobileStep === "pay" ? "max-lg:hidden space-y-2" : "space-y-2"}
+            >
             {posView === "scan" ? (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">
@@ -1778,30 +1819,50 @@ export function PosClient({
                 );
               })
             )}
+            </div>
 
-            <div className="grid grid-cols-4 gap-1.5 pt-1">
-              {payMethods.map((m) => {
-                const Icon = m.icon;
-                const active = paymentMethod === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setPaymentMethod(m.id)}
-                    className={
-                      "flex flex-col items-center gap-0.5 rounded-xl px-1 py-2 " +
-                      (active ? m.activeClass : m.idleClass)
-                    }
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="text-[10px] font-bold">{m.label}</span>
-                  </button>
-                );
-              })}
+            <div
+              className={
+                "space-y-2 " +
+                (mobileStep === "items" ? "max-lg:hidden" : "")
+              }
+            >
+              <p className="text-xs font-semibold text-muted-foreground max-lg:block lg:hidden">
+                Step 2 · How is the customer paying?
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
+                {payMethods.map((m) => {
+                  const Icon = m.icon;
+                  const active = paymentMethod === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setPaymentMethod(m.id)}
+                      className={
+                        "flex min-h-[3.75rem] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-3 text-center transition-all " +
+                        (active
+                          ? m.activeClass + " ring-2 ring-primary/40 shadow-sm"
+                          : m.idleClass)
+                      }
+                    >
+                      <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                      <span className="text-xs font-bold sm:text-sm">
+                        {m.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {saleMode === "CASH" && paymentMethod === "CASH" ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div
+                className={
+                  "grid grid-cols-2 gap-2 " +
+                  (mobileStep === "items" ? "max-lg:hidden" : "")
+                }
+              >
                 <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">
                     Tendered
@@ -1832,7 +1893,12 @@ export function PosClient({
               </div>
             ) : null}
 
-            <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+            <div
+              className={
+                "space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5 " +
+                (mobileStep === "items" ? "max-lg:hidden" : "")
+              }
+            >
               <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                 <UserRound className="h-3.5 w-3.5" />
                 Customer
@@ -1944,7 +2010,7 @@ export function PosClient({
             </div>
           </div>
 
-          {/* Always visible on mobile — total + complete */}
+          {/* Sticky total + wizard / complete */}
           <div className="shrink-0 space-y-2 border-t border-border/60 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:p-3">
             <div className="flex items-end justify-between">
               <span className="text-xs text-muted-foreground">Total</span>
@@ -1955,64 +2021,96 @@ export function PosClient({
                 })}
               </span>
             </div>
-            {/* Cash sale vs credit invoice */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSaleMode("CASH");
-                  if (paymentMethod === "CREDIT") setPaymentMethod("CASH");
-                }}
-                className={
-                  saleMode === "CASH"
-                    ? "rounded-xl border-2 border-primary bg-primary/10 px-2 py-2 text-xs font-bold text-primary"
-                    : "rounded-xl border border-border bg-muted/40 px-2 py-2 text-xs font-medium text-muted-foreground"
-                }
-              >
-                Cash sale
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSaleMode("CREDIT");
-                  setPaymentMethod("CREDIT");
-                }}
-                className={
-                  saleMode === "CREDIT"
-                    ? "rounded-xl border-2 border-primary bg-primary/10 px-2 py-2 text-xs font-bold text-primary"
-                    : "rounded-xl border border-border bg-muted/40 px-2 py-2 text-xs font-medium text-muted-foreground"
-                }
-              >
-                Credit invoice
-              </button>
-            </div>
-            {saleMode === "CREDIT" ? (
-              <p className="text-[11px] text-muted-foreground">
-                Posts to Accounts Receivable. Customer account required — look
-                up or register the buyer above before completing.
-              </p>
-            ) : (
-              <p className="text-[11px] text-muted-foreground">
-                Immediate payment (cash, M-Pesa, card). Optional customer for
-                loyalty.
-              </p>
-            )}
-            <Button
-              className="h-12 w-full rounded-xl text-base font-bold shadow-md"
-              size="lg"
-              disabled={
-                pending ||
-                cart.length === 0 ||
-                (saleMode === "CREDIT" && !customerId)
+
+            {/* Mobile: step 1 → continue to pay */}
+            {mobileStep === "items" ? (
+              <div className="space-y-2 lg:hidden">
+                <Button
+                  type="button"
+                  className="h-12 w-full rounded-xl text-base font-bold shadow-md"
+                  size="lg"
+                  disabled={cart.length === 0}
+                  onClick={() => setMobileStep("pay")}
+                >
+                  Continue to payment
+                </Button>
+              </div>
+            ) : null}
+
+            {/* Mobile step 2 + always on desktop: sale type + complete */}
+            <div
+              className={
+                "space-y-2 " +
+                (mobileStep === "items" ? "max-lg:hidden" : "")
               }
-              onClick={checkout}
             >
-              {pending
-                ? "Processing…"
-                : saleMode === "CREDIT"
-                  ? "Post credit invoice"
-                  : "Complete cash sale"}
-            </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSaleMode("CASH");
+                    if (paymentMethod === "CREDIT") setPaymentMethod("CASH");
+                  }}
+                  className={
+                    saleMode === "CASH"
+                      ? "min-h-[3rem] rounded-2xl border-2 border-primary bg-primary/10 px-2 py-2.5 text-sm font-bold text-primary"
+                      : "min-h-[3rem] rounded-2xl border border-border bg-muted/40 px-2 py-2.5 text-sm font-medium text-muted-foreground"
+                  }
+                >
+                  Cash sale
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSaleMode("CREDIT");
+                    setPaymentMethod("CREDIT");
+                  }}
+                  className={
+                    saleMode === "CREDIT"
+                      ? "min-h-[3rem] rounded-2xl border-2 border-primary bg-primary/10 px-2 py-2.5 text-sm font-bold text-primary"
+                      : "min-h-[3rem] rounded-2xl border border-border bg-muted/40 px-2 py-2.5 text-sm font-medium text-muted-foreground"
+                  }
+                >
+                  Credit invoice
+                </button>
+              </div>
+              {saleMode === "CREDIT" ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Posts to Accounts Receivable. Customer required before
+                  completing.
+                </p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  Pay now (cash, M-Pesa, card…). Customer optional for loyalty.
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 shrink-0 rounded-xl px-3 lg:hidden"
+                  onClick={() => setMobileStep("items")}
+                >
+                  Back
+                </Button>
+                <Button
+                  className="h-12 w-full rounded-xl text-base font-bold shadow-md"
+                  size="lg"
+                  disabled={
+                    pending ||
+                    cart.length === 0 ||
+                    (saleMode === "CREDIT" && !customerId)
+                  }
+                  onClick={checkout}
+                >
+                  {pending
+                    ? "Processing…"
+                    : saleMode === "CREDIT"
+                      ? "Post credit invoice"
+                      : "Complete cash sale"}
+                </Button>
+              </div>
+            </div>
           </div>
         </section>
 
