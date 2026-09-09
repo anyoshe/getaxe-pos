@@ -663,6 +663,19 @@ export function PosClient({
         }
       }
       for (const line of cart) {
+        if (
+          (line.trackBatch || line.trackExpiry) &&
+          batchesFor(line.productId).length > 0 &&
+          !line.selectedBatchId
+        ) {
+          toast.error(
+            `${line.name}: select a batch / expiry date before completing the sale.`,
+          );
+          setMobileStep("items");
+          return;
+        }
+      }
+      for (const line of cart) {
         if (line.serialized) {
           const needSerials = Math.round(
             line.quantity * (line.factorToStock > 0 ? line.factorToStock : 1),
@@ -1396,8 +1409,11 @@ export function PosClient({
             ) : (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <p className="shrink-0 border-b border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
-                  Scan mode — use the bar above. Lines appear here as you add items.
-                  Payments stay on the side.
+                  Scan mode — barcode / search above. For medicines, pick{" "}
+                  <span className="font-semibold text-foreground">
+                    batch / expiry
+                  </span>{" "}
+                  (and serials if required) on each line — same as Browse.
                 </p>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2 sm:p-3">
                   {cart.length === 0 ? (
@@ -1412,140 +1428,197 @@ export function PosClient({
                       </p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-border/70">
-                      <table className="w-full min-w-[520px] text-left text-sm">
-                        <thead className="bg-secondary/50 text-[11px] uppercase tracking-wide text-muted-foreground">
-                          <tr>
-                            <th className="p-2.5 font-medium">Product</th>
-                            <th className="p-2.5 font-medium">Unit</th>
-                            <th className="p-2.5 text-right font-medium">Qty</th>
-                            <th className="p-2.5 text-right font-medium">Price</th>
-                            <th className="p-2.5 text-right font-medium">Line</th>
-                            <th className="p-2.5 font-medium" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cart.map((line) => {
-                            const units =
-                              productUnitsByProduct[line.productId] ?? [];
-                            const lineTotal = line.quantity * line.unitPrice;
-                            return (
-                              <tr
-                                key={line.productId}
-                                className="border-t border-border/60 bg-card"
-                              >
-                                <td className="max-w-[14rem] p-2.5">
-                                  <div className="truncate font-semibold">
-                                    {line.name}
-                                  </div>
-                                  <div className="truncate font-mono text-[10px] text-muted-foreground">
-                                    {line.sku || "—"}
-                                  </div>
-                                </td>
-                                <td className="p-2.5">
-                                  {units.length > 1 ? (
-                                    <select
-                                      className="h-8 max-w-[7rem] rounded-md border border-input bg-background px-1 text-xs"
-                                      value={line.unitId ?? ""}
-                                      onChange={(e) =>
-                                        setLineUnit(
-                                          line.productId,
-                                          e.target.value,
-                                        )
-                                      }
-                                    >
-                                      {units.map((u) => (
-                                        <option key={u.unitId} value={u.unitId}>
-                                          {u.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">
-                                      {units[0]?.label ?? "—"}
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="p-2.5 text-right">
-                                  <div className="inline-flex items-center gap-1">
-                                    <button
-                                      type="button"
-                                      className="h-7 w-7 rounded-md border text-xs"
-                                      onClick={() =>
-                                        setCart((c) =>
-                                          c
-                                            .map((x) =>
-                                              x.productId === line.productId
-                                                ? {
-                                                    ...x,
-                                                    quantity: Math.max(
-                                                      0,
-                                                      x.quantity - 1,
-                                                    ),
-                                                  }
-                                                : x,
-                                            )
-                                            .filter((x) => x.quantity > 0),
-                                        )
-                                      }
-                                    >
-                                      −
-                                    </button>
-                                    <span className="min-w-[1.5rem] text-center font-semibold tabular-nums">
-                                      {line.quantity}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      className="h-7 w-7 rounded-md border text-xs"
-                                      onClick={() =>
-                                        setCart((c) =>
-                                          c.map((x) =>
-                                            x.productId === line.productId
-                                              ? {
-                                                  ...x,
-                                                  quantity: x.quantity + 1,
-                                                }
-                                              : x,
-                                          ),
-                                        )
-                                      }
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="p-2.5 text-right tabular-nums">
+                    <div className="space-y-2">
+                      {cart.map((line) => {
+                        const options = freeSerials(line.productId);
+                        const units =
+                          productUnitsByProduct[line.productId] ?? [];
+                        const lineTotal = line.quantity * line.unitPrice;
+                        const needsBatch =
+                          (line.trackBatch || line.trackExpiry) &&
+                          batchesFor(line.productId).length > 0;
+                        return (
+                          <div
+                            key={line.productId}
+                            className="rounded-xl border border-border/70 bg-card p-3 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-semibold">
+                                  {line.name}
+                                </div>
+                                <div className="font-mono text-[10px] text-muted-foreground">
+                                  {line.sku || "—"}
+                                  {" · "}
                                   {line.unitPrice.toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  })}
-                                </td>
-                                <td className="p-2.5 text-right font-semibold tabular-nums text-primary">
-                                  {lineTotal.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })}
-                                </td>
-                                <td className="p-2.5 text-right">
-                                  <button
-                                    type="button"
-                                    className="text-xs font-medium text-destructive"
-                                    onClick={() =>
-                                      setCart((c) =>
-                                        c.filter(
-                                          (x) => x.productId !== line.productId,
-                                        ),
-                                      )
-                                    }
-                                  >
-                                    Remove
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                  })}{" "}
+                                  / {line.unitLabel}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                className="rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() =>
+                                  setCart((c) =>
+                                    c.filter(
+                                      (x) => x.productId !== line.productId,
+                                    ),
+                                  )
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <div className="flex items-center rounded-xl border border-primary/20 bg-primary/5">
+                                <button
+                                  type="button"
+                                  className="flex h-9 w-9 items-center justify-center text-primary"
+                                  onClick={() =>
+                                    setCart((c) =>
+                                      c
+                                        .map((x) =>
+                                          x.productId === line.productId
+                                            ? {
+                                                ...x,
+                                                quantity: Math.max(
+                                                  0,
+                                                  x.quantity - 1,
+                                                ),
+                                              }
+                                            : x,
+                                        )
+                                        .filter((x) => x.quantity > 0),
+                                    )
+                                  }
+                                >
+                                  <Minus className="h-3.5 w-3.5" />
+                                </button>
+                                <span className="min-w-[1.75rem] text-center text-sm font-bold tabular-nums">
+                                  {line.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="flex h-9 w-9 items-center justify-center text-primary"
+                                  onClick={() =>
+                                    setCart((c) =>
+                                      c.map((x) =>
+                                        x.productId === line.productId
+                                          ? {
+                                              ...x,
+                                              quantity: x.quantity + 1,
+                                            }
+                                          : x,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              {units.length > 0 ? (
+                                <select
+                                  className="h-9 min-w-[7.5rem] rounded-lg border bg-background px-2 text-xs"
+                                  value={line.unitId ?? ""}
+                                  onChange={(e) => {
+                                    const unitId = e.target.value;
+                                    if (unitId)
+                                      setLineUnit(line.productId, unitId);
+                                  }}
+                                >
+                                  {units.map((u) => (
+                                    <option key={u.unitId} value={u.unitId}>
+                                      {u.label}
+                                      {u.factorToStock > 1
+                                        ? ` (×${u.factorToStock})`
+                                        : u.isStockUnit
+                                          ? " (pc)"
+                                          : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : null}
+                              <div className="ml-auto text-sm font-bold tabular-nums text-primary">
+                                {lineTotal.toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </div>
+                            </div>
+
+                            {needsBatch ? (
+                              <select
+                                className="mt-2 h-10 w-full rounded-lg border border-chart-3/40 bg-chart-3/10 px-2 text-xs font-medium"
+                                value={line.selectedBatchId ?? ""}
+                                onChange={(e) =>
+                                  setCart((c) =>
+                                    c.map((x) =>
+                                      x.productId === line.productId
+                                        ? {
+                                            ...x,
+                                            selectedBatchId:
+                                              e.target.value || null,
+                                          }
+                                        : x,
+                                    ),
+                                  )
+                                }
+                              >
+                                <option value="">
+                                  Select batch / expiry (FEFO)…
+                                </option>
+                                {batchesFor(line.productId).map((b) => (
+                                  <option key={b.batchId} value={b.batchId}>
+                                    {b.batchNumber || "Batch"}
+                                    {b.expiryDate
+                                      ? ` · exp ${b.expiryDate}`
+                                      : ""}
+                                    {` · qty ${b.quantity}`}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : null}
+
+                            {line.serialized ? (
+                              <div className="mt-2 max-h-24 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
+                                <p className="text-[10px] font-semibold text-chart-5">
+                                  Serials {line.selectedSerials.length}/
+                                  {Math.round(
+                                    line.quantity * (line.factorToStock || 1),
+                                  )}
+                                </p>
+                                {options.length === 0 ? (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    No free serials in this warehouse
+                                  </p>
+                                ) : (
+                                  options.map((serial) => (
+                                    <label
+                                      key={serial}
+                                      className="flex cursor-pointer items-center gap-2 text-xs"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={line.selectedSerials.includes(
+                                          serial,
+                                        )}
+                                        onChange={() =>
+                                          toggleSerial(line.productId, serial)
+                                        }
+                                      />
+                                      <span className="font-mono">{serial}</span>
+                                    </label>
+                                  ))
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
                     </div>
                   )}
                 </div>
