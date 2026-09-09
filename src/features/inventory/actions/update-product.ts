@@ -92,6 +92,7 @@ export async function updateProductAction(id: string, formData: FormData) {
     trackExpiry: formData.get("trackExpiry") === "true",
 
     serialized: formData.get("serialized") === "true",
+      isControlled: formData.get("isControlled") === "true",
 
     allowNegativeStock: formData.get("allowNegativeStock") === "true",
 

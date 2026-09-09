@@ -202,6 +202,13 @@ export const navigation: NavigationItem[] = [
         capability: "pharmacy.dispensing",
       },
       {
+        label: "Controlled register",
+        href: "/pharmacy/controlled-register",
+        icon: ClipboardList,
+        permission: "products.view",
+        capability: "pharmacy.controlled-medicines",
+      },
+      {
         label: "Catalogues",
         href: "/inventory/pharmacy-catalogues",
         icon: ClipboardList,

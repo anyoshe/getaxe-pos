@@ -164,6 +164,8 @@ export async function createProductAction(
 
       serialized:
         formData.get("serialized") === "true",
+      isControlled:
+        formData.get("isControlled") === "true",
 
       allowNegativeStock:
         formData.get("allowNegativeStock") === "true",

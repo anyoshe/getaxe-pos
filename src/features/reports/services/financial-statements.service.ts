@@ -10,6 +10,7 @@ import { journalEntries } from "@/db/schema/finance/journal_entries";
 import { journalEntryLines } from "@/db/schema/finance/journal_entry_lines";
 import { sales } from "@/db/schema/sales/sales";
 import { saleItems } from "@/db/schema/sales/sale_items";
+import { saleItemBatches } from "@/db/schema/sales/sale_item_batches";
 import { products } from "@/db/schema/inventory/products";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
 import { productBatches } from "@/db/schema/inventory/product_batches";
@@ -46,6 +47,70 @@ type AccountBalance = {
 };
 
 export class FinancialStatementsService {
+
+  /** COGS: prefer batch cost × qty from sale_item_batches; residual lines use product cost. */
+  private async operationalCogs(
+    businessId: string,
+    start: Date,
+    end: Date,
+  ): Promise<{ total: number; fromBatches: number; fromProduct: number }> {
+    const [batchRow] = await db
+      .select({
+        total: sql<string>`coalesce(sum(
+          ${saleItemBatches.quantity}::numeric *
+          coalesce(${productBatches.costPrice}::numeric, 0)
+        ), 0)`,
+      })
+      .from(saleItemBatches)
+      .innerJoin(saleItems, eq(saleItemBatches.saleItemId, saleItems.id))
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .innerJoin(
+        productBatches,
+        eq(saleItemBatches.productBatchId, productBatches.id),
+      )
+      .where(
+        and(
+          eq(sales.businessId, businessId),
+          eq(sales.status, "COMPLETED"),
+          gte(sales.soldAt, start),
+          lt(sales.soldAt, end),
+        ),
+      );
+    const fromBatches = Number(batchRow?.total ?? 0);
+
+    const [prodRow] = await db
+      .select({
+        total: sql<string>`coalesce(sum(
+          coalesce(${products.costPrice}::numeric, 0) *
+          coalesce(
+            nullif(${saleItems.quantityStock}::numeric, 0),
+            ${saleItems.quantity}::numeric
+          )
+        ), 0)`,
+      })
+      .from(saleItems)
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .innerJoin(products, eq(saleItems.productId, products.id))
+      .where(
+        and(
+          eq(sales.businessId, businessId),
+          eq(sales.status, "COMPLETED"),
+          gte(sales.soldAt, start),
+          lt(sales.soldAt, end),
+          sql`not exists (
+            select 1 from sale_item_batches sib
+            where sib.sale_item_id = ${saleItems.id}
+          )`,
+        ),
+      );
+    const fromProduct = Number(prodRow?.total ?? 0);
+    return {
+      total: fromBatches + fromProduct,
+      fromBatches,
+      fromProduct,
+    };
+  }
+
   private async ledgerBalances(
     businessId: string,
     opts: { from?: Date; toExclusive: Date },
@@ -322,28 +387,8 @@ export class FinancialStatementsService {
       );
     const salesTotal = Number(saleRow?.total ?? 0);
 
-    const cogsRows = await db
-      .select({
-        total: sql<string>`coalesce(sum(
-          coalesce(${products.costPrice}::numeric, 0) *
-          coalesce(
-            nullif(${saleItems.quantityStock}::numeric, 0),
-            ${saleItems.quantity}::numeric
-          )
-        ), 0)`,
-      })
-      .from(saleItems)
-      .innerJoin(sales, eq(saleItems.saleId, sales.id))
-      .innerJoin(products, eq(saleItems.productId, products.id))
-      .where(
-        and(
-          eq(sales.businessId, businessId),
-          eq(sales.status, "COMPLETED"),
-          gte(sales.soldAt, start),
-          lt(sales.soldAt, end),
-        ),
-      );
-    const cogsTotal = Number(cogsRows[0]?.total ?? 0);
+    const cogsOp = await this.operationalCogs(businessId, start, end);
+    const cogsTotal = cogsOp.total;
     const grossProfit = salesTotal - cogsTotal;
 
     const cash = await this.cashMovements(businessId, fromDate, toDate);
@@ -480,29 +525,9 @@ export class FinancialStatementsService {
     const cashExpenses = Number(expRow?.total ?? 0);
     const otherIncome = Number(incRow?.total ?? 0);
 
-    // Estimated COGS from product cost × qty on completed sales in range
-    const cogsRows = await db
-      .select({
-        total: sql<string>`coalesce(sum(
-          coalesce(${products.costPrice}::numeric, 0) *
-          coalesce(
-            nullif(${saleItems.quantityStock}::numeric, 0),
-            ${saleItems.quantity}::numeric
-          )
-        ), 0)`,
-      })
-      .from(saleItems)
-      .innerJoin(sales, eq(saleItems.saleId, sales.id))
-      .innerJoin(products, eq(saleItems.productId, products.id))
-      .where(
-        and(
-          eq(sales.businessId, businessId),
-          eq(sales.status, "COMPLETED"),
-          gte(sales.soldAt, start),
-          lt(sales.soldAt, end),
-        ),
-      );
-    const estimatedCogs = Number(cogsRows[0]?.total ?? 0);
+    // COGS: batch cost when sale_item_batches exist; else product cost
+    const cogsOp = await this.operationalCogs(businessId, start, end);
+    const estimatedCogs = cogsOp.total;
 
     // Prefer operational figures when journals are incomplete
     if (salesTotal > revenueTotal) {

@@ -128,6 +128,10 @@ export const products = pgTable(
       .default(false)
       .notNull(),
 
+    isControlled: boolean("is_controlled")
+      .default(false)
+      .notNull(),
+
     allowNegativeStock: boolean("allow_negative_stock")
       .default(false)
       .notNull(),

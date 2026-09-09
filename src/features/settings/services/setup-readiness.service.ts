@@ -100,6 +100,30 @@ export async function getSetupReadiness(
   const hasPromo = caps.includes("inventory.promotional-pricing");
   const hasDispense = caps.includes("pharmacy.dispensing");
 
+
+  // Distinct till → GL mapping (shared ledger breaks cash truth)
+  let tillLedgersOk = true;
+  try {
+    const tills = await db
+      .select({
+        id: cashAccounts.id,
+        name: cashAccounts.name,
+        accountId: cashAccounts.accountId,
+      })
+      .from(cashAccounts)
+      .where(eq(cashAccounts.businessId, businessId));
+    const byAccount = new Map<string, string[]>();
+    for (const row of tills) {
+      if (!row.accountId) continue;
+      const list = byAccount.get(row.accountId) ?? [];
+      list.push(row.name);
+      byAccount.set(row.accountId, list);
+    }
+    tillLedgersOk = [...byAccount.values()].every((names) => names.length <= 1);
+  } catch {
+    tillLedgersOk = true;
+  }
+
   const checks: SetupCheck[] = [
     {
       id: "profile",
@@ -164,6 +188,14 @@ export async function getSetupReadiness(
       done: productCount > 0,
       href: "/inventory/products",
       priority: 8,
+    },
+    {
+      id: "till_ledgers",
+      label: "Cash tills use separate ledgers",
+      description: "Cash, M-Pesa, mobile money, card and bank must not share one GL account",
+      done: tillLedgersOk,
+      href: "/finance/cash-accounts",
+      priority: 7.5,
     },
     {
       id: "opening_balances",

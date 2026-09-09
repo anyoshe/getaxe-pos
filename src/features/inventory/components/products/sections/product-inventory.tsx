@@ -33,6 +33,7 @@ export function ProductInventory({
         showField("trackBatch") ||
         showField("trackExpiry") ||
         showField("serialized") ||
+        showField("isControlled") ||
         showField("allowNegativeStock");
 
     const showLevels =
@@ -76,6 +77,14 @@ export function ProductInventory({
                                 name="serialized"
                                 label="Serialized"
                                 description="When on, serial numbers will be required for stock of this product. Capability makes this option available — it stays off until you enable it here."
+                            />
+                        )}
+                        {showField("isControlled") && (
+                            <FormCheckbox
+                                control={form.control}
+                                name="isControlled"
+                                label="Controlled medicine"
+                                description="Flag for schedule / controlled stock. Sales appear on the controlled register for audit."
                             />
                         )}
                         {showField("allowNegativeStock") && (

@@ -120,6 +120,8 @@ export const productFormSchema = z.object({
   trackExpiry:
     z.boolean(),
 
+  isControlled:
+    z.boolean().optional(),
   serialized:
     z.boolean(),
 

@@ -144,6 +144,14 @@ export function DispensingClient({
   }
 
   return (
+    <>
+    <div className="mb-4 rounded-xl border border-primary/25 bg-primary/5 p-3 text-sm text-muted-foreground">
+      <strong className="text-foreground">POS vs dispensing:</strong> use{" "}
+      <a className="text-primary underline" href="/sales/pos">POS</a> to sell and
+      collect payment (or credit invoice). This screen logs clinical dispense /
+      issue when your SOP requires it — it does not replace the till.
+    </div>
+
     <div className="space-y-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-primary">
@@ -346,5 +354,6 @@ export function DispensingClient({
         </div>
       </div>
     </div>
+    </>
   );
 }

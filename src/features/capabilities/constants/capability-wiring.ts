@@ -181,7 +181,7 @@ export const CAPABILITY_WIRING: Record<string, CapabilityWiring> = {
     routes: ["/pharmacy/dispensing"],
     note: "Walk-in dispense with FEFO batches; stock via inventory issue",
   },
-  "pharmacy.controlled-medicines": { status: "partial" },
+  "pharmacy.controlled-medicines": { status: "wired", href: "/pharmacy/controlled-register", notes: "Product flag + sales register" },
   "pharmacy.cold-chain-monitoring": { status: "roadmap" },
   "pharmacy.medicine-recall": { status: "roadmap" },
   "pharmacy.audit-trail": {
