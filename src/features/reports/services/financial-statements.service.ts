@@ -306,6 +306,46 @@ export class FinancialStatementsService {
       0,
     );
 
+    // Trading result for Income|Expenses (gross profit already net of COGS)
+    const [saleRow] = await db
+      .select({
+        total: sql<string>`coalesce(sum(${sales.total}::numeric), 0)`,
+      })
+      .from(sales)
+      .where(
+        and(
+          eq(sales.businessId, businessId),
+          eq(sales.status, "COMPLETED"),
+          gte(sales.soldAt, start),
+          lt(sales.soldAt, end),
+        ),
+      );
+    const salesTotal = Number(saleRow?.total ?? 0);
+
+    const cogsRows = await db
+      .select({
+        total: sql<string>`coalesce(sum(
+          coalesce(${products.costPrice}::numeric, 0) *
+          coalesce(
+            nullif(${saleItems.quantityStock}::numeric, 0),
+            ${saleItems.quantity}::numeric
+          )
+        ), 0)`,
+      })
+      .from(saleItems)
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .innerJoin(products, eq(saleItems.productId, products.id))
+      .where(
+        and(
+          eq(sales.businessId, businessId),
+          eq(sales.status, "COMPLETED"),
+          gte(sales.soldAt, start),
+          lt(sales.soldAt, end),
+        ),
+      );
+    const cogsTotal = Number(cogsRows[0]?.total ?? 0);
+    const grossProfit = salesTotal - cogsTotal;
+
     const cash = await this.cashMovements(businessId, fromDate, toDate);
 
     return {
@@ -352,8 +392,14 @@ export class FinancialStatementsService {
           status: String(l.status ?? "COMPLETED"),
         })),
       },
-      /** POS receipts by method + expenses by till */
+      /** POS receipts by method + expenses by till (cash control, not P&amp;L income) */
       cash,
+      /** Trading: sales − estimated COGS (use on Income side with other income) */
+      trading: {
+        salesTotal,
+        cogsTotal,
+        grossProfit,
+      },
     };
   }
 

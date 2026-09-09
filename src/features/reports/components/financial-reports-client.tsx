@@ -478,22 +478,30 @@ function ExpenseView({
   layout?: "list" | "columns";
 }) {
   if (layout === "columns") {
+    const salesTotal = data.trading?.salesTotal ?? 0;
+    const cogsTotal = data.trading?.cogsTotal ?? 0;
+    const grossProfit = data.trading?.grossProfit ?? salesTotal - cogsTotal;
     const otherIncomeRows = (data.otherIncome?.lines ?? []).map((l) => ({
       label: l.description || "Other income",
       amount: l.amount,
     }));
-    const posRows = (data.cash?.receivedByMethod ?? []).map((r) => ({
-      label: `POS · ${r.method}`,
-      amount: r.total,
-    }));
-    const incomeRows = [...otherIncomeRows, ...posRows];
+    const incomeRows = [
+      ...(salesTotal !== 0 || cogsTotal !== 0
+        ? [
+            {
+              label: `Gross profit (sales ${money(salesTotal)} − COGS ${money(cogsTotal)})`,
+              amount: grossProfit,
+            },
+          ]
+        : []),
+      ...otherIncomeRows,
+    ];
+    const otherIncomeTotal = data.otherIncome?.total ?? 0;
+    const incomeTotal = grossProfit + otherIncomeTotal;
     const expenseRows = data.byCategory.map((c) => ({
       label: c.categoryName,
       amount: c.total,
     }));
-    const otherIncomeTotal = data.otherIncome?.total ?? 0;
-    const posTotal = data.cash?.totalReceived ?? 0;
-    const incomeTotal = otherIncomeTotal + posTotal;
     const expenseTotal = data.total;
     const net = incomeTotal - expenseTotal;
     return (
@@ -502,21 +510,21 @@ function ExpenseView({
           Income | Expenses {data.fromDate} → {data.toDate}
         </SectionTitle>
         <p className="text-xs text-muted-foreground">
-          Left includes <strong>Other income</strong> (e.g. used oil, packaging)
-          and <strong>POS receipts</strong> by method. Right is operating expenses
-          by category.
+          Left: <strong>gross profit</strong> (sales after stock cost) and{" "}
+          <strong>other income</strong>. Right: operating expenses only. POS
+          till totals stay under cash / reconciliation — not mixed here.
         </p>
         <TwoColumnStatement
-          leftTitle="Income (other + POS)"
+          leftTitle="Gross profit + other income"
           leftTotal={incomeTotal}
           leftRows={incomeRows}
-          rightTitle="Expenses"
+          rightTitle="Operating expenses"
           rightTotal={expenseTotal}
           rightRows={expenseRows}
           footerLabel={
             net >= 0
-              ? "Surplus (Income − Expenses)"
-              : "Deficit (Expenses − Income)"
+              ? "Surplus (GP + other income − expenses)"
+              : "Deficit (expenses − GP − other income)"
           }
           footerValue={Math.abs(net)}
           footerPositive={net >= 0}
