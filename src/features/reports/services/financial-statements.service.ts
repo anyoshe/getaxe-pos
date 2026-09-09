@@ -283,6 +283,31 @@ export class FinancialStatementsService {
 
     const total = lines.reduce((s, l) => s + Number(l.amount ?? 0), 0);
 
+    const incomeLines = await db
+      .select({
+        id: incomes.id,
+        incomeDate: incomes.incomeDate,
+        description: incomes.description,
+        amount: incomes.amount,
+        status: incomes.status,
+      })
+      .from(incomes)
+      .where(
+        and(
+          eq(incomes.businessId, businessId),
+          gte(incomes.incomeDate, start),
+          lt(incomes.incomeDate, end),
+        ),
+      )
+      .orderBy(asc(incomes.incomeDate));
+
+    const otherIncomeTotal = incomeLines.reduce(
+      (s, l) => s + Number(l.amount ?? 0),
+      0,
+    );
+
+    const cash = await this.cashMovements(businessId, fromDate, toDate);
+
     return {
       fromDate,
       toDate,
@@ -309,6 +334,26 @@ export class FinancialStatementsService {
         paidTo: l.paidTo,
         reference: l.reference,
       })),
+      /** Non-POS income (Finance → Other income) */
+      otherIncome: {
+        total: otherIncomeTotal,
+        lines: incomeLines.map((l) => ({
+          id: l.id,
+          date: l.incomeDate
+            ? new Date(l.incomeDate).toLocaleDateString("en-KE", {
+                timeZone: "UTC",
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "—",
+          description: l.description ?? "Other income",
+          amount: Number(l.amount ?? 0),
+          status: String(l.status ?? "COMPLETED"),
+        })),
+      },
+      /** POS receipts by method + expenses by till */
+      cash,
     };
   }
 

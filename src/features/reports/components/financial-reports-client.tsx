@@ -478,15 +478,22 @@ function ExpenseView({
   layout?: "list" | "columns";
 }) {
   if (layout === "columns") {
-    const incomeRows = (data.cash?.receivedByMethod ?? []).map((r) => ({
-      label: r.method,
+    const otherIncomeRows = (data.otherIncome?.lines ?? []).map((l) => ({
+      label: l.description || "Other income",
+      amount: l.amount,
+    }));
+    const posRows = (data.cash?.receivedByMethod ?? []).map((r) => ({
+      label: `POS · ${r.method}`,
       amount: r.total,
     }));
+    const incomeRows = [...otherIncomeRows, ...posRows];
     const expenseRows = data.byCategory.map((c) => ({
       label: c.categoryName,
       amount: c.total,
     }));
-    const incomeTotal = data.cash?.totalReceived ?? incomeRows.reduce((s, r) => s + r.amount, 0);
+    const otherIncomeTotal = data.otherIncome?.total ?? 0;
+    const posTotal = data.cash?.totalReceived ?? 0;
+    const incomeTotal = otherIncomeTotal + posTotal;
     const expenseTotal = data.total;
     const net = incomeTotal - expenseTotal;
     return (
@@ -494,14 +501,23 @@ function ExpenseView({
         <SectionTitle>
           Income | Expenses {data.fromDate} → {data.toDate}
         </SectionTitle>
+        <p className="text-xs text-muted-foreground">
+          Left includes <strong>Other income</strong> (e.g. used oil, packaging)
+          and <strong>POS receipts</strong> by method. Right is operating expenses
+          by category.
+        </p>
         <TwoColumnStatement
-          leftTitle="Income / receipts"
+          leftTitle="Income (other + POS)"
           leftTotal={incomeTotal}
           leftRows={incomeRows}
           rightTitle="Expenses"
           rightTotal={expenseTotal}
           rightRows={expenseRows}
-          footerLabel={net >= 0 ? "Surplus (Income − Expenses)" : "Deficit (Expenses − Income)"}
+          footerLabel={
+            net >= 0
+              ? "Surplus (Income − Expenses)"
+              : "Deficit (Expenses − Income)"
+          }
           footerValue={Math.abs(net)}
           footerPositive={net >= 0}
         />
@@ -515,7 +531,43 @@ function ExpenseView({
       </SectionTitle>
       <p className="text-sm">
         Total expenses: <strong>KES {money(data.total)}</strong>
+        {data.otherIncome && data.otherIncome.total > 0 ? (
+          <>
+            {" · "}
+            Other income:{" "}
+            <strong>KES {money(data.otherIncome.total)}</strong>
+          </>
+        ) : null}
       </p>
+      {data.otherIncome && data.otherIncome.lines.length > 0 ? (
+        <div className="overflow-x-auto rounded-xl border">
+          <div className="border-b bg-secondary/40 px-3 py-2 text-sm font-semibold">
+            Other income
+          </div>
+          <table className="w-full min-w-[560px] text-sm">
+            <thead className="bg-secondary/30 text-left">
+              <tr>
+                <th className="p-3">Date</th>
+                <th className="p-3">Description</th>
+                <th className="p-3 text-right">Amount</th>
+                <th className="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.otherIncome.lines.map((l) => (
+                <tr key={l.id} className="border-t">
+                  <td className="p-3 whitespace-nowrap">{l.date}</td>
+                  <td className="p-3">{l.description}</td>
+                  <td className="p-3 text-right tabular-nums">
+                    {money(l.amount)}
+                  </td>
+                  <td className="p-3 text-xs">{l.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full min-w-[560px] text-sm">
           <thead className="bg-secondary/50 text-left">
