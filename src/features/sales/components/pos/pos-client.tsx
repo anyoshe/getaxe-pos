@@ -1166,7 +1166,7 @@ export function PosClient({
                 />
               </div>
             )}
-
+          </div>
 
             {posView === "browse" ? (
               <>
@@ -1244,7 +1244,6 @@ export function PosClient({
                 </>
               )}
             </p>
-          </div>
 
           {/* THIS is the only product scroll region */}
 
