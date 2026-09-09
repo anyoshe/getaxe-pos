@@ -56,6 +56,7 @@ function printArea(id: string, title: string) {
 export function FinancialReportsClient() {
   const [pending, start] = useTransition();
   const [tab, setTab] = useState<Tab>("pl");
+  const [layoutMode, setLayoutMode] = useState<"list" | "columns">("list");
   const [fromDate, setFromDate] = useState(todayNairobi().slice(0, 8) + "01");
   const [toDate, setToDate] = useState(todayNairobi());
   const [asOfDate, setAsOfDate] = useState(todayNairobi());
@@ -251,6 +252,37 @@ export function FinancialReportsClient() {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">Layout:</span>
+        <div className="flex rounded-lg border border-border bg-card p-0.5">
+          <button
+            type="button"
+            onClick={() => setLayoutMode("list")}
+            className={
+              layoutMode === "list"
+                ? "rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                : "rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground"
+            }
+          >
+            List
+          </button>
+          <button
+            type="button"
+            onClick={() => setLayoutMode("columns")}
+            className={
+              layoutMode === "columns"
+                ? "rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                : "rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground"
+            }
+          >
+            2-column
+          </button>
+        </div>
+        <span className="text-[11px] text-muted-foreground">
+          2-column = Income|Expense, Assets|Liabilities, Debit|Credit style
+        </span>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
         {tab === "expenses" || tab === "pl" ? (
           <>
@@ -309,16 +341,16 @@ export function FinancialReportsClient() {
 
       <div id="finance-report-print" className="space-y-4">
         {tab === "expenses" && expenseData?.success ? (
-          <ExpenseView data={expenseData.data} />
+          <ExpenseView data={expenseData.data} layout={layoutMode} />
         ) : null}
         {tab === "pl" && plData?.success ? (
-          <PlView data={plData.data} />
+          <PlView data={plData.data} layout={layoutMode} />
         ) : null}
         {tab === "balance" && bsData?.success ? (
-          <BsView data={bsData.data} />
+          <BsView data={bsData.data} layout={layoutMode} />
         ) : null}
         {tab === "assets" && alData?.success ? (
-          <AlView data={alData.data} />
+          <AlView data={alData.data} layout={layoutMode} />
         ) : null}
         {!expenseData && !plData && !bsData && !alData ? (
           <p className="text-sm text-muted-foreground">
@@ -330,18 +362,152 @@ export function FinancialReportsClient() {
   );
 }
 
+
+function TwoColumnStatement({
+  leftTitle,
+  leftTotal,
+  leftRows,
+  rightTitle,
+  rightTotal,
+  rightRows,
+  footerLabel,
+  footerValue,
+  footerPositive,
+}: {
+  leftTitle: string;
+  leftTotal: number;
+  leftRows: Array<{ label: string; amount: number }>;
+  rightTitle: string;
+  rightTotal: number;
+  rightRows: Array<{ label: string; amount: number }>;
+  footerLabel: string;
+  footerValue: number;
+  footerPositive?: boolean;
+}) {
+  const maxRows = Math.max(leftRows.length, rightRows.length, 1);
+  const leftPad = [...leftRows];
+  const rightPad = [...rightRows];
+  while (leftPad.length < maxRows) leftPad.push({ label: "", amount: 0 });
+  while (rightPad.length < maxRows) rightPad.push({ label: "", amount: 0 });
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-border">
+      <table className="w-full min-w-[640px] text-sm">
+        <thead className="bg-secondary/50">
+          <tr>
+            <th className="p-3 text-left font-semibold" colSpan={2}>
+              {leftTitle}
+            </th>
+            <th className="w-2 bg-border p-0" />
+            <th className="p-3 text-left font-semibold" colSpan={2}>
+              {rightTitle}
+            </th>
+          </tr>
+          <tr className="text-xs text-muted-foreground">
+            <th className="px-3 pb-2 text-left font-medium">Particulars</th>
+            <th className="px-3 pb-2 text-right font-medium">Amount</th>
+            <th className="w-2 bg-border p-0" />
+            <th className="px-3 pb-2 text-left font-medium">Particulars</th>
+            <th className="px-3 pb-2 text-right font-medium">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: maxRows }).map((_, i) => (
+            <tr key={i} className="border-t border-border/60">
+              <td className="max-w-[12rem] truncate p-2.5">
+                {leftPad[i].label || " "}
+              </td>
+              <td className="p-2.5 text-right tabular-nums">
+                {leftPad[i].label
+                  ? money(leftPad[i].amount)
+                  : ""}
+              </td>
+              <td className="w-2 bg-border/80 p-0" />
+              <td className="max-w-[12rem] truncate p-2.5">
+                {rightPad[i].label || " "}
+              </td>
+              <td className="p-2.5 text-right tabular-nums">
+                {rightPad[i].label
+                  ? money(rightPad[i].amount)
+                  : ""}
+              </td>
+            </tr>
+          ))}
+          <tr className="border-t-2 border-border bg-secondary/30 font-semibold">
+            <td className="p-3">Total</td>
+            <td className="p-3 text-right tabular-nums">{money(leftTotal)}</td>
+            <td className="w-2 bg-border p-0" />
+            <td className="p-3">Total</td>
+            <td className="p-3 text-right tabular-nums">{money(rightTotal)}</td>
+          </tr>
+          <tr className="border-t bg-primary/5">
+            <td className="p-3 font-medium" colSpan={2}>
+              {footerLabel}
+            </td>
+            <td className="w-2 bg-border p-0" />
+            <td
+              className={
+                "p-3 text-right font-bold tabular-nums " +
+                (footerPositive === false
+                  ? "text-destructive"
+                  : "text-primary")
+              }
+              colSpan={2}
+            >
+              KES {money(footerValue)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-lg font-semibold">{children}</h2>;
 }
 
 function ExpenseView({
   data,
+  layout = "list",
 }: {
   data: Extract<
     Awaited<ReturnType<typeof getExpenseReportAction>>,
     { success: true }
   >["data"];
+  layout?: "list" | "columns";
 }) {
+  if (layout === "columns") {
+    const incomeRows = (data.cash?.receivedByMethod ?? []).map((r) => ({
+      label: r.method,
+      amount: r.total,
+    }));
+    const expenseRows = data.byCategory.map((c) => ({
+      label: c.categoryName,
+      amount: c.total,
+    }));
+    const incomeTotal = data.cash?.totalReceived ?? incomeRows.reduce((s, r) => s + r.amount, 0);
+    const expenseTotal = data.total;
+    const net = incomeTotal - expenseTotal;
+    return (
+      <div className="space-y-4">
+        <SectionTitle>
+          Income | Expenses {data.fromDate} → {data.toDate}
+        </SectionTitle>
+        <TwoColumnStatement
+          leftTitle="Income / receipts"
+          leftTotal={incomeTotal}
+          leftRows={incomeRows}
+          rightTitle="Expenses"
+          rightTotal={expenseTotal}
+          rightRows={expenseRows}
+          footerLabel={net >= 0 ? "Surplus (Income − Expenses)" : "Deficit (Expenses − Income)"}
+          footerValue={Math.abs(net)}
+          footerPositive={net >= 0}
+        />
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <SectionTitle>
@@ -406,12 +572,78 @@ function ExpenseView({
 
 function PlView({
   data,
+  layout = "list",
 }: {
   data: Extract<
     Awaited<ReturnType<typeof getProfitAndLossAction>>,
     { success: true }
   >["data"];
+  layout?: "list" | "columns";
 }) {
+  if (layout === "columns") {
+    const leftRows = [
+      ...data.revenue.lines.map((l) => ({
+        label: `${l.accountCode} ${l.accountName}`,
+        amount: l.balance,
+      })),
+    ];
+    if (leftRows.length === 0 && data.revenue.salesTotal > 0) {
+      leftRows.push({ label: "Sales (operations)", amount: data.revenue.salesTotal });
+    }
+    if (data.revenue.otherIncome > 0) {
+      leftRows.push({ label: "Other income", amount: data.revenue.otherIncome });
+    }
+    // Show revenue on left; COGS+opex on right (classic trading + P&L)
+    const rightRows = [
+      ...data.cogs.lines.map((l) => ({
+        label: `${l.accountCode} ${l.accountName}`,
+        amount: l.balance,
+      })),
+      ...data.operatingExpenses.lines.map((l) => ({
+        label: `${l.accountCode} ${l.accountName}`,
+        amount: l.balance,
+      })),
+    ];
+    if (data.cogs.lines.length === 0 && data.cogs.total > 0) {
+      rightRows.unshift({
+        label: "Cost of goods sold (est.)",
+        amount: data.cogs.total,
+      });
+    }
+    if (
+      data.operatingExpenses.lines.length === 0 &&
+      data.operatingExpenses.cashExpenses > 0
+    ) {
+      rightRows.push({
+        label: "Operating expenses (cash)",
+        amount: data.operatingExpenses.cashExpenses,
+      });
+    }
+    const leftTotal = data.revenue.total;
+    const rightTotal = data.cogs.total + data.operatingExpenses.total;
+    const net = data.netProfit;
+    return (
+      <div className="space-y-4">
+        <SectionTitle>
+          Profit | Loss {data.fromDate} → {data.toDate}
+        </SectionTitle>
+        <TwoColumnStatement
+          leftTitle="Income / revenue"
+          leftTotal={leftTotal}
+          leftRows={leftRows}
+          rightTitle="Expenses (COGS + operating)"
+          rightTotal={rightTotal}
+          rightRows={rightRows}
+          footerLabel={net >= 0 ? "Net profit" : "Net loss"}
+          footerValue={Math.abs(net)}
+          footerPositive={net >= 0}
+        />
+        <p className="text-xs text-muted-foreground">
+          Gross profit: KES {money(data.grossProfit)} · Net: KES {money(data.netProfit)}
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <SectionTitle>
@@ -523,12 +755,47 @@ function PlView({
 
 function BsView({
   data,
+  layout = "list",
 }: {
   data: Extract<
     Awaited<ReturnType<typeof getBalanceSheetAction>>,
     { success: true }
   >["data"];
+  layout?: "list" | "columns";
 }) {
+  if (layout === "columns") {
+    const assetRows = data.assets.lines.map((l) => ({
+      label: `${l.accountCode} ${l.accountName}`,
+      amount: l.balance,
+    }));
+    const rightRows = [
+      ...data.liabilities.lines.map((l) => ({
+        label: `${l.accountCode} ${l.accountName}`,
+        amount: l.balance,
+      })),
+      ...data.equity.lines.map((l) => ({
+        label: `${l.accountCode} ${l.accountName}`,
+        amount: l.balance,
+      })),
+    ];
+    const rightTotal = data.liabilities.total + data.equity.total;
+    return (
+      <div className="space-y-4">
+        <SectionTitle>Balance sheet as at {data.asOfDate}</SectionTitle>
+        <TwoColumnStatement
+          leftTitle="Assets (Debit)"
+          leftTotal={data.assets.total}
+          leftRows={assetRows}
+          rightTitle="Liabilities & equity (Credit)"
+          rightTotal={rightTotal}
+          rightRows={rightRows}
+          footerLabel="Balance check (Assets − Liab − Equity)"
+          footerValue={Math.abs(data.assets.total - rightTotal)}
+          footerPositive={Math.abs(data.assets.total - rightTotal) < 0.5}
+        />
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <SectionTitle>Balance sheet as at {data.asOfDate}</SectionTitle>
@@ -650,12 +917,38 @@ function BsView({
 
 function AlView({
   data,
+  layout = "list",
 }: {
   data: Extract<
     Awaited<ReturnType<typeof getAssetsLiabilitiesAction>>,
     { success: true }
   >["data"];
+  layout?: "list" | "columns";
 }) {
+  if (layout === "columns") {
+    return (
+      <div className="space-y-4">
+        <SectionTitle>Assets | Liabilities as at {data.asOfDate}</SectionTitle>
+        <TwoColumnStatement
+          leftTitle="Assets"
+          leftTotal={data.assets.total}
+          leftRows={data.assets.lines.map((l) => ({
+            label: `${l.accountCode} ${l.accountName}`,
+            amount: l.balance,
+          }))}
+          rightTitle="Liabilities"
+          rightTotal={data.liabilities.total}
+          rightRows={data.liabilities.lines.map((l) => ({
+            label: `${l.accountCode} ${l.accountName}`,
+            amount: l.balance,
+          }))}
+          footerLabel="Net assets (Assets − Liabilities)"
+          footerValue={Math.abs(data.netAssets)}
+          footerPositive={data.netAssets >= 0}
+        />
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <SectionTitle>Assets &amp; liabilities as at {data.asOfDate}</SectionTitle>
