@@ -25,6 +25,12 @@ const cards = [
     icon: ClipboardList,
   },
   {
+    href: "/settings/compliance",
+    title: "Compliance checks",
+    desc: "KRA PIN, till ledgers, controlled meds, eTIMS status",
+    icon: ShieldCheck,
+  },
+  {
     href: "/finance/opening-balances",
     title: "Opening balances",
     desc: "Opening cash + owned stock for existing businesses",

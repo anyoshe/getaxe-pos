@@ -319,6 +319,7 @@ export default async function FullScreenPosPage() {
             (p as { trackInventory?: boolean }).trackInventory ?? true,
           ),
           serialized: Boolean((p as { serialized?: boolean }).serialized),
+          isControlled: Boolean((p as { isControlled?: boolean }).isControlled),
           trackBatch: Boolean((p as { trackBatch?: boolean }).trackBatch),
           trackExpiry: Boolean((p as { trackExpiry?: boolean }).trackExpiry),
           unitPrice: retailPrice,

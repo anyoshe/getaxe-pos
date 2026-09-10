@@ -37,3 +37,9 @@ test("batch COGS helper is present in financial statements", () => {
   assert.match(src, /operationalCogs/);
   assert.match(src, /saleItemBatches/);
 });
+
+test("health route and deploy docs exist", () => {
+  assert.ok(existsSync(resolve("src/app/api/health/route.ts")));
+  assert.ok(existsSync(resolve("docs/DEPLOY.md")));
+  assert.ok(existsSync(resolve("src/app/(dashboard)/settings/compliance/page.tsx")));
+});

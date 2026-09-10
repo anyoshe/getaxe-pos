@@ -63,3 +63,11 @@ Enable capability **pharmacy.controlled-medicines**. On the product, tick **Cont
 ## Support contacts
 
 Document your internal admin, DB host, and backup location here after deployment.
+
+
+## Compliance & 10/10 hosting bar
+
+1. **Settings → Compliance checks** — KRA PIN, till ledgers, controlled products.
+2. **`GET /api/health`** must return `ok: true` behind your proxy.
+3. **eTIMS**: v1 is **structurally ready** (PIN, invoices, audit) but **not device-certified**. Do not advertise eTIMS compliance until a KRA-approved integrator/device is connected (v2).
+4. Run `ensureFinanceDefaults` path by opening Cash & bank once after deploy so tills re-map to 1000/1100/1110/1120/1130.

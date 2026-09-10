@@ -58,6 +58,7 @@ export type PosProduct = {
   productType: string;
   trackInventory: boolean;
   serialized: boolean;
+  isControlled?: boolean;
   trackBatch?: boolean;
   trackExpiry?: boolean;
   unitPrice: number;
@@ -456,6 +457,7 @@ export function PosClient({
             unitLabel: u?.label ?? "unit",
             factorToStock: u?.factorToStock ?? 1,
             serialized: p.serialized,
+            isControlled: Boolean(p.isControlled),
             trackBatch: Boolean(p.trackBatch),
             trackExpiry: Boolean(p.trackExpiry),
             selectedSerials: [],
@@ -670,6 +672,18 @@ export function PosClient({
         ) {
           toast.error(
             `${line.name}: select a batch / expiry date before completing the sale.`,
+          );
+          setMobileStep("items");
+          return;
+        }
+      }
+      for (const line of cart) {
+        const prod = sellable.find((x) => x.id === line.productId) as
+          | { isControlled?: boolean }
+          | undefined;
+        if (prod?.isControlled && !customerId && !customerPhone.trim()) {
+          toast.error(
+            `${line.name} is controlled — record customer name/phone or select a customer for the register.`,
           );
           setMobileStep("items");
           return;

@@ -251,9 +251,8 @@ export async function ensureFinanceDefaults(businessId: string) {
       byTypeName.add(key);
     }
 
-    // Repair: if several tills still share Cash on Hand (1000), re-link by type
-    const cashOnHand = byCode.get("1000");
-    if (cashOnHand) {
+    // Repair: every till must map to its type ledger (never share M-Pesa/cash/bank)
+    {
       const allCash = await db
         .select()
         .from(cashAccounts)
@@ -263,9 +262,6 @@ export async function ensureFinanceDefaults(businessId: string) {
         const want = byCode.get(wantCode);
         if (!want) continue;
         if (row.accountId === want.id) continue;
-        // Only auto-fix when currently on 1000 (mis-seeded shared ledger)
-        if (row.accountId !== cashOnHand.id) continue;
-        if (wantCode === "1000") continue;
         await db
           .update(cashAccounts)
           .set({ accountId: want.id, updatedAt: new Date() })
