@@ -7,6 +7,8 @@ test("go-live docs and backup scripts exist", () => {
   assert.ok(existsSync(resolve("docs/GO_LIVE.md")));
   assert.ok(existsSync(resolve("scripts/backup-db.sh")));
   assert.ok(existsSync(resolve("scripts/restore-db.sh")));
+  assert.ok(existsSync(resolve("scripts/install-backup-cron.sh")));
+  assert.ok(existsSync(resolve("docs/STAFF_SOP.md")));
 });
 
 test("controlled medicine migration and field wiring", () => {

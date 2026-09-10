@@ -33,14 +33,23 @@ Supported for **controlled go-live**: product catalogue, multi-unit stock, batch
 ## Backup & restore
 
 ```bash
-# Backup (from project root, DATABASE_URL set)
+# One-off backup (from project root, DATABASE_URL set)
 ./scripts/backup-db.sh
+
+# Install daily cron (default 02:15 local time; keeps 14 days)
+./scripts/install-backup-cron.sh
+# Optional: CRON_HOUR=3 CRON_MIN=0 KEEP_DAYS=21 ./scripts/install-backup-cron.sh
 
 # Restore (DANGER — overwrites DB)
 ./scripts/restore-db.sh path/to/backup.dump
 ```
 
-Run a restore drill on a **staging** database before production go-live.
+Dumps land in `backups/`; log in `backups/backup.log`. Run a restore drill on a **staging** database before production go-live.
+
+## Staff SOP (printout)
+
+- In-app: **Settings → Staff SOP (print)** → browser Print (Ctrl+P).
+- Markdown: `docs/STAFF_SOP.md` (same content for Word/PDF export).
 
 ## POS vs Dispensing
 

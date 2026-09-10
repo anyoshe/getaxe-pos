@@ -19,6 +19,12 @@ const cards = [
     icon: ClipboardList,
   },
   {
+    href: "/settings/staff-sop",
+    title: "Staff SOP (print)",
+    desc: "One-page till procedures for cashiers and pharmacy staff",
+    icon: ClipboardList,
+  },
+  {
     href: "/finance/opening-balances",
     title: "Opening balances",
     desc: "Opening cash + owned stock for existing businesses",
