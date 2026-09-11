@@ -155,10 +155,27 @@ export async function getPurchaseOrderPrintDataAction(purchaseOrderId: string) {
   }
 }
 
+type GoodsReceiptPrintRow = {
+  id: string;
+  businessId: string;
+  createdAt: Date | string;
+  notes?: string | null;
+  receiptNumber?: string | null;
+  receivedAt?: Date | string | null;
+  supplier?: { name?: string | null } | null;
+  items?: Array<{
+    productId: string;
+    quantity: string | number;
+    unitCost?: string | number | null;
+  }>;
+};
+
 export async function getGoodsReceiptPrintDataAction(goodsReceiptId: string) {
   try {
     const user = await requirePurchaseDocUser();
-    const grn = await purchasesQueryService.getGoodsReceipt(goodsReceiptId);
+    const grn = (await purchasesQueryService.getGoodsReceipt(
+      goodsReceiptId,
+    )) as GoodsReceiptPrintRow | null | undefined;
     if (!grn || grn.businessId !== user.businessId) {
       return { success: false as const, message: "Goods receipt not found." };
     }
