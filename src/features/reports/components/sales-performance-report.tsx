@@ -25,11 +25,10 @@ function money(n: number) {
   });
 }
 
-type ReportData = Awaited<
-  ReturnType<typeof getSalesPerformanceReportAction>
-> extends { success: true; data: infer D }
-  ? D
-  : never;
+type ReportData = Extract<
+  Awaited<ReturnType<typeof getSalesPerformanceReportAction>>,
+  { success: true }
+>["data"];
 
 export function SalesPerformanceReport() {
   const [pending, start] = useTransition();

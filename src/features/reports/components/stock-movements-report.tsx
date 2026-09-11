@@ -46,11 +46,10 @@ function productTotals(p: {
 }
 
 
-type ReportData = Awaited<
-  ReturnType<typeof getStockMovementsReportAction>
-> extends { success: true; data: infer D }
-  ? D
-  : never;
+type ReportData = Extract<
+  Awaited<ReturnType<typeof getStockMovementsReportAction>>,
+  { success: true }
+>["data"];
 
 type FlatRow = {
   key: string;
