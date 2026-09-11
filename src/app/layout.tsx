@@ -19,6 +19,16 @@ export const metadata: Metadata = {
   title: "GetAxe POS",
   description: "GetAxe point of sale and ERP",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/gat-icon.svg", type: "image/svg+xml" },
+      { url: "/gat-icon.png", sizes: "500x500", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/gat-icon.png",
+  },
   appleWebApp: {
     capable: true,
     title: "GetAxe POS",

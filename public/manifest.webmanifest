@@ -5,5 +5,29 @@
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#2563eb",
-  "description": "GetAxe POS — works online and queues sales offline"
+  "description": "GetAxe POS — works online and queues sales offline",
+  "icons": [
+    {
+      "src": "/gat-icon.png",
+      "sizes": "500x500",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    }
+  ]
 }
