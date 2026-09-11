@@ -91,7 +91,9 @@ export async function getSetupReadiness(
       .where(eq(sales.businessId, businessId))
       .then((r) => Number(r[0]?.c ?? 0))
       .catch(() => 0),
-    new BusinessCapabilityRepository().listEnabled(businessId).catch(() => []),
+    new BusinessCapabilityRepository()
+      .listEnabled(businessId)
+      .catch((): string[] => []),
   ]);
 
   const hasPharmacy = caps.includes("pharmacy.core") || caps.includes("pharmacy.medicine-catalogue");
