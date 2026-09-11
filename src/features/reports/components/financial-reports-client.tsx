@@ -78,22 +78,34 @@ export function FinancialReportsClient() {
     start(async () => {
       if (tab === "expenses") {
         const r = await getExpenseReportAction({ fromDate, toDate });
-        if (!r.success) return toast.error(r.message);
+        if (!r.success) {
+          toast.error(r.message);
+          return;
+        }
         setExpenseData(r);
         toast.success("Expense report ready");
       } else if (tab === "pl") {
         const r = await getProfitAndLossAction({ fromDate, toDate });
-        if (!r.success) return toast.error(r.message);
+        if (!r.success) {
+          toast.error(r.message);
+          return;
+        }
         setPlData(r);
         toast.success("P&L ready");
       } else if (tab === "balance") {
         const r = await getBalanceSheetAction({ asOfDate });
-        if (!r.success) return toast.error(r.message);
+        if (!r.success) {
+          toast.error(r.message);
+          return;
+        }
         setBsData(r);
         toast.success("Balance sheet ready");
       } else {
         const r = await getAssetsLiabilitiesAction({ asOfDate });
-        if (!r.success) return toast.error(r.message);
+        if (!r.success) {
+          toast.error(r.message);
+          return;
+        }
         setAlData(r);
         toast.success("Assets & liabilities ready");
       }
