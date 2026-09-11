@@ -49,10 +49,36 @@ async function businessLetterhead(businessId: string) {
   return b ?? null;
 }
 
+type PurchaseOrderPrintRow = {
+  id: string;
+  businessId: string;
+  orderNumber: string;
+  status: string;
+  orderedAt?: Date | string | null;
+  createdAt: Date | string;
+  notes?: string | null;
+  tax?: string | number | null;
+  total?: string | number | null;
+  supplier?: {
+    name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
+  } | null;
+  items?: Array<{
+    productId: string;
+    quantity: string | number;
+    unitCost: string | number;
+    total?: string | number | null;
+  }>;
+};
+
 export async function getPurchaseOrderPrintDataAction(purchaseOrderId: string) {
   try {
     const user = await requirePurchaseDocUser();
-    const po = await purchasesQueryService.getPurchaseOrder(purchaseOrderId);
+    const po = (await purchasesQueryService.getPurchaseOrder(
+      purchaseOrderId,
+    )) as PurchaseOrderPrintRow | null | undefined;
     if (!po || po.businessId !== user.businessId) {
       return { success: false as const, message: "Purchase order not found." };
     }
