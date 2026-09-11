@@ -1,5 +1,7 @@
 "use client";
 
+/* Loyalty UI — build-safe imports */
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
