@@ -97,12 +97,14 @@ export type PosProductUnit = {
 type CartLine = {
   productId: string;
   name: string;
+  sku: string | null;
   quantity: number;
   unitPrice: number;
   unitId: string | null;
   unitLabel: string;
   factorToStock: number;
   serialized: boolean;
+  isControlled?: boolean;
   selectedSerials: string[];
   selectedBatchId: string | null;
   trackBatch: boolean;
@@ -451,6 +453,7 @@ export function PosClient({
           {
             productId: p.id,
             name: p.name,
+            sku: p.sku ?? null,
             quantity: 1,
             unitPrice: priceFor(p, u?.unitId ?? null, u?.factorToStock ?? 1),
             unitId: u?.unitId ?? null,
