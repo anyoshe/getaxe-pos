@@ -103,14 +103,10 @@ export async function validateProductImportAction(
     const c = (row.category ?? "").trim();
     if (c) neededCategories.add(c);
   }
+  const categoryCreateErrors: string[] = [];
   for (const catName of neededCategories) {
-    const existing = matchByCodeOrName(
-      categories.map((c) => ({
-        id: c.id,
-        name: c.name,
-        code: c.code,
-      })),
-      catName,
+    const existing = categories.find(
+      (c) => norm(c.name) === norm(catName),
     );
     if (existing) continue;
     try {
@@ -125,9 +121,31 @@ export async function validateProductImportAction(
         name: created.name,
         code: (created as { code?: string | null }).code ?? null,
       });
-    } catch {
-      // exists race or permission — will surface as not found below if still missing
+    } catch (e) {
+      // Already exists under different casing, or DB error
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/already exists/i.test(msg)) {
+        const refreshed = await productContextService.getContext(user.businessId);
+        for (const c of refreshed.categories ?? []) {
+          if (!categories.some((x) => x.id === c.id)) {
+            categories.push({
+              id: c.id,
+              name: c.name,
+              code: (c as { code?: string | null }).code ?? null,
+            });
+          }
+        }
+      } else {
+        categoryCreateErrors.push(`${catName}: ${msg}`);
+      }
     }
+  }
+  if (categoryCreateErrors.length > 0) {
+    return {
+      success: false as const,
+      message: `Could not create categories: ${categoryCreateErrors.slice(0, 3).join("; ")}`,
+      results: [] as ImportRowResult[],
+    };
   }
 
   const results: ImportRowResult[] = [];
@@ -164,18 +182,20 @@ export async function validateProductImportAction(
     if (name.length < 2) errors.push("Name is required (min 2 characters).");
 
     const categoryVal = (row.category ?? "").trim();
-    const category = matchByCodeOrName(
-      categories.map((c) => ({
-        id: c.id,
-        name: c.name,
-        code: (c as { code?: string }).code,
-      })),
-      categoryVal,
-    );
+    const category =
+      categories.find((c) => norm(c.name) === norm(categoryVal)) ||
+      matchByCodeOrName(
+        categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          code: (c as { code?: string }).code,
+        })),
+        categoryVal,
+      );
     if (!category) {
       errors.push(
         categoryVal
-          ? `Category "${categoryVal}" not found. Create it under Categories first.`
+          ? `Category "${categoryVal}" not found (auto-create failed). Create it under Categories first.`
           : "Category is required.",
       );
     }
