@@ -215,6 +215,90 @@ export async function createCashAccountAction(input: unknown) {
   }
 }
 
+
+export async function deactivateCashAccountAction(input: unknown) {
+  const user = await requireAuthorizedUser("accounts.update");
+  const parsed = z.object({ id: z.uuid() }).safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, message: "Invalid cash account." };
+  }
+  try {
+    const { eq, and } = await import("drizzle-orm");
+    const updated = await db
+      .update(cashAccounts)
+      .set({ active: false, updatedAt: new Date() })
+      .where(
+        and(
+          eq(cashAccounts.id, parsed.data.id),
+          eq(cashAccounts.businessId, user.businessId),
+        ),
+      )
+      .returning({ id: cashAccounts.id });
+    if (!updated.length) {
+      return { success: false as const, message: "Cash account not found." };
+    }
+    revalidatePath("/finance/cash-accounts");
+    revalidatePath("/finance/opening-balances");
+    revalidatePath("/sales/pos");
+    return {
+      success: true as const,
+      message: "Cash account removed from the active list. Ledger history is kept.",
+    };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to remove cash account.",
+    };
+  }
+}
+
+export async function updateCashAccountDetailsAction(input: unknown) {
+  const user = await requireAuthorizedUser("accounts.update");
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      bankName: z.string().nullable().optional(),
+      accountNumber: z.string().nullable().optional(),
+      branchName: z.string().nullable().optional(),
+      name: z.string().min(1).optional(),
+    })
+    .safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, message: "Check account details." };
+  }
+  try {
+    const { eq, and } = await import("drizzle-orm");
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (parsed.data.name != null) patch.name = parsed.data.name;
+    if (parsed.data.bankName !== undefined) patch.bankName = parsed.data.bankName;
+    if (parsed.data.accountNumber !== undefined)
+      patch.accountNumber = parsed.data.accountNumber;
+    if (parsed.data.branchName !== undefined)
+      patch.branchName = parsed.data.branchName;
+    const updated = await db
+      .update(cashAccounts)
+      .set(patch)
+      .where(
+        and(
+          eq(cashAccounts.id, parsed.data.id),
+          eq(cashAccounts.businessId, user.businessId),
+        ),
+      )
+      .returning({ id: cashAccounts.id });
+    if (!updated.length) {
+      return { success: false as const, message: "Cash account not found." };
+    }
+    revalidatePath("/finance/cash-accounts");
+    revalidatePath("/sales/pos");
+    return { success: true as const, message: "Cash account updated." };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to update.",
+    };
+  }
+}
+
 export async function createChartAccountAction(input: unknown) {
   const user = await requireAuthorizedUser("accounts.update");
   const parsed = z

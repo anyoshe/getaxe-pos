@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { formatDateTimeNairobi } from "@/lib/timezone";
 import {
   createCashAccountAction,
+  deactivateCashAccountAction,
+  updateCashAccountDetailsAction,
   createExpenseAction,
   createIncomeAction,
   createTaxRateAction,
@@ -147,6 +149,9 @@ export function CashAccountsClient({
     openingBalance?: string;
     accountCode?: string;
     accountName?: string;
+    bankName?: string | null;
+    accountNumber?: string | null;
+    branchName?: string | null;
     movementIn?: number;
     movementOut?: number;
     currentBalance?: number;
@@ -278,6 +283,7 @@ export function CashAccountsClient({
               <th className="p-3 text-right">In (debits)</th>
               <th className="p-3 text-right">Out (credits)</th>
               <th className="p-3 text-right">Current balance</th>
+              <th className="p-3 text-right"> </th>
             </tr>
           </thead>
           <tbody>
@@ -286,11 +292,7 @@ export function CashAccountsClient({
                 <td className="p-3 font-medium">{a.name}</td>
                 <td className="p-3">{a.type}</td>
                 <td className="p-3 text-xs text-muted-foreground">
-                  {[
-                    (a as { bankName?: string | null }).bankName,
-                    (a as { accountNumber?: string | null }).accountNumber,
-                    (a as { branchName?: string | null }).branchName,
-                  ]
+                  {[a.bankName, a.accountNumber, a.branchName]
                     .filter(Boolean)
                     .join(" · ") || "—"}
                 </td>
@@ -306,6 +308,34 @@ export function CashAccountsClient({
                 <td className="p-3 text-right tabular-nums font-semibold">
                   {(a.currentBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}{" "}
                   {a.currency}
+                </td>
+                <td className="p-3 text-right">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={pending}
+                    onClick={() => {
+                      if (
+                        !confirm(
+                          `Remove "${a.name}" from active cash & bank list?\n\nPast journals stay on the ledger. You can add a fresh account with the correct bank details afterward.`,
+                        )
+                      ) {
+                        return;
+                      }
+                      start(async () => {
+                        const r = await deactivateCashAccountAction({ id: a.id });
+                        if (!r.success) toast.error(r.message);
+                        else {
+                          toast.success(r.message);
+                          router.refresh();
+                        }
+                      });
+                    }}
+                  >
+                    Remove
+                  </Button>
                 </td>
               </tr>
             ))}

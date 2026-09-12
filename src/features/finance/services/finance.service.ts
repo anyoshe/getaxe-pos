@@ -427,6 +427,9 @@ export class FinanceService {
         currency: cashAccounts.currency,
         openingBalance: cashAccounts.openingBalance,
         accountId: cashAccounts.accountId,
+        bankName: cashAccounts.bankName,
+        accountNumber: cashAccounts.accountNumber,
+        branchName: cashAccounts.branchName,
         accountCode: chartOfAccounts.accountCode,
         accountName: chartOfAccounts.accountName,
       })
