@@ -63,9 +63,6 @@ export function TaxRatesClient({
   const [pending, start] = useTransition();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [branchName, setBranchName] = useState("");
   const [rate, setRate] = useState("16");
 
   return (
@@ -161,6 +158,9 @@ export function CashAccountsClient({
   const [name, setName] = useState("");
   const [type, setType] = useState("CASH");
   const [accountId, setAccountId] = useState(ledgerAccounts[0]?.id ?? "");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [branchName, setBranchName] = useState("");
 
   return (
     <div className="space-y-6">
