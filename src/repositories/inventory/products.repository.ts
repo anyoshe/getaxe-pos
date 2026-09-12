@@ -192,13 +192,19 @@ export class ProductRepository extends BaseRepository {
         taxRate: true,
 
         prices: true,
-        batches: true,
-        stockMovements: true,
-        inventoryBalances: true,
+        // Do not eager-load batches/movements/balances here:
+        // products.batches relation is fragile under circular schema imports
+        // and breaks receive / opening-stock (Drizzle infer error).
       },
     });
 
-    return row ? toDomainProduct(row) : null;
+    if (!row) return null;
+    return {
+      ...toDomainProduct(row),
+      batches: [],
+      stockMovements: [],
+      inventoryBalances: [],
+    };
   }
 
     async findForSelection(businessId: string) {

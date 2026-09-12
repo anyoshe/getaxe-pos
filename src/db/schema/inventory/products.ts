@@ -275,7 +275,7 @@ export const productsRelations = relations(
     }),
     prices: many(productPrices),
 
-    batches: many(productBatches),
+    batches: many(productBatches, { relationName: "product_batches" }),
 
     stockMovements: many(stockMovements),
 

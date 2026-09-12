@@ -101,6 +101,7 @@ export const productBatchesRelations = relations(
     product: one(products, {
       fields: [productBatches.productId],
       references: [products.id],
+      relationName: "product_batches",
     }),
 
     supplier: one(suppliers, {
