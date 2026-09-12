@@ -5,6 +5,7 @@ import { BusinessCapabilityRepository } from "@/features/capabilities/repositori
 import { createProductSchema } from "../schemas/products";
 import { productRuleResolver } from "../services/product-rule-resolver";
 import { productContextService } from "../services/product-context.service";
+import { categoryService } from "../services/categories.service";
 
 function parseBool(v: string | undefined, defaultValue: boolean): boolean {
   if (v === undefined || v === null || String(v).trim() === "") {
@@ -83,7 +84,11 @@ export async function validateProductImportAction(
   const businessCapabilities =
     await new BusinessCapabilityRepository().listEnabled(user.businessId);
 
-  const categories = ctx.categories ?? [];
+  const categories = [...(ctx.categories ?? [])] as Array<{
+    id: string;
+    name: string;
+    code?: string | null;
+  }>;
   const units = ctx.units ?? [];
   const dosageForms = ctx.dosageForms ?? [];
   const drugCategories = ctx.drugCategories ?? [];
@@ -91,6 +96,39 @@ export async function validateProductImportAction(
   const prescriptionTypes = ctx.prescriptionTypes ?? [];
   const manufacturers = ctx.manufacturers ?? [];
   const suppliers = ctx.suppliers ?? [];
+
+  // Auto-create missing categories so Excel import works without manual setup
+  const neededCategories = new Set<string>();
+  for (const row of rows) {
+    const c = (row.category ?? "").trim();
+    if (c) neededCategories.add(c);
+  }
+  for (const catName of neededCategories) {
+    const existing = matchByCodeOrName(
+      categories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        code: c.code,
+      })),
+      catName,
+    );
+    if (existing) continue;
+    try {
+      const created = await categoryService.createCategory({
+        businessId: user.businessId,
+        name: catName,
+        description: "Created from product import",
+        active: true,
+      });
+      categories.push({
+        id: created.id,
+        name: created.name,
+        code: (created as { code?: string | null }).code ?? null,
+      });
+    } catch {
+      // exists race or permission — will surface as not found below if still missing
+    }
+  }
 
   const results: ImportRowResult[] = [];
 
@@ -215,8 +253,8 @@ export async function validateProductImportAction(
         })),
         row.manufacturer,
       );
-      if (!m) errors.push(`Manufacturer "${row.manufacturer}" not found.`);
-      else manufacturerId = m.id;
+      // Optional: skip unknown brands so auto-parts import is not blocked
+      if (m) manufacturerId = m.id;
     }
     if (row.supplier) {
       const s = matchByCodeOrName(
