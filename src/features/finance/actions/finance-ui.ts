@@ -257,10 +257,14 @@ export async function updateCashAccountDetailsAction(input: unknown) {
   const parsed = z
     .object({
       id: z.uuid(),
+      name: z.string().min(1).optional(),
+      type: z
+        .enum(["CASH", "BANK", "MPESA", "MOBILE_MONEY", "PETTY_CASH"])
+        .optional(),
+      accountId: z.uuid().optional(),
       bankName: z.string().nullable().optional(),
       accountNumber: z.string().nullable().optional(),
       branchName: z.string().nullable().optional(),
-      name: z.string().min(1).optional(),
     })
     .safeParse(input);
   if (!parsed.success) {
@@ -270,6 +274,8 @@ export async function updateCashAccountDetailsAction(input: unknown) {
     const { eq, and } = await import("drizzle-orm");
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     if (parsed.data.name != null) patch.name = parsed.data.name;
+    if (parsed.data.type != null) patch.type = parsed.data.type;
+    if (parsed.data.accountId != null) patch.accountId = parsed.data.accountId;
     if (parsed.data.bankName !== undefined) patch.bankName = parsed.data.bankName;
     if (parsed.data.accountNumber !== undefined)
       patch.accountNumber = parsed.data.accountNumber;

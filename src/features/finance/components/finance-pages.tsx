@@ -149,6 +149,7 @@ export function CashAccountsClient({
     openingBalance?: string;
     accountCode?: string;
     accountName?: string;
+    accountId?: string;
     bankName?: string | null;
     accountNumber?: string | null;
     branchName?: string | null;
@@ -160,6 +161,7 @@ export function CashAccountsClient({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [type, setType] = useState("CASH");
   const [accountId, setAccountId] = useState(ledgerAccounts[0]?.id ?? "");
@@ -167,12 +169,36 @@ export function CashAccountsClient({
   const [accountNumber, setAccountNumber] = useState("");
   const [branchName, setBranchName] = useState("");
 
+  function resetForm() {
+    setEditingId(null);
+    setName("");
+    setType("CASH");
+    setAccountId(ledgerAccounts[0]?.id ?? "");
+    setBankName("");
+    setAccountNumber("");
+    setBranchName("");
+  }
+
+  function startEdit(a: (typeof accounts)[number]) {
+    setEditingId(a.id);
+    setName(a.name);
+    setType(a.type);
+    setAccountId(a.accountId ?? ledgerAccounts[0]?.id ?? "");
+    setBankName(a.bankName ?? "");
+    setAccountNumber(a.accountNumber ?? "");
+    setBranchName(a.branchName ?? "");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Cash & bank accounts</h1>
         <p className="text-sm text-muted-foreground">
           POS payments, expenses, and other cash movements post against these drawers/accounts.
+          Add banks, M-Pesa tills, or card terminals here — they appear on POS when matching the payment type.
           Set starting till amounts under{" "}
           <a href="/finance/opening-balances" className="text-primary underline">
             Opening balances
@@ -180,7 +206,16 @@ export function CashAccountsClient({
           .
         </p>
       </div>
-      <div className="grid max-w-lg gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+      <div className="grid max-w-2xl gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        {editingId ? (
+          <p className="text-sm font-medium text-primary">
+            Editing account — update bank / till details, then save. Balances stay on the linked ledger.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            New tills (KCB, Equity, second M-Pesa till, etc.) are selectable on POS Bank / Mobile / Card once saved.
+          </p>
+        )}
         <div className="space-y-1">
           <Label>Name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Main Cash Drawer" />
@@ -248,29 +283,55 @@ export function CashAccountsClient({
             </div>
           </div>
         )}
-        <Button
-          type="button"
-          disabled={pending || !accountId}
-          onClick={() =>
-            start(async () => {
-              const r = await createCashAccountAction({
-                name,
-                type: type as "CASH",
-                accountId,
-                bankName: bankName.trim() || null,
-                accountNumber: accountNumber.trim() || null,
-                branchName: branchName.trim() || null,
-              });
-              if (!r.success) toast.error(r.message);
-              else {
-                toast.success(r.message);
-                router.refresh();
-              }
-            })
-          }
-        >
-          Add cash account
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={pending || !accountId || !name.trim()}
+            onClick={() =>
+              start(async () => {
+                if (editingId) {
+                  const r = await updateCashAccountDetailsAction({
+                    id: editingId,
+                    name: name.trim(),
+                    type: type as "CASH",
+                    accountId,
+                    bankName: bankName.trim() || null,
+                    accountNumber: accountNumber.trim() || null,
+                    branchName: branchName.trim() || null,
+                  });
+                  if (!r.success) toast.error(r.message);
+                  else {
+                    toast.success(r.message);
+                    resetForm();
+                    router.refresh();
+                  }
+                  return;
+                }
+                const r = await createCashAccountAction({
+                  name: name.trim(),
+                  type: type as "CASH",
+                  accountId,
+                  bankName: bankName.trim() || null,
+                  accountNumber: accountNumber.trim() || null,
+                  branchName: branchName.trim() || null,
+                });
+                if (!r.success) toast.error(r.message);
+                else {
+                  toast.success(r.message);
+                  resetForm();
+                  router.refresh();
+                }
+              })
+            }
+          >
+            {editingId ? "Save changes" : "Add cash account"}
+          </Button>
+          {editingId ? (
+            <Button type="button" variant="outline" disabled={pending} onClick={resetForm}>
+              Cancel edit
+            </Button>
+          ) : null}
+        </div>
       </div>
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full text-sm">
@@ -309,7 +370,16 @@ export function CashAccountsClient({
                   {(a.currentBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}{" "}
                   {a.currency}
                 </td>
-                <td className="p-3 text-right">
+                                <td className="p-3 text-right whitespace-nowrap">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => startEdit(a)}
+                  >
+                    Edit
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -329,6 +399,7 @@ export function CashAccountsClient({
                         if (!r.success) toast.error(r.message);
                         else {
                           toast.success(r.message);
+                          if (editingId === a.id) resetForm();
                           router.refresh();
                         }
                       });
@@ -337,6 +408,7 @@ export function CashAccountsClient({
                     Remove
                   </Button>
                 </td>
+
               </tr>
             ))}
           </tbody>

@@ -15,6 +15,7 @@ export default async function CashAccountsPage() {
         id: a.id,
         name: a.name,
         type: a.type,
+        accountId: a.accountId,
         currency: a.currency,
         openingBalance: String(a.openingBalance ?? "0"),
         accountCode: a.accountCode,
