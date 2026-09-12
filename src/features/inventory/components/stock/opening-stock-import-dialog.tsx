@@ -94,29 +94,70 @@ export function OpeningStockImportDialog({
       return;
     }
     setImporting(true);
-    const res = await commitOpeningStockImportAction(payloads);
-    setImporting(false);
-    if (res.success) toast.success(res.message);
-    else toast.error(res.message);
-
-    if (res.results?.length) {
+    try {
+      // Chunk to avoid serverless timeouts (Vercel ~10–60s) on large opening stocks
+      const chunkSize = 5;
+      let totalOk = 0;
+      let totalFail = 0;
       const next = [...results];
-      let pi = 0;
-      for (let i = 0; i < next.length; i++) {
-        if (!next[i].ok) continue;
-        const c = res.results[pi++];
-        if (c && !c.success) {
-          next[i] = {
-            ...next[i],
-            ok: false,
-            errors: [c.message],
-            payload: undefined,
-          };
+      let payloadCursor = 0;
+
+      for (let offset = 0; offset < payloads.length; offset += chunkSize) {
+        const chunk = payloads.slice(offset, offset + chunkSize);
+        const res = await commitOpeningStockImportAction(chunk);
+
+        for (const c of res.results ?? []) {
+          // Map chunk result index → next payload among ok rows
+          while (payloadCursor < next.length && !next[payloadCursor].ok) {
+            payloadCursor += 1;
+          }
+          if (payloadCursor >= next.length) break;
+          if (c.success) {
+            totalOk += 1;
+            next[payloadCursor] = {
+              ...next[payloadCursor],
+              errors: [],
+              preview: {
+                ...next[payloadCursor].preview!,
+                product: `${next[payloadCursor].preview?.product ?? ""} ✓`,
+              },
+            };
+          } else {
+            totalFail += 1;
+            next[payloadCursor] = {
+              ...next[payloadCursor],
+              ok: false,
+              errors: [c.message || "Failed."],
+              payload: undefined,
+            };
+          }
+          payloadCursor += 1;
         }
+        setResults([...next]);
       }
-      setResults(next);
+
+      if (totalFail === 0 && totalOk > 0) {
+        toast.success(`${totalOk} opening stock line(s) received.`);
+        onImported?.();
+      } else if (totalOk > 0) {
+        toast.message(`${totalOk} received, ${totalFail} failed. See status column.`);
+        onImported?.();
+      } else {
+        toast.error(
+          totalFail > 0
+            ? `All ${totalFail} line(s) failed. See status column.`
+            : "Receive did not complete. Check permissions (stock adjustments) and try smaller batches.",
+        );
+      }
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Receive timed out or failed. Try again, or import fewer rows.",
+      );
+    } finally {
+      setImporting(false);
     }
-    onImported?.();
   }
 
   return (

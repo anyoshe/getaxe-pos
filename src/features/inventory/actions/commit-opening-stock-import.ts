@@ -1,5 +1,8 @@
 "use server";
 
+/** Allow longer runs on Vercel when importing many opening lines */
+export const maxDuration = 60;
+
 import { revalidatePath } from "next/cache";
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { receiveStockAction } from "./receive-stock";
@@ -29,18 +32,26 @@ export async function commitOpeningStockImportAction(
   let ok = 0;
 
   for (let index = 0; index < payloads.length; index++) {
-    const result = await receiveStockAction({
-      ...payloads[index],
-      movementType: "OPENING_STOCK",
-    });
-    if (result.success) {
-      ok += 1;
-      results.push({ index, success: true, message: "Received." });
-    } else {
+    try {
+      const result = await receiveStockAction({
+        ...payloads[index],
+        movementType: "OPENING_STOCK",
+      });
+      if (result.success) {
+        ok += 1;
+        results.push({ index, success: true, message: "Received." });
+      } else {
+        results.push({
+          index,
+          success: false,
+          message: result.message || "Failed.",
+        });
+      }
+    } catch (e) {
       results.push({
         index,
         success: false,
-        message: result.message || "Failed.",
+        message: e instanceof Error ? e.message : "Receive failed unexpectedly.",
       });
     }
   }
