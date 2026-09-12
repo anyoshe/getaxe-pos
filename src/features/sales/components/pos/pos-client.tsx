@@ -772,7 +772,15 @@ export function PosClient({
         receiptNote = `Walk-in: ${customerName.trim()}`;
       }
 
-      let effectiveMethod =
+      type PayMethod =
+        | "CASH"
+        | "MPESA"
+        | "CARD"
+        | "BANK_TRANSFER"
+        | "CHEQUE"
+        | "MOBILE_MONEY"
+        | "CREDIT";
+      let effectiveMethod: PayMethod =
         saleMode === "CREDIT" ? "CREDIT" : paymentMethod;
       if (saleMode !== "CREDIT" && paymentMethod === "MPESA") {
         effectiveMethod =
