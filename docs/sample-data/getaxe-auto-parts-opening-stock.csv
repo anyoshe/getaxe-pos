@@ -1,0 +1,26 @@
+sku,barcode,warehouse,quantity,unit,unitCost,batchNumber,manufactureDate,expiryDate,serialNumbers,reference,notes
+SP-OF-HF204,,MAIN,40,PCS,180,,,,,OPENING,Opening oil filters
+SP-PLUG-CR7,,MAIN,80,PCS,120,,,,,OPENING,Opening spark plugs
+SP-BRK-F01,,MAIN,25,PCS,450,,,,,OPENING,Opening brake shoes
+SP-CHN-428,,MAIN,15,PCS,1200,,,,,OPENING,Opening chains
+SP-CBL-CLT,,MAIN,30,PCS,250,,,,,OPENING,Opening clutch cables
+SP-BULB-H4,,MAIN,50,PCS,200,,,,,OPENING,Opening bulbs
+SP-BAT-12V5,,MAIN,12,PCS,3500,,,,,OPENING,Opening batteries
+SP-AF-01,,MAIN,35,PCS,300,,,,,OPENING,Opening air filters
+SP-MIR-PAIR,,MAIN,18,PCS,800,,,,,OPENING,Opening mirrors
+SP-OIL-20W50,,MAIN,60,PCS,650,,,,,OPENING,Opening engine oil
+SP-BRKFL-DOT4,,MAIN,24,PCS,400,,,,,OPENING,Opening brake fluid
+SP-TYRE-27518,,MAIN,20,PCS,2800,,,,,OPENING,Opening tyres
+SP-TUBE-27518,,MAIN,30,PCS,600,,,,,OPENING,Opening tubes
+SP-CARB-KIT,,MAIN,10,PCS,900,,,,,OPENING,Opening carb kits
+SP-CDI-6P,,MAIN,8,PCS,1500,,,,,OPENING,Opening CDI
+SP-GRP-01,,MAIN,40,PCS,150,,,,,OPENING,Opening grips
+SP-SPR-F14,,MAIN,20,PCS,350,,,,,OPENING,Opening front sprockets
+SP-SPR-R42,,MAIN,15,PCS,800,,,,,OPENING,Opening rear sprockets
+SP-3W-BRK-CBL,,MAIN,12,PCS,500,,,,,OPENING,Opening 3W brake cables
+SP-3W-BELT,,MAIN,8,PCS,2200,,,,,OPENING,Opening 3W belts
+UNIT-BOXER-150,,MAIN,3,PCS,185000,,,,CHS-BX150-KE-1001|CHS-BX150-KE-1002|CHS-BX150-KE-1003,OPENING,Boxer units; engines ENG-BX-5501/02/03 (ref only)
+UNIT-TVS-HLX150,,MAIN,2,PCS,175000,,,,CHS-TVS150-KE-2001|CHS-TVS150-KE-2002,OPENING,TVS units
+UNIT-HONDA-ACE125,,MAIN,2,PCS,195000,,,,CHS-HDA125-KE-3001|CHS-HDA125-KE-3002,OPENING,Honda Ace units
+UNIT-BAJAJ-RE,,MAIN,2,PCS,520000,,,,CHS-RE-KE-4001|CHS-RE-KE-4002,OPENING,Bajaj RE 3-wheelers
+UNIT-APE-CITY,,MAIN,1,PCS,480000,,,,CHS-APE-KE-5001,OPENING,Piaggio Ape unit

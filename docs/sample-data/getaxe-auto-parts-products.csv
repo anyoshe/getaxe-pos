@@ -1,0 +1,26 @@
+productType,name,sku,barcode,category,genericName,productBrand,description,packSize,costPrice,sellingPrice,trackInventory,trackBatch,trackExpiry,serialized,allowNegativeStock,minimumStock,reorderLevel,stockUnit,purchaseUnit,salesUnit,dosageForm,drugCategory,drugStrength,prescriptionType,manufacturer,supplier,active
+physical,Oil Filter HF204,SP-OF-HF204,6003003003001,Engine Filters,,Honda,Spin-on oil filter common 125-150cc,1,180,350,true,false,false,false,false,10,25,PCS,BOX,PCS,,,,,OEM,,true
+physical,Spark Plug CR7HSA,SP-PLUG-CR7,6003003003002,Ignition,,NGK,Standard plug motorcycle,1,120,250,true,false,false,false,false,20,50,PCS,BOX,PCS,,,,,NGK,,true
+physical,Brake Shoe Set Front,SP-BRK-F01,6003003003003,Brakes,,Generic,Drum brake shoes pair,1,450,900,true,false,false,false,false,8,20,PCS,PCS,PCS,,,,,Generic,,true
+physical,Drive Chain 428H 120L,SP-CHN-428,6003003003004,Transmission,,DID,Heavy duty 428 chain,1,1200,2200,true,false,false,false,false,5,12,PCS,PCS,PCS,,,,,DID,,true
+physical,Clutch Cable,SP-CBL-CLT,6003003003005,Controls,,Generic,Universal clutch cable 125cc class,1,250,500,true,false,false,false,false,10,30,PCS,PCS,PCS,,,,,Generic,,true
+physical,Headlight Bulb H4 12V,SP-BULB-H4,6003003003006,Electrical,,Philips,H4 halogen,1,200,400,true,false,false,false,false,15,40,PCS,BOX,PCS,,,,,Philips,,true
+physical,Battery 12V 5Ah,SP-BAT-12V5,6003003003007,Electrical,,Yuasa,MF battery motorcycle,1,3500,5500,true,false,false,false,false,4,10,PCS,PCS,PCS,,,,,Yuasa,,true
+physical,Air Filter Element,SP-AF-01,6003003003008,Engine Filters,,Generic,Foam/paper air filter,1,300,600,true,false,false,false,false,10,25,PCS,PCS,PCS,,,,,Generic,,true
+physical,Side Mirror Pair,SP-MIR-PAIR,6003003003009,Body,,Generic,Left+right mirror set,1,800,1500,true,false,false,false,false,6,15,PCS,PCS,PCS,,,,,Generic,,true
+physical,Engine Oil 20W-50 1L,SP-OIL-20W50,6003003003010,Lubricants,,Total,Mineral 20W-50 1 litre,1,650,950,true,false,false,false,false,24,60,PCS,BOX,PCS,,,,,Total,,true
+physical,Brake Fluid DOT 4 500ml,SP-BRKFL-DOT4,6003003003011,Lubricants,,Castrol,DOT 4 500ml,1,400,700,true,false,false,false,false,12,30,PCS,BOX,PCS,,,,,Castrol,,true
+physical,Tyre 2.75-18 Tube Type,SP-TYRE-27518,6003003003012,Tyres & Tubes,,MRF,Rear tyre common commuter,1,2800,4500,true,false,false,false,false,6,15,PCS,PCS,PCS,,,,,MRF,,true
+physical,Inner Tube 2.75-18,SP-TUBE-27518,6003003003013,Tyres & Tubes,,Generic,Butyl tube,1,600,1100,true,false,false,false,false,10,25,PCS,PCS,PCS,,,,,Generic,,true
+physical,Carburetor Rebuild Kit,SP-CARB-KIT,6003003003014,Engine,,Generic,Jets+gaskets kit 125cc,1,900,1800,true,false,false,false,false,5,12,PCS,PCS,PCS,,,,,Generic,,true
+physical,CDI Unit 6-Pin,SP-CDI-6P,6003003003015,Electrical,,Generic,Ignition CDI module,1,1500,2800,true,false,false,false,false,3,8,PCS,PCS,PCS,,,,,Generic,,true
+physical,Hand Grip Pair,SP-GRP-01,6003003003016,Controls,,Generic,Rubber grips black,1,150,350,true,false,false,false,false,15,40,PCS,PCS,PCS,,,,,Generic,,true
+physical,Sprocket Front 14T 428,SP-SPR-F14,6003003003017,Transmission,,Generic,Front sprocket 14 tooth,1,350,700,true,false,false,false,false,8,20,PCS,PCS,PCS,,,,,Generic,,true
+physical,Sprocket Rear 42T 428,SP-SPR-R42,6003003003018,Transmission,,Generic,Rear sprocket 42 tooth,1,800,1500,true,false,false,false,false,6,15,PCS,PCS,PCS,,,,,Generic,,true
+physical,3-Wheeler Brake Cable,SP-3W-BRK-CBL,6003003003019,3-Wheeler Parts,,Generic,Tuk-tuk brake cable,1,500,950,true,false,false,false,false,8,20,PCS,PCS,PCS,,,,,Generic,,true
+physical,3-Wheeler Belt Drive,SP-3W-BELT,6003003003020,3-Wheeler Parts,,Generic,CVT/drive belt class,1,2200,3800,true,false,false,false,false,4,10,PCS,PCS,PCS,,,,,Generic,,true
+physical,Boxer 150 Commuter (unit),UNIT-BOXER-150,6003003004001,Complete Units,,Bajaj,Complete motorcycle. Track by chassis serial. Engine no. in description on receive.,1,185000,245000,true,false,false,true,false,1,2,PCS,PCS,PCS,,,,,Bajaj,,true
+physical,TVS HLX 150 (unit),UNIT-TVS-HLX150,6003003004002,Complete Units,,TVS,Complete motorcycle — chassis serial required,1,175000,235000,true,false,false,true,false,1,2,PCS,PCS,PCS,,,,,TVS,,true
+physical,Honda Ace 125 (unit),UNIT-HONDA-ACE125,6003003004003,Complete Units,,Honda,Complete motorcycle — chassis serial required,1,195000,260000,true,false,false,true,false,1,2,PCS,PCS,PCS,,,,,Honda,,true
+physical,Bajaj RE Compact 3-Wheeler (unit),UNIT-BAJAJ-RE,6003003004004,Complete Units,,Bajaj,Passenger 3-wheeler — chassis serial required,1,520000,680000,true,false,false,true,false,1,1,PCS,PCS,PCS,,,,,Bajaj,,true
+physical,Piaggio Ape City (unit),UNIT-APE-CITY,6003003004005,Complete Units,,Piaggio,Cargo/passenger 3-wheeler — chassis serial,1,480000,620000,true,false,false,true,false,1,1,PCS,PCS,PCS,,,,,Piaggio,,true
