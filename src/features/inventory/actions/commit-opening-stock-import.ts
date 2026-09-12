@@ -1,8 +1,5 @@
 "use server";
 
-/** Allow longer runs on Vercel when importing many opening lines */
-export const maxDuration = 60;
-
 import { revalidatePath } from "next/cache";
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { receiveStockAction } from "./receive-stock";
