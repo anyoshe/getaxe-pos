@@ -35,9 +35,7 @@ export const STOCK_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
 
     dependencies: [],
 
-    conflicts: [
-      "inventory.serial-numbers",
-    ],
+    conflicts: [],
 
     schema: [
       "product_batches",

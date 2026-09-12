@@ -322,9 +322,7 @@ export const IDENTIFICATION_CAPABILITIES: CapabilityDefinition[] = [
 
     dependencies: [],
 
-    conflicts: [
-      "inventory.batch-control",
-    ],
+    conflicts: [],
 
     schema: [
       "products",
