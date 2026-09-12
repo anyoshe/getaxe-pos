@@ -27,6 +27,11 @@ import {
 } from "../../actions/validate-opening-stock-import";
 import { commitOpeningStockImportAction } from "../../actions/commit-opening-stock-import";
 
+type RowResult = OpeningStockRowResult & {
+  /** Set after successful receive — blocks double import */
+  received?: boolean;
+};
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,11 +44,18 @@ export function OpeningStockImportDialog({
   onImported,
 }: Props) {
   const [fileName, setFileName] = useState<string | null>(null);
-  const [results, setResults] = useState<OpeningStockRowResult[]>([]);
+  const [results, setResults] = useState<RowResult[]>([]);
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
 
-  const okRows = useMemo(() => results.filter((r) => r.ok), [results]);
+  const pendingRows = useMemo(
+    () => results.filter((r) => r.ok && !r.received && r.payload),
+    [results],
+  );
+  const receivedCount = useMemo(
+    () => results.filter((r) => r.received).length,
+    [results],
+  );
   const badRows = useMemo(() => results.filter((r) => !r.ok), [results]);
 
   function downloadTemplateCsv() {
@@ -86,67 +98,67 @@ export function OpeningStockImportDialog({
   }
 
   async function commit() {
-    const payloads = okRows
+    const payloads = pendingRows
       .map((r) => r.payload)
       .filter(Boolean) as Record<string, unknown>[];
     if (payloads.length === 0) {
-      toast.error("No valid rows.");
+      toast.error("Nothing left to receive. Close and re-upload only if you need more stock.");
       return;
     }
     setImporting(true);
     try {
-      // Chunk to avoid serverless timeouts (Vercel ~10–60s) on large opening stocks
       const chunkSize = 5;
       let totalOk = 0;
       let totalFail = 0;
-      const next = [...results];
-      let payloadCursor = 0;
+      const next: RowResult[] = results.map((r) => ({ ...r }));
+      // Indices of rows still pending receive, in table order
+      const pendingIdx = next
+        .map((r, i) => ({ r, i }))
+        .filter(({ r }) => r.ok && !r.received && r.payload)
+        .map(({ i }) => i);
+      let cursor = 0;
 
       for (let offset = 0; offset < payloads.length; offset += chunkSize) {
         const chunk = payloads.slice(offset, offset + chunkSize);
         const res = await commitOpeningStockImportAction(chunk);
 
         for (const c of res.results ?? []) {
-          // Map chunk result index → next payload among ok rows
-          while (payloadCursor < next.length && !next[payloadCursor].ok) {
-            payloadCursor += 1;
-          }
-          if (payloadCursor >= next.length) break;
+          if (cursor >= pendingIdx.length) break;
+          const rowIndex = pendingIdx[cursor];
+          cursor += 1;
           if (c.success) {
             totalOk += 1;
-            next[payloadCursor] = {
-              ...next[payloadCursor],
+            next[rowIndex] = {
+              ...next[rowIndex],
+              received: true,
+              payload: undefined,
               errors: [],
-              preview: {
-                ...next[payloadCursor].preview!,
-                product: `${next[payloadCursor].preview?.product ?? ""} ✓`,
-              },
             };
           } else {
             totalFail += 1;
-            next[payloadCursor] = {
-              ...next[payloadCursor],
+            next[rowIndex] = {
+              ...next[rowIndex],
               ok: false,
+              received: false,
               errors: [c.message || "Failed."],
               payload: undefined,
             };
           }
-          payloadCursor += 1;
         }
         setResults([...next]);
       }
 
       if (totalFail === 0 && totalOk > 0) {
-        toast.success(`${totalOk} opening stock line(s) received.`);
+        toast.success(`${totalOk} opening stock line(s) received. Safe to close.`);
         onImported?.();
       } else if (totalOk > 0) {
-        toast.message(`${totalOk} received, ${totalFail} failed. See status column.`);
+        toast.message(`${totalOk} received, ${totalFail} failed. Failed lines can be fixed and re-uploaded.`);
         onImported?.();
       } else {
         toast.error(
           totalFail > 0
             ? `All ${totalFail} line(s) failed. See status column.`
-            : "Receive did not complete. Check permissions (stock adjustments) and try smaller batches.",
+            : "Receive did not complete. Try again with fewer rows.",
         );
       }
     } catch (e) {
@@ -161,6 +173,7 @@ export function OpeningStockImportDialog({
   }
 
   return (
+
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[92vh] w-[95vw] max-w-4xl flex-col gap-4 overflow-hidden">
         <DialogHeader>
@@ -208,7 +221,7 @@ export function OpeningStockImportDialog({
           <div className="min-h-0 flex-1 space-y-3 overflow-hidden">
             <div className="flex flex-wrap gap-3 text-sm">
               <span className="rounded-full bg-chart-4/15 px-2.5 py-0.5 font-medium text-chart-4">
-                {okRows.length} ready
+                {pendingRows.length} ready to receive · {receivedCount} already received
               </span>
               <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 font-medium text-destructive">
                 {badRows.length} errors
@@ -235,7 +248,9 @@ export function OpeningStockImportDialog({
                       <td className="p-2 text-xs">{r.preview?.warehouse}</td>
                       <td className="p-2 tabular-nums">{r.preview?.quantity}</td>
                       <td className="p-2 text-xs">
-                        {r.ok ? (
+                        {r.received ? (
+                          <span className="font-medium text-chart-4">Received</span>
+                        ) : r.ok ? (
                           <span className="text-chart-4">Ready</span>
                         ) : (
                           <span className="text-destructive">{r.errors.join(" · ")}</span>
@@ -253,10 +268,14 @@ export function OpeningStockImportDialog({
               <Button
                 type="button"
                 className="rounded-xl"
-                disabled={okRows.length === 0 || importing}
+                disabled={pendingRows.length === 0 || importing}
                 onClick={() => void commit()}
               >
-                {importing ? "Receiving…" : `Receive ${okRows.length} line${okRows.length === 1 ? "" : "s"}`}
+                {importing
+                  ? "Receiving…"
+                  : pendingRows.length === 0 && receivedCount > 0
+                    ? "All lines received"
+                    : `Receive ${pendingRows.length} line${pendingRows.length === 1 ? "" : "s"}`}
               </Button>
             </div>
           </div>
