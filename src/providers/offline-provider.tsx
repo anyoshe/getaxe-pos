@@ -85,6 +85,9 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
             customerId,
             notes: item.payload.notes,
             paymentMethod: item.payload.paymentMethod,
+            cashAccountId: item.payload.cashAccountId ?? null,
+            paymentReference: item.payload.paymentReference ?? null,
+            paymentDetail: item.payload.paymentDetail ?? null,
             items: item.payload.items,
           });
           if (!result.success) {

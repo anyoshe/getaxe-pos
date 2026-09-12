@@ -43,10 +43,17 @@ const schema = z.object({
       "MPESA",
       "CARD",
       "BANK_TRANSFER",
+      "CHEQUE",
       "MOBILE_MONEY",
       "CREDIT",
     ])
     .default("CASH"),
+  /** Optional till override (e.g. specific bank account) */
+  cashAccountId: z.uuid().nullable().optional(),
+  /** M-Pesa code, bank slip, RTGS ref, etc. */
+  paymentReference: z.string().max(120).nullable().optional(),
+  /** Extra tender detail for audit (bank subtype, origin bank, provider) */
+  paymentDetail: z.string().max(500).nullable().optional(),
   items: z.array(lineSchema).min(1),
 });
 
@@ -277,9 +284,19 @@ export async function createSaleAction(input: unknown) {
 
     const tillAccountId = isCredit
       ? null
-      : await financeService
-          .resolveCashAccountIdForMethod(user.businessId, data.paymentMethod)
-          .catch(() => null);
+      : data.cashAccountId
+        ? data.cashAccountId
+        : await financeService
+            .resolveCashAccountIdForMethod(user.businessId, data.paymentMethod)
+            .catch(() => null);
+
+    const paymentAudit =
+      [data.paymentDetail?.trim(), data.paymentReference?.trim()]
+        .filter(Boolean)
+        .join(" · ") || null;
+    const saleNotes = [data.notes?.trim(), paymentAudit]
+      .filter(Boolean)
+      .join(" | ") || null;
 
     const result = (await salesService.createSale({
       sale: {
@@ -296,7 +313,7 @@ export async function createSaleAction(input: unknown) {
         amountPaid: isCredit ? "0" : subtotal.toFixed(2),
         balanceDue: isCredit ? subtotal.toFixed(2) : "0",
         paymentStatus: isCredit ? "PENDING" : "COMPLETED",
-        notes: data.notes ?? null,
+        notes: saleNotes,
         soldBy: user.id,
         soldAt: nowNairobiWallClock(),
       },
@@ -335,7 +352,10 @@ export async function createSaleAction(input: unknown) {
               method: data.paymentMethod,
               status: "COMPLETED",
               amount: subtotal.toFixed(2),
-              transactionReference: null,
+              transactionReference:
+                data.paymentReference?.trim() ||
+                data.paymentDetail?.trim() ||
+                null,
               receivedBy: user.id,
             },
           ],

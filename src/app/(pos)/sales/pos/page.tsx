@@ -15,10 +15,24 @@ import { PosClient } from "@/features/sales/components/pos/pos-client";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { promotionsRepository } from "@/repositories/inventory/promotions.repository";
 import { businesses } from "@/db/schema/core/businesses";
+import { financeService } from "@/features/finance/services/finance.service";
 
 export default async function FullScreenPosPage() {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  const cashAccountsRaw = await financeService
+    .getCashAccounts(user.businessId)
+    .catch(() => [] as Awaited<ReturnType<typeof financeService.getCashAccounts>>);
+  const cashAccounts = cashAccountsRaw.map((a) => ({
+    id: a.id,
+    name: a.name,
+    type: a.type,
+    bankName: (a as { bankName?: string | null }).bankName ?? null,
+    accountNumber: (a as { accountNumber?: string | null }).accountNumber ?? null,
+    branchName: (a as { branchName?: string | null }).branchName ?? null,
+    active: a.active !== false,
+  }));
 
   const businessRow = await db.query.businesses
     .findFirst({ where: eq(businesses.id, user.businessId) })
@@ -264,6 +278,7 @@ export default async function FullScreenPosPage() {
 
   return (
     <PosClient
+      cashAccounts={cashAccounts}
 
       fullScreen
       cashierName={user.name ?? user.email}

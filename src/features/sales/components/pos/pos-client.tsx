@@ -20,6 +20,7 @@ import {
   Minus,
   Plus,
   UserRound,
+  Building2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -135,6 +136,15 @@ interface PosClientProps {
   fullScreen?: boolean;
   cashierName?: string | null;
   recentSales?: RecentSale[];
+  cashAccounts?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    bankName?: string | null;
+    accountNumber?: string | null;
+    branchName?: string | null;
+    active?: boolean;
+  }>;
 }
 
 export function PosClient({
@@ -152,6 +162,7 @@ export function PosClient({
   fullScreen = false,
   cashierName,
   recentSales = [],
+  cashAccounts = [],
 }: PosClientProps) {
   const router = useRouter();
   const { online, refreshOutbox } = useOffline();
@@ -200,8 +211,17 @@ export function PosClient({
     return batchesByProductWarehouse[productId]?.[whId] ?? [];
   }
   const [paymentMethod, setPaymentMethod] = useState<
-    "CASH" | "MPESA" | "CARD" | "MOBILE_MONEY" | "CREDIT"
+    "CASH" | "MPESA" | "CARD" | "BANK_TRANSFER" | "MOBILE_MONEY" | "CREDIT"
   >("CASH");
+  const [mobileProvider, setMobileProvider] = useState<"MPESA" | "AIRTEL" | "OTHER">(
+    "MPESA",
+  );
+  const [bankChannel, setBankChannel] = useState<
+    "TRANSFER" | "DEPOSIT" | "RTGS" | "EFT" | "CHEQUE"
+  >("TRANSFER");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [originBank, setOriginBank] = useState("");
+  const [selectedCashAccountId, setSelectedCashAccountId] = useState("");
   /** Cash sale (immediate payment) vs credit invoice (AR / customer account). */
   const [saleMode, setSaleMode] = useState<"CASH" | "CREDIT">("CASH");
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
@@ -752,7 +772,30 @@ export function PosClient({
         receiptNote = `Walk-in: ${customerName.trim()}`;
       }
 
-      const effectiveMethod = saleMode === "CREDIT" ? "CREDIT" : paymentMethod;
+      let effectiveMethod =
+        saleMode === "CREDIT" ? "CREDIT" : paymentMethod;
+      if (saleMode !== "CREDIT" && paymentMethod === "MPESA") {
+        effectiveMethod =
+          mobileProvider === "MPESA" ? "MPESA" : "MOBILE_MONEY";
+      }
+      if (saleMode !== "CREDIT" && paymentMethod === "BANK_TRANSFER") {
+        effectiveMethod =
+          bankChannel === "CHEQUE" ? "CHEQUE" : "BANK_TRANSFER";
+      }
+      const paymentDetailParts: string[] = [];
+      if (saleMode !== "CREDIT" && paymentMethod === "MPESA") {
+        paymentDetailParts.push(`Provider: ${mobileProvider}`);
+      }
+      if (saleMode !== "CREDIT" && paymentMethod === "BANK_TRANSFER") {
+        paymentDetailParts.push(`Channel: ${bankChannel}`);
+        if (originBank.trim()) paymentDetailParts.push(`From: ${originBank.trim()}`);
+        const dest = bankAccounts.find((a) => a.id === selectedCashAccountId);
+        if (dest) {
+          paymentDetailParts.push(
+            `To: ${dest.name}${dest.bankName ? ` (${dest.bankName})` : ""}${dest.accountNumber ? ` ${dest.accountNumber}` : ""}`,
+          );
+        }
+      }
       const salePayload: OutboxSalePayload = {
         warehouseId,
         branchId,
@@ -764,6 +807,14 @@ export function PosClient({
               ? `Cash sale · ${receiptNote}`
               : "Cash sale",
         paymentMethod: effectiveMethod,
+        cashAccountId:
+          saleMode === "CREDIT"
+            ? null
+            : selectedCashAccountId || null,
+        paymentReference: paymentReference.trim() || null,
+        paymentDetail: paymentDetailParts.length
+          ? paymentDetailParts.join(" · ")
+          : null,
         items: cart.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,
@@ -795,6 +846,8 @@ export function PosClient({
         toast.success("Sale saved offline — will sync when online");
         setCart([]);
         setAmountTendered("");
+        setPaymentReference("");
+        setOriginBank("");
         scanRef.current?.focus();
         return;
       }
@@ -807,6 +860,9 @@ export function PosClient({
           customerId: salePayload.customerId,
           notes: salePayload.notes,
           paymentMethod: salePayload.paymentMethod,
+          cashAccountId: salePayload.cashAccountId ?? null,
+          paymentReference: salePayload.paymentReference ?? null,
+          paymentDetail: salePayload.paymentDetail ?? null,
           items: salePayload.items,
         });
       } catch (e) {
@@ -957,6 +1013,21 @@ export function PosClient({
     query.trim().length >= 1 ? searchHits(query, 15) : [];
 
 
+  const bankAccounts = cashAccounts.filter(
+    (a) => a.active !== false && a.type === "BANK" && !a.name.toLowerCase().includes("card"),
+  );
+  const mpesaAccounts = cashAccounts.filter(
+    (a) => a.active !== false && a.type === "MPESA",
+  );
+  const mobileAccounts = cashAccounts.filter(
+    (a) => a.active !== false && a.type === "MOBILE_MONEY",
+  );
+  const cardAccounts = cashAccounts.filter(
+    (a) =>
+      a.active !== false &&
+      (a.type === "BANK" && a.name.toLowerCase().includes("card")),
+  );
+
   const payMethods: {
     id: typeof paymentMethod;
     label: string;
@@ -974,7 +1045,7 @@ export function PosClient({
     },
     {
       id: "MPESA",
-      label: "M-Pesa",
+      label: "Mobile money",
       icon: Smartphone,
       activeClass: "bg-chart-2 text-accent-foreground shadow-md ring-2 ring-chart-2/40",
       idleClass:
@@ -989,9 +1060,9 @@ export function PosClient({
         "border border-primary/30 bg-primary/10 text-primary hover:bg-primary/15",
     },
     {
-      id: "MOBILE_MONEY",
-      label: "Mobile",
-      icon: Smartphone,
+      id: "BANK_TRANSFER",
+      label: "Bank",
+      icon: Building2,
       activeClass: "bg-chart-3 text-white shadow-md ring-2 ring-chart-3/40",
       idleClass:
         "border border-chart-3/30 bg-chart-3/10 text-chart-3 hover:bg-chart-3/20",
@@ -1948,6 +2019,161 @@ export function PosClient({
                   );
                 })}
               </div>
+
+              {saleMode === "CASH" && paymentMethod === "MPESA" ? (
+                <div className="mt-2 space-y-2 rounded-xl border border-chart-2/30 bg-chart-2/5 p-2.5">
+                  <Label className="text-[11px] text-muted-foreground">Provider</Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["MPESA", "AIRTEL", "OTHER"] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setMobileProvider(p);
+                          setSelectedCashAccountId(
+                            p === "MPESA"
+                              ? (mpesaAccounts[0]?.id ?? "")
+                              : (mobileAccounts[0]?.id ?? mpesaAccounts[0]?.id ?? ""),
+                          );
+                        }}
+                        className={
+                          "rounded-lg px-2 py-1.5 text-xs font-semibold " +
+                          (mobileProvider === p
+                            ? "bg-chart-2 text-accent-foreground"
+                            : "border bg-background")
+                        }
+                      >
+                        {p === "MPESA" ? "M-Pesa" : p === "AIRTEL" ? "Airtel" : "Other"}
+                      </button>
+                    ))}
+                  </div>
+                  {(mobileProvider === "MPESA" ? mpesaAccounts : mobileAccounts).length > 0 ? (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Till / account</Label>
+                      <select
+                        className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm"
+                        value={selectedCashAccountId}
+                        onChange={(e) => setSelectedCashAccountId(e.target.value)}
+                      >
+                        <option value="">Default till</option>
+                        {(mobileProvider === "MPESA" ? mpesaAccounts : mobileAccounts.length ? mobileAccounts : mpesaAccounts).map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                            {a.accountNumber ? ` · ${a.accountNumber}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Confirmation / ref no.
+                    </Label>
+                    <Input
+                      className="h-9 rounded-xl"
+                      placeholder="e.g. QGH12ABCDE"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {saleMode === "CASH" && paymentMethod === "BANK_TRANSFER" ? (
+                <div className="mt-2 space-y-2 rounded-xl border border-chart-3/30 bg-chart-3/5 p-2.5">
+                  <Label className="text-[11px] text-muted-foreground">Bank channel</Label>
+                  <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
+                    {(["TRANSFER", "DEPOSIT", "RTGS", "EFT", "CHEQUE"] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setBankChannel(c)}
+                        className={
+                          "rounded-lg px-1.5 py-1.5 text-[10px] font-bold sm:text-xs " +
+                          (bankChannel === c
+                            ? "bg-chart-3 text-white"
+                            : "border bg-background")
+                        }
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Paid into (our bank)</Label>
+                    <select
+                      className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm"
+                      value={selectedCashAccountId}
+                      onChange={(e) => setSelectedCashAccountId(e.target.value)}
+                    >
+                      <option value="">Default bank account</option>
+                      {bankAccounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                          {a.bankName ? ` · ${a.bankName}` : ""}
+                          {a.accountNumber ? ` · ${a.accountNumber}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {bankAccounts.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground">
+                        Add bank accounts under Finance → Cash &amp; bank (type BANK + bank name / account no.).
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Customer&apos;s bank (origin)</Label>
+                    <Input
+                      className="h-9 rounded-xl"
+                      placeholder="e.g. Equity, KCB"
+                      value={originBank}
+                      onChange={(e) => setOriginBank(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Transaction / slip / RTGS ref
+                    </Label>
+                    <Input
+                      className="h-9 rounded-xl"
+                      placeholder="Reference number"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {saleMode === "CASH" && paymentMethod === "CARD" ? (
+                <div className="mt-2 space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+                  {cardAccounts.length > 0 ? (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">Terminal / account</Label>
+                      <select
+                        className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm"
+                        value={selectedCashAccountId}
+                        onChange={(e) => setSelectedCashAccountId(e.target.value)}
+                      >
+                        <option value="">Default card clearing</option>
+                        {cardAccounts.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Auth / RRN (optional)</Label>
+                    <Input
+                      className="h-9 rounded-xl"
+                      placeholder="Card reference"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {saleMode === "CASH" && paymentMethod === "CASH" ? (

@@ -186,6 +186,7 @@ export async function createCashAccountAction(input: unknown) {
       accountId: z.uuid(),
       bankName: z.string().nullable().optional(),
       accountNumber: z.string().nullable().optional(),
+      branchName: z.string().nullable().optional(),
     })
     .safeParse(input);
   if (!parsed.success) {
@@ -199,6 +200,7 @@ export async function createCashAccountAction(input: unknown) {
       accountId: parsed.data.accountId,
       bankName: parsed.data.bankName ?? null,
       accountNumber: parsed.data.accountNumber ?? null,
+      branchName: parsed.data.branchName ?? null,
       currency: "KES",
       openingBalance: "0",
       active: true,

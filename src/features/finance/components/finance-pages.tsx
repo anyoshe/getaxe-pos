@@ -63,6 +63,9 @@ export function TaxRatesClient({
   const [pending, start] = useTransition();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [branchName, setBranchName] = useState("");
   const [rate, setRate] = useState("16");
 
   return (
@@ -205,6 +208,41 @@ export function CashAccountsClient({
             ))}
           </select>
         </div>
+
+        {(type === "BANK" || type === "MPESA" || type === "MOBILE_MONEY") && (
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                {type === "BANK" ? "Bank name" : "Provider label"}
+              </Label>
+              <Input
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                placeholder={type === "BANK" ? "e.g. KCB, Equity" : "e.g. Safaricom"}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                {type === "BANK" ? "Account number" : "Till / Paybill / Merchant"}
+              </Label>
+              <Input
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                placeholder={type === "BANK" ? "Account no." : "Till or paybill"}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                {type === "BANK" ? "Branch" : "Extra detail"}
+              </Label>
+              <Input
+                value={branchName}
+                onChange={(e) => setBranchName(e.target.value)}
+                placeholder={type === "BANK" ? "Branch name" : "Optional"}
+              />
+            </div>
+          </div>
+        )}
         <Button
           type="button"
           disabled={pending || !accountId}
@@ -214,6 +252,9 @@ export function CashAccountsClient({
                 name,
                 type: type as "CASH",
                 accountId,
+                bankName: bankName.trim() || null,
+                accountNumber: accountNumber.trim() || null,
+                branchName: branchName.trim() || null,
               });
               if (!r.success) toast.error(r.message);
               else {
@@ -232,6 +273,7 @@ export function CashAccountsClient({
             <tr>
               <th className="p-3">Name</th>
               <th className="p-3">Type</th>
+              <th className="p-3">Bank / Till</th>
               <th className="p-3">Ledger</th>
               <th className="p-3 text-right">In (debits)</th>
               <th className="p-3 text-right">Out (credits)</th>
@@ -243,6 +285,15 @@ export function CashAccountsClient({
               <tr key={a.id} className="border-t">
                 <td className="p-3 font-medium">{a.name}</td>
                 <td className="p-3">{a.type}</td>
+                <td className="p-3 text-xs text-muted-foreground">
+                  {[
+                    (a as { bankName?: string | null }).bankName,
+                    (a as { accountNumber?: string | null }).accountNumber,
+                    (a as { branchName?: string | null }).branchName,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "—"}
+                </td>
                 <td className="p-3 text-xs text-muted-foreground">
                   {a.accountCode ? `${a.accountCode} · ${a.accountName ?? ""}` : "—"}
                 </td>
