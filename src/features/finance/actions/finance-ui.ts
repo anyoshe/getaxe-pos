@@ -305,6 +305,67 @@ export async function updateCashAccountDetailsAction(input: unknown) {
   }
 }
 
+
+export async function updateChartAccountAction(input: unknown) {
+  const user = await requireAuthorizedUser("accounts.update");
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      accountCode: z.string().min(1).optional(),
+      accountName: z.string().min(1).optional(),
+      description: z.string().nullable().optional(),
+      accountCategoryId: z.uuid().optional(),
+    })
+    .safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, message: "Check account details." };
+  }
+  try {
+    const { eq, and } = await import("drizzle-orm");
+    const existing = await db
+      .select()
+      .from(chartOfAccounts)
+      .where(
+        and(
+          eq(chartOfAccounts.id, parsed.data.id),
+          eq(chartOfAccounts.businessId, user.businessId),
+        ),
+      )
+      .limit(1);
+    if (!existing[0]) {
+      return { success: false as const, message: "Account not found." };
+    }
+    const row = existing[0];
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (parsed.data.accountName != null) patch.accountName = parsed.data.accountName;
+    if (parsed.data.description !== undefined)
+      patch.description = parsed.data.description;
+    if (parsed.data.accountCategoryId != null)
+      patch.accountCategoryId = parsed.data.accountCategoryId;
+    // System accounts keep stable codes used by journals / readiness
+    if (!row.isSystem && parsed.data.accountCode != null) {
+      patch.accountCode = parsed.data.accountCode.trim();
+    }
+    await db
+      .update(chartOfAccounts)
+      .set(patch)
+      .where(
+        and(
+          eq(chartOfAccounts.id, parsed.data.id),
+          eq(chartOfAccounts.businessId, user.businessId),
+        ),
+      );
+    revalidatePath("/finance/accounts");
+    revalidatePath("/finance/cash-accounts");
+    return { success: true as const, message: "Account updated." };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to update account.",
+    };
+  }
+}
+
 export async function createChartAccountAction(input: unknown) {
   const user = await requireAuthorizedUser("accounts.update");
   const parsed = z
@@ -331,6 +392,7 @@ export async function createChartAccountAction(input: unknown) {
       active: true,
     });
     revalidatePath("/finance/accounts");
+    revalidatePath("/finance/cash-accounts");
     revalidatePath("/inventory/products");
     return { success: true as const, message: "Account created." };
   } catch (e) {

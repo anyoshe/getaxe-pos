@@ -13,6 +13,8 @@ import {
   createCashAccountAction,
   deactivateCashAccountAction,
   updateCashAccountDetailsAction,
+  createChartAccountAction,
+  updateChartAccountAction,
   createExpenseAction,
   createIncomeAction,
   createTaxRateAction,
@@ -20,18 +22,156 @@ import {
 
 export function AccountsList({
   accounts,
+  categories,
 }: {
-  accounts: { id: string; accountCode: string; accountName: string; description?: string | null }[];
+  accounts: {
+    id: string;
+    accountCode: string;
+    accountName: string;
+    description?: string | null;
+    isSystem?: boolean;
+    accountCategoryId?: string;
+  }[];
+  categories: { id: string; code: string; name: string }[];
 }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [accountCode, setAccountCode] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [description, setDescription] = useState("");
+  const [accountCategoryId, setAccountCategoryId] = useState(
+    categories.find((c) => c.code === "CA")?.id ?? categories[0]?.id ?? "",
+  );
+
+  const caCategoryId =
+    categories.find((c) => c.code === "CA")?.id ?? categories[0]?.id ?? "";
+
+  function resetForm() {
+    setEditingId(null);
+    setAccountCode("");
+    setAccountName("");
+    setDescription("");
+    setAccountCategoryId(caCategoryId);
+  }
+
+  function startEdit(a: (typeof accounts)[number]) {
+    setEditingId(a.id);
+    setAccountCode(a.accountCode);
+    setAccountName(a.accountName);
+    setDescription(a.description ?? "");
+    setAccountCategoryId(a.accountCategoryId ?? caCategoryId);
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Chart of accounts</h1>
         <p className="text-sm text-muted-foreground">
-          Ledger accounts used by products (income, COGS, inventory), cash accounts, and reports.
-          Defaults are created automatically when empty.
+          Ledger used by cash tills, journals, and reports. Add extra bank or till ledgers
+          (e.g. 1101 KCB, 1102 Equity) under Current Assets, then link them under{" "}
+          <a href="/finance/cash-accounts" className="text-primary underline">
+            Cash &amp; bank
+          </a>
+          . Use description for bank name, account number, or till / paybill.
         </p>
       </div>
+
+      <div className="grid max-w-2xl gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <p className="text-sm font-medium text-primary">
+          {editingId ? "Edit ledger account" : "Add ledger account"}
+        </p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="space-y-1">
+            <Label>Code</Label>
+            <Input
+              value={accountCode}
+              onChange={(e) => setAccountCode(e.target.value)}
+              placeholder="1101"
+              disabled={Boolean(editingId && accounts.find((x) => x.id === editingId)?.isSystem)}
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label>Name</Label>
+            <Input
+              value={accountName}
+              onChange={(e) => setAccountName(e.target.value)}
+              placeholder="KCB Current Account"
+            />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label>Description (bank / till details)</Label>
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="KCB · Acc 1234567890 · Branch Nairobi · or Till 554433"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Category</Label>
+          <select
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            value={accountCategoryId}
+            onChange={(e) => setAccountCategoryId(e.target.value)}
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} — {c.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] text-muted-foreground">
+            Banks, cash, and mobile money ledgers usually use <strong>CA — Current Assets</strong>.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={pending || !accountName.trim() || !accountCode.trim() || !accountCategoryId}
+            onClick={() =>
+              start(async () => {
+                if (editingId) {
+                  const r = await updateChartAccountAction({
+                    id: editingId,
+                    accountCode: accountCode.trim(),
+                    accountName: accountName.trim(),
+                    description: description.trim() || null,
+                    accountCategoryId,
+                  });
+                  if (!r.success) toast.error(r.message);
+                  else {
+                    toast.success(r.message);
+                    resetForm();
+                    router.refresh();
+                  }
+                  return;
+                }
+                const r = await createChartAccountAction({
+                  accountCode: accountCode.trim(),
+                  accountName: accountName.trim(),
+                  accountCategoryId,
+                  description: description.trim() || null,
+                });
+                if (!r.success) toast.error(r.message);
+                else {
+                  toast.success(r.message);
+                  resetForm();
+                  router.refresh();
+                }
+              })
+            }
+          >
+            {editingId ? "Save changes" : "Add account"}
+          </Button>
+          {editingId ? (
+            <Button type="button" variant="outline" disabled={pending} onClick={resetForm}>
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
       <div className="overflow-x-auto rounded-xl border">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left">
@@ -39,14 +179,33 @@ export function AccountsList({
               <th className="p-3">Code</th>
               <th className="p-3">Name</th>
               <th className="p-3">Description</th>
+              <th className="p-3 text-right"> </th>
             </tr>
           </thead>
           <tbody>
             {accounts.map((a) => (
               <tr key={a.id} className="border-t">
                 <td className="p-3 font-mono text-xs">{a.accountCode}</td>
-                <td className="p-3 font-medium">{a.accountName}</td>
+                <td className="p-3 font-medium">
+                  {a.accountName}
+                  {a.isSystem ? (
+                    <span className="ml-2 text-[10px] font-normal text-muted-foreground">
+                      system
+                    </span>
+                  ) : null}
+                </td>
                 <td className="p-3 text-muted-foreground">{a.description ?? "—"}</td>
+                <td className="p-3 text-right">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => startEdit(a)}
+                  >
+                    Edit
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
