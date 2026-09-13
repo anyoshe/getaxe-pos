@@ -24,6 +24,10 @@ export type ReceiptLine = {
   unitLabel?: string | null;
   unitPrice: number;
   total: number;
+  /** Part number / SKU for issue traceability */
+  sku?: string | null;
+  /** Chassis / engine / serial numbers issued on this line */
+  serialNumbers?: string[];
 };
 
 export type ReceiptData = {
@@ -333,9 +337,19 @@ function ReceiptBody({
               <tr key={i} style={{ borderBottom: "1px dashed #333" }}>
                 <td style={{ ...black, padding: "4px 4px 4px 0", textAlign: "left" }}>
                   {l.name || "Item"}
+                  {l.sku ? (
+                    <span style={{ display: "block", fontSize: 10, color: "#000" }}>
+                      Part/SKU: {l.sku}
+                    </span>
+                  ) : null}
                   {l.unitLabel ? (
                     <span style={{ display: "block", fontSize: 10, color: "#000" }}>
                       ({l.unitLabel})
+                    </span>
+                  ) : null}
+                  {l.serialNumbers && l.serialNumbers.length > 0 ? (
+                    <span style={{ display: "block", fontSize: 10, color: "#000", fontFamily: "ui-monospace, monospace" }}>
+                      S/N: {l.serialNumbers.join(", ")}
                     </span>
                   ) : null}
                 </td>

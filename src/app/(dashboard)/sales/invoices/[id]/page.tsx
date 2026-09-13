@@ -89,6 +89,8 @@ export default async function InvoiceDetailPage({
       unitLabel: null as string | null,
       unitPrice: Number(it.unitPrice ?? 0),
       total: Number(it.total ?? 0),
+      sku: (it as { sku?: string | null }).sku ?? null,
+      serialNumbers: (it as { serialNumbers?: string[] }).serialNumbers ?? [],
     })),
   };
 
@@ -148,7 +150,22 @@ export default async function InvoiceDetailPage({
           <tbody>
             {items.map((it) => (
               <tr key={it.id} className="border-t">
-                <td className="p-3 font-medium">{it.productName}</td>
+                <td className="p-3 font-medium">
+                  <div>{it.productName}</div>
+                  {(it as { sku?: string | null }).sku ? (
+                    <div className="text-xs font-normal text-muted-foreground">
+                      Part/SKU: {(it as { sku?: string | null }).sku}
+                    </div>
+                  ) : null}
+                  {(it as { serialNumbers?: string[] }).serialNumbers?.length ? (
+                    <div className="font-mono text-xs font-normal text-muted-foreground">
+                      S/N:{" "}
+                      {(it as { serialNumbers?: string[] }).serialNumbers!.join(
+                        ", ",
+                      )}
+                    </div>
+                  ) : null}
+                </td>
                 <td className="p-3 text-right tabular-nums">{it.quantity}</td>
                 <td className="p-3 text-right tabular-nums">
                   {money(it.unitPrice)}

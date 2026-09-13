@@ -964,6 +964,11 @@ export function PosClient({
           unitLabel: l.unitLabel ?? null,
           unitPrice: l.unitPrice,
           total: l.quantity * l.unitPrice,
+          sku: l.sku ?? null,
+          serialNumbers:
+            l.serialized && l.selectedSerials.length > 0
+              ? [...l.selectedSerials]
+              : undefined,
         })),
       });
 

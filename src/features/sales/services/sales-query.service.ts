@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { sales } from "@/db/schema/sales/sales";
@@ -7,6 +7,7 @@ import { products } from "@/db/schema/inventory/products";
 import { saleItemBatches } from "@/db/schema/sales/sale_item_batches";
 import { saleReturns } from "@/db/schema/sales/sale_returns";
 import { customers } from "@/db/schema/sales/customers";
+import { productSerials } from "@/db/schema/inventory/product_serials";
 
 export class SalesQueryService {
   async listSales(
@@ -74,7 +75,41 @@ export class SalesQueryService {
       allBatches.push(...rows);
     }
 
-    return { sale, items, batches: allBatches };
+    // Serials marked SOLD with notes = invoice number (see markSold)
+    const serialByProduct = new Map<string, string[]>();
+    try {
+      const productIds = items.map((i) => i.productId);
+      if (productIds.length > 0 && sale.invoiceNumber) {
+        const serialRows = await db
+          .select({
+            productId: productSerials.productId,
+            serialNumber: productSerials.serialNumber,
+          })
+          .from(productSerials)
+          .where(
+            and(
+              eq(productSerials.businessId, businessId),
+              eq(productSerials.status, "SOLD"),
+              eq(productSerials.notes, sale.invoiceNumber),
+              inArray(productSerials.productId, productIds),
+            ),
+          );
+        for (const r of serialRows) {
+          const list = serialByProduct.get(r.productId) ?? [];
+          list.push(r.serialNumber);
+          serialByProduct.set(r.productId, list);
+        }
+      }
+    } catch {
+      // older DBs may lack notes linkage
+    }
+
+    const itemsWithSerials = items.map((it) => ({
+      ...it,
+      serialNumbers: serialByProduct.get(it.productId) ?? [],
+    }));
+
+    return { sale, items: itemsWithSerials, batches: allBatches };
   }
 
   async listReturns(businessId: string) {
