@@ -1,4 +1,4 @@
-import { eq, isNull, or, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { products } from "@/db/schema/inventory/products";
@@ -76,7 +76,12 @@ export async function getSetupReadiness(
     db
       .select({ c: sql<number>`count(*)::int` })
       .from(cashAccounts)
-      .where(eq(cashAccounts.businessId, businessId))
+      .where(
+        and(
+          eq(cashAccounts.businessId, businessId),
+          eq(cashAccounts.active, true),
+        ),
+      )
       .then((r) => Number(r[0]?.c ?? 0))
       .catch(() => 0),
     db
@@ -103,8 +108,11 @@ export async function getSetupReadiness(
   const hasDispense = caps.includes("pharmacy.dispensing");
 
 
-  // Distinct till → GL mapping (shared ledger breaks cash truth)
+  // Distinct till → GL mapping (shared ledger breaks cash truth).
+  // Only active tills count — removed accounts must not block readiness.
   let tillLedgersOk = true;
+  let tillLedgerHint =
+    "Cash, M-Pesa, mobile money, card and bank must each use a different ledger account";
   try {
     const tills = await db
       .select({
@@ -113,7 +121,12 @@ export async function getSetupReadiness(
         accountId: cashAccounts.accountId,
       })
       .from(cashAccounts)
-      .where(eq(cashAccounts.businessId, businessId));
+      .where(
+        and(
+          eq(cashAccounts.businessId, businessId),
+          eq(cashAccounts.active, true),
+        ),
+      );
     const byAccount = new Map<string, string[]>();
     for (const row of tills) {
       if (!row.accountId) continue;
@@ -121,7 +134,14 @@ export async function getSetupReadiness(
       list.push(row.name);
       byAccount.set(row.accountId, list);
     }
-    tillLedgersOk = [...byAccount.values()].every((names) => names.length <= 1);
+    const conflicts = [...byAccount.values()].filter((names) => names.length > 1);
+    tillLedgersOk = conflicts.length === 0;
+    if (conflicts.length > 0) {
+      tillLedgerHint =
+        "Shared ledger: " +
+        conflicts.map((names) => names.join(" + ")).join("; ") +
+        ". Edit each till and pick a unique ledger (e.g. 1100 Bank vs 1120 Card).";
+    }
   } catch {
     tillLedgersOk = true;
   }
@@ -194,7 +214,7 @@ export async function getSetupReadiness(
     {
       id: "till_ledgers",
       label: "Cash tills use separate ledgers",
-      description: "Cash, M-Pesa, mobile money, card and bank must not share one GL account",
+      description: tillLedgerHint,
       done: tillLedgersOk,
       href: "/finance/cash-accounts",
       priority: 7.5,
