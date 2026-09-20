@@ -39,6 +39,8 @@ function attentionStyles(kind: AttentionKind) {
       return "border-blue-500/30 bg-blue-500/5";
     case "slow":
       return "border-orange-500/30 bg-orange-500/5";
+    case "expense":
+      return "border-violet-500/30 bg-violet-500/5";
     default:
       return "border-border bg-card";
   }

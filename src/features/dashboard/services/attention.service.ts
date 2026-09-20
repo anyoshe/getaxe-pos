@@ -103,6 +103,21 @@ function daysBetween(a: Date, b: Date) {
   return Math.floor((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000));
 }
 
+function toDateString(value: unknown): string {
+  if (value == null) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const s = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? s.slice(0, 10) : d.toISOString().slice(0, 10);
+}
+
+function toDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  return new Date(String(value ?? ""));
+}
+
+
 export async function loadAttentionBundle(
   businessId: string,
   kind: AttentionKind,
@@ -250,10 +265,7 @@ export async function loadAttentionBundle(
         productName: r.productName,
         sku: r.sku,
         batchNumber: r.batchNumber,
-        expiryDate:
-          r.expiryDate instanceof Date
-            ? r.expiryDate.toISOString().slice(0, 10)
-            : String(r.expiryDate ?? ""),
+        expiryDate: toDateString(r.expiryDate),
         quantityRemaining: Number(r.quantityRemaining ?? 0),
         warehouseId: wh?.id ?? null,
         warehouseName: wh?.name ?? null,
@@ -297,8 +309,7 @@ export async function loadAttentionBundle(
       const customerName = isBiz
         ? r.companyName || person || "Customer"
         : person || r.companyName || "Customer";
-      const sold =
-        r.soldAt instanceof Date ? r.soldAt : new Date(String(r.soldAt));
+      const sold = toDate(r.soldAt);
       return {
         saleId: r.id,
         invoiceNumber: r.invoiceNumber,
@@ -338,16 +349,8 @@ export async function loadAttentionBundle(
       .catch(() => []);
 
     empty.payables = rows.map((r) => {
-      const due =
-        r.dueDate instanceof Date
-          ? r.dueDate
-          : r.dueDate
-            ? new Date(String(r.dueDate))
-            : null;
-      const inv =
-        r.invoiceDate instanceof Date
-          ? r.invoiceDate
-          : new Date(String(r.invoiceDate));
+      const due = r.dueDate ? toDate(r.dueDate) : null;
+      const inv = toDate(r.invoiceDate);
       const daysUntilDue = due ? daysBetween(today, due) : null;
       return {
         invoiceId: r.id,
@@ -448,10 +451,7 @@ export async function loadAttentionBundle(
     .catch(() => []);
 
   empty.expenses = expRows.map((r) => {
-    const d =
-      r.expenseDate instanceof Date
-        ? r.expenseDate
-        : new Date(String(r.expenseDate));
+    const d = toDate(r.expenseDate);
     return {
       id: r.id,
       description: r.description,

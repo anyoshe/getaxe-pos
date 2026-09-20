@@ -16,6 +16,7 @@ import { products } from "@/db/schema/inventory/products";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
 import { payments } from "@/db/schema/sales/payments";
 import { supplierInvoices } from "@/db/schema/purchasing/supplier_invoices";
+import { expenses } from "@/db/schema/finance/expenses";
 import { productBatches } from "@/db/schema/inventory/product_batches";
 
 import { userRepository } from "@/repositories/users/user.repository";
@@ -260,6 +261,49 @@ class DashboardService {
     const openAr = Number(arRow[0]?.total ?? 0);
     const openAp = Number(apRow[0]?.total ?? 0);
 
+    const [arCountRow, apCountRow, expAgg] = await Promise.all([
+      db
+        .select({ c: sql<number>`count(*)` })
+        .from(sales)
+        .where(
+          and(
+            eq(sales.businessId, businessId),
+            sql`${sales.paymentStatus} in ('PENDING','PARTIAL')`,
+            sql`coalesce(${sales.balanceDue}::numeric, 0) > 0`,
+          ),
+        )
+        .catch(() => [{ c: 0 }]),
+      db
+        .select({ c: sql<number>`count(*)` })
+        .from(supplierInvoices)
+        .where(
+          and(
+            eq(supplierInvoices.businessId, businessId),
+            sql`coalesce(${supplierInvoices.balanceDue}::numeric, 0) > 0.009`,
+          ),
+        )
+        .catch(() => [{ c: 0 }]),
+      db
+        .select({
+          c: sql<number>`count(*)`,
+          total: sql<string>`coalesce(sum(${expenses.amount}::numeric), 0)`,
+        })
+        .from(expenses)
+        .where(
+          and(
+            eq(expenses.businessId, businessId),
+            gte(expenses.expenseDate, today),
+            sql`${expenses.expenseDate} < ${today}::timestamptz + interval '30 days'`,
+          ),
+        )
+        .catch(() => [{ c: 0, total: "0" }]),
+    ]);
+    const openArCount = Number(arCountRow[0]?.c ?? 0);
+    const openApCount = Number(apCountRow[0]?.c ?? 0);
+    const upcomingExpenseCount = Number(expAgg[0]?.c ?? 0);
+    const upcomingExpenseTotal = Number(expAgg[0]?.total ?? 0);
+
+
     const lowMap = new Map<string, LowStockItem>();
     for (const r of lowStockRows as {
       productId: string;
@@ -297,9 +341,9 @@ class DashboardService {
       productName: r.productName,
       batchNumber: r.batchNumber,
       expiryDate:
-        r.expiryDate instanceof Date
-          ? r.expiryDate.toISOString().slice(0, 10)
-          : String(r.expiryDate ?? ""),
+        r.expiryDate != null && typeof r.expiryDate === "object" && "toISOString" in (r.expiryDate as object)
+          ? (r.expiryDate as Date).toISOString().slice(0, 10)
+          : String(r.expiryDate ?? "").slice(0, 10),
       quantityRemaining: Number(r.quantityRemaining ?? 0),
     }));
 
@@ -355,22 +399,42 @@ class DashboardService {
         href: "/dashboard/attention?kind=expiry",
       });
     }
-    if (openAr > 0.5) {
-      attention.push({
-        kind: "receivable",
-        title: `Customers owe KES ${openAr.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-        detail: "Open credit invoices — follow up collections",
-        href: "/dashboard/attention?kind=receivable",
-      });
-    }
-    if (openAp > 0.5) {
-      attention.push({
-        kind: "payable",
-        title: `Supplier bills KES ${openAp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-        detail: "Unpaid payables — plan cash for suppliers",
-        href: "/dashboard/attention?kind=payable",
-      });
-    }
+    attention.push({
+      kind: "receivable",
+      title:
+        openAr > 0.5
+          ? `Collect debts · KES ${openAr.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+          : "Collect debts · nothing outstanding",
+      detail:
+        openArCount > 0
+          ? `${openArCount} open credit invoice${openArCount === 1 ? "" : "s"} — follow up collections`
+          : "No open customer balances",
+      href: "/dashboard/attention?kind=receivable",
+    });
+    attention.push({
+      kind: "payable",
+      title:
+        openAp > 0.5
+          ? `Pay suppliers · KES ${openAp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+          : "Pay suppliers · nothing outstanding",
+      detail:
+        openApCount > 0
+          ? `${openApCount} unpaid supplier invoice${openApCount === 1 ? "" : "s"} — due dates inside`
+          : "No open supplier balances",
+      href: "/dashboard/attention?kind=payable",
+    });
+    attention.push({
+      kind: "expense",
+      title:
+        upcomingExpenseCount > 0
+          ? `Expenses · ${upcomingExpenseCount} in next 30 days`
+          : "Expenses · next 30 days",
+      detail:
+        upcomingExpenseCount > 0
+          ? `KES ${upcomingExpenseTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} scheduled / dated ahead`
+          : "Review recent and upcoming expense dates",
+      href: "/dashboard/attention?kind=expense",
+    });
     if (slowProducts.length > 0 && stockValue > 0) {
       attention.push({
         kind: "slow",
@@ -382,13 +446,22 @@ class DashboardService {
         href: "/dashboard/attention?kind=slow",
       });
     }
-    if (attention.length === 0) {
+        // Always surface restock / expiry cards (calm state when empty)
+    if (lowStockItems.length === 0) {
+      attention.unshift({
+        kind: "restock",
+        title: "Restock · stock levels healthy",
+        detail: "No products at or below reorder level",
+        href: "/dashboard/attention?kind=restock",
+      });
+    }
+    if (expiringBatches.length === 0) {
+      // keep expiry optional when no batches — still offer entry
       attention.push({
-        kind: "info",
-        title: "Nothing urgent right now",
-        detail:
-          "Stock levels, payables and receivables look calm. Check reports for deeper trends.",
-        href: "/reports",
+        kind: "expiry",
+        title: "Expiry · no batches in next 90 days",
+        detail: "Open to review batch list anytime",
+        href: "/dashboard/attention?kind=expiry",
       });
     }
 
@@ -409,6 +482,10 @@ class DashboardService {
         stockValue,
         todayCashIn,
         todayCashByMethod,
+        upcomingExpenseCount,
+        upcomingExpenseTotal,
+        openArCount,
+        openApCount,
       },
       attention,
       lowStockItems,

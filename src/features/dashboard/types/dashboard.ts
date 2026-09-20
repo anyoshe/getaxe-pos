@@ -15,6 +15,11 @@ export interface DashboardSummary {
   stockValue: number;
   todayCashIn: number;
   todayCashByMethod: { method: string; total: number }[];
+  /** Expenses dated in next 30 days or unpaid-looking recent */
+  upcomingExpenseCount: number;
+  upcomingExpenseTotal: number;
+  openArCount: number;
+  openApCount: number;
 }
 
 /** Owner decision cues — surface “what to do next” on the home screen. */
@@ -24,6 +29,7 @@ export type AttentionKind =
   | "receivable"
   | "payable"
   | "slow"
+  | "expense"
   | "info";
 
 export interface AttentionItem {
