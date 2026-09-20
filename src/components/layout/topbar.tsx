@@ -8,6 +8,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { InstallAppButton } from "@/components/layout/install-app-button";
 import { ConnectionStatus } from "@/components/layout/connection-status";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -151,6 +152,7 @@ export function Topbar({ user }: TopbarProps) {
         <div className="flex items-center gap-2">
 
           <ConnectionStatus />
+          <InstallAppButton />
           <ThemeToggle />
 
           <Button

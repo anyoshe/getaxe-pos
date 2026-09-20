@@ -31,9 +31,26 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "GetAxe POS",
+    title: "GetAxe",
+    statusBarStyle: "default",
+  },
+  applicationName: "GetAxe",
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
+
+// theme-color via viewport (Next 14+)
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2563eb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 
 export default function RootLayout({
   children,
