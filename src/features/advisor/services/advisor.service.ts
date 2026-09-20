@@ -54,7 +54,7 @@ function heuristicAnswer(
   const lines: string[] = [];
 
   lines.push(
-    `Based on your GetAxe data as of ${new Date(ctx.asOf).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })} (not a formal audit):`,
+    `Figures below are live from your GetAxe records as of ${new Date(ctx.asOf).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}:`,
   );
 
   if (
@@ -165,7 +165,7 @@ function heuristicAnswer(
 
   lines.push("");
   lines.push(
-    "This uses live figures from your GetAxe books. For custom date ranges, use Reports.",
+    "All amounts above come from completed sales, product costs, stock, and open balances in GetAxe. For other date ranges use Reports.",
   );
 
   return lines.join("\n");
@@ -203,10 +203,12 @@ async function callGroq(
   if (!key) return null;
 
   const system = `You are GetAxe Business Advisor for an SME owner in Kenya (KES).
-Use ONLY the JSON business facts provided. Do not invent numbers.
-Be concise, practical, and end with 2-4 concrete actions the owner can take in the system (restock, collect debts, review prices, sell expiring stock first, etc.).
-If data is missing for the question, say so and point them to the relevant GetAxe screen.
-Tone: clear owner language — Know, Control, Decide, Grow. Not corporate jargon.`;
+The JSON business facts are LIVE figures from this business's GetAxe database (sales, costs, stock, cash, AR/AP). Treat them as accurate operational numbers from the system.
+Use ONLY those facts. Never invent or estimate amounts not present in the JSON.
+State exact KES figures from the data. Be concise and practical. End with 2-4 concrete actions in GetAxe (restock, collect debts, review prices, sell expiring stock first, etc.).
+If the JSON cannot answer the question, say which figure is missing and which screen to open (Reports, Stock, Receivables, etc.).
+Do not say "this is not an audit" or disclaim accuracy of the provided JSON — the numbers are system truth. You may note that external factors (tax filings, bank statements not yet entered) are outside GetAxe.
+Tone: owner language — Know, Control, Decide, Grow.`;
 
   const body = {
     model: process.env.GROQ_MODEL?.trim() || "llama-3.1-8b-instant",
