@@ -385,6 +385,8 @@ Tone: Know, Control, Decide, Grow.`;
 
 type LlmResult = { text: string; provider: "xai" | "groq" };
 
+type ChatAttempt = { text: string | null; error?: string };
+
 async function openaiCompatibleChat(opts: {
   url: string;
   apiKey: string;
@@ -392,7 +394,7 @@ async function openaiCompatibleChat(opts: {
   question: string;
   ctx: BusinessAdvisorContext;
   label: string;
-}): Promise<string | null> {
+}): Promise<ChatAttempt> {
   const body = {
     model: opts.model,
     temperature: 0.4,
@@ -418,58 +420,95 @@ async function openaiCompatibleChat(opts: {
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       console.error(`[advisor] ${opts.label}`, res.status, errText.slice(0, 400));
-      return null;
+      return {
+        text: null,
+        error: `${opts.label} ${res.status}: ${errText.slice(0, 180)}`,
+      };
     }
     const data = (await res.json()) as {
       choices?: { message?: { content?: string } }[];
     };
-    return data.choices?.[0]?.message?.content?.trim() || null;
+    const text = data.choices?.[0]?.message?.content?.trim() || null;
+    if (!text) return { text: null, error: `${opts.label}: empty model reply` };
+    return { text };
   } catch (e) {
     console.error(`[advisor] ${opts.label} error`, e);
-    return null;
+    return {
+      text: null,
+      error: `${opts.label}: ${e instanceof Error ? e.message : "network error"}`,
+    };
   }
 }
 
+type LlmCallResult = LlmResult | { text: null; error: string; hadKey: boolean };
+
 /**
- * Prefer xAI Grok (XAI_API_KEY / GROK_API_KEY), then Groq free tier (GROQ_API_KEY).
+ * Groq first when GROQ_API_KEY is set (your setup), then xAI if configured.
  */
 async function callLlm(
   question: string,
   ctx: BusinessAdvisorContext,
-): Promise<LlmResult | null> {
+): Promise<LlmCallResult> {
+  const errors: string[] = [];
+  let hadKey = false;
+
+  const groqKey = process.env.GROQ_API_KEY?.trim();
+  if (groqKey) {
+    hadKey = true;
+    const models = [
+      process.env.GROQ_MODEL?.trim(),
+      "llama-3.1-8b-instant",
+      "llama-3.3-70b-versatile",
+      "gemma2-9b-it",
+    ].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
+
+    for (const model of models) {
+      const attempt = await openaiCompatibleChat({
+        url: "https://api.groq.com/openai/v1/chat/completions",
+        apiKey: groqKey,
+        model,
+        question,
+        ctx,
+        label: `groq:${model}`,
+      });
+      if (attempt.text) return { text: attempt.text, provider: "groq" };
+      if (attempt.error) errors.push(attempt.error);
+    }
+  }
+
   const xaiKey =
     process.env.XAI_API_KEY?.trim() ||
     process.env.GROK_API_KEY?.trim() ||
     process.env.XAI_KEY?.trim();
-  if (xaiKey) {
-    const text = await openaiCompatibleChat({
-      url: "https://api.x.ai/v1/chat/completions",
-      apiKey: xaiKey,
-      model:
-        process.env.XAI_MODEL?.trim() ||
-        process.env.GROK_MODEL?.trim() ||
-        "grok-3-mini",
-      question,
-      ctx,
-      label: "xai",
-    });
-    if (text) return { text, provider: "xai" };
+  // Only treat as xAI if key does not look like a Groq key (gsk_)
+  if (xaiKey && !xaiKey.startsWith("gsk_")) {
+    hadKey = true;
+    const models = [
+      process.env.XAI_MODEL?.trim(),
+      process.env.GROK_MODEL?.trim(),
+      "grok-3-mini",
+      "grok-2-latest",
+    ].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
+
+    for (const model of models) {
+      const attempt = await openaiCompatibleChat({
+        url: "https://api.x.ai/v1/chat/completions",
+        apiKey: xaiKey,
+        model,
+        question,
+        ctx,
+        label: `xai:${model}`,
+      });
+      if (attempt.text) return { text: attempt.text, provider: "xai" };
+      if (attempt.error) errors.push(attempt.error);
+    }
   }
 
-  const groqKey = process.env.GROQ_API_KEY?.trim();
-  if (groqKey) {
-    const text = await openaiCompatibleChat({
-      url: "https://api.groq.com/openai/v1/chat/completions",
-      apiKey: groqKey,
-      model: process.env.GROQ_MODEL?.trim() || "llama-3.1-8b-instant",
-      question,
-      ctx,
-      label: "groq",
-    });
-    if (text) return { text, provider: "groq" };
-  }
-
-  return null;
+  return {
+    text: null,
+    error: errors[0] || (hadKey ? "LLM request failed" : "No GROQ_API_KEY / XAI_API_KEY configured"),
+    hadKey,
+  };
 }
 
 export async function askBusinessAdvisor(
@@ -502,7 +541,7 @@ export async function askBusinessAdvisor(
   const left = consumeUsage(businessId);
 
   const llm = await callLlm(q, ctx);
-  if (llm) {
+  if (llm.text) {
     return {
       answer: llm.text,
       provider: llm.provider,
@@ -511,8 +550,16 @@ export async function askBusinessAdvisor(
     };
   }
 
+  let answer = heuristicAnswer(q, ctx);
+  if ("hadKey" in llm && llm.hadKey) {
+    answer +=
+      "\n\n---\nNote: An AI API key is configured, but the model call failed (" +
+      (("error" in llm && llm.error) || "unknown") +
+      "). Showing the on-device coach from live GetAxe data instead. Check Vercel logs, key validity, and that Production env is set, then redeploy.";
+  }
+
   return {
-    answer: heuristicAnswer(q, ctx),
+    answer,
     provider: "heuristic",
     actions: defaultActions(ctx),
     remainingToday: left,
