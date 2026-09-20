@@ -101,30 +101,22 @@ export function Topbar({ user }: TopbarProps) {
                   </div>
 
 
-                  <div className="flex flex-col">
-
+                  <div className="min-w-0 max-w-[42vw] flex-col sm:max-w-[14rem] md:max-w-xs lg:max-w-sm">
                     <h1
                       className="
-                        text-lg
-                        font-extrabold
-                        tracking-tight
-                        bg-gradient-to-r
-                        from-indigo-600
-                        via-violet-600
-                        to-purple-600
-                        bg-clip-text
-                        text-transparent
+                        truncate whitespace-nowrap
+                        text-xs font-bold tracking-tight
+                        sm:text-sm md:text-base lg:text-lg
+                        bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600
+                        bg-clip-text text-transparent
                       "
+                      title={user.business.name}
                     >
                       {user.business.name}
                     </h1>
-
-
-                    <p className="text-xs font-medium text-muted-foreground">
+                    <p className="hidden text-[10px] font-medium text-muted-foreground sm:block sm:text-xs">
                       Dashboard
                     </p>
-
-
                   </div>
 
                 </div>
