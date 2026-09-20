@@ -127,6 +127,17 @@ export function BusinessAdvisorChat() {
                 )}
               >
                 <p className="whitespace-pre-wrap">{msg.text}</p>
+                {msg.provider && msg.role === "assistant" ? (
+                  <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/80">
+                    {msg.provider === "xai"
+                      ? "Grok · live data"
+                      : msg.provider === "groq"
+                        ? "Groq · live data"
+                        : msg.provider === "heuristic"
+                          ? "On-device coach · live data"
+                          : msg.provider}
+                  </p>
+                ) : null}
                 {msg.actions && msg.actions.length > 0 ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {msg.actions.map((a) => (
