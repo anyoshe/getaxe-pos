@@ -1,5 +1,7 @@
 "use client";
 
+/* ATTENTION_CENTER_V2 — links use buttonVariants; never Button asChild */
+
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
