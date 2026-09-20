@@ -4,6 +4,7 @@ import type { CurrentUser } from "@/lib/auth/current-user";
 
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { BusinessAdvisorChat } from "@/features/advisor/components/business-advisor-chat";
 
 interface AppShellProps {
   children: ReactNode;
@@ -32,6 +33,8 @@ export function AppShell({ children, user }: AppShellProps) {
           </div>
         </main>
       </div>
+
+      <BusinessAdvisorChat />
     </div>
   );
 }
