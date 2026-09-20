@@ -455,11 +455,13 @@ async function callLlm(
   const groqKey = process.env.GROQ_API_KEY?.trim();
   if (groqKey) {
     hadKey = true;
+    // Free/dev tier (mid-2026+): llama-3.1-8b-instant often model_not_found.
     const models = [
       process.env.GROQ_MODEL?.trim(),
-      "llama-3.1-8b-instant",
+      "openai/gpt-oss-20b",
+      "openai/gpt-oss-120b",
       "llama-3.3-70b-versatile",
-      "gemma2-9b-it",
+      "llama-3.1-8b-instant",
     ].filter((m, i, a): m is string => Boolean(m) && a.indexOf(m) === i);
 
     for (const model of models) {
