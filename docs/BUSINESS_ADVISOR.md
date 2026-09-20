@@ -1,19 +1,26 @@
-# Business Advisor (AI coach)
+# Business Advisor
 
-Floating chat on every authenticated screen (AppShell).
+Floating chat on dashboard + POS.
 
-## Providers
+## Providers (order)
 
-1. **Heuristic (default, free)** — answers from live dashboard/profit/stock/AR/AP numbers. No API key.
-2. **Groq (optional, free tier)** — set `GROQ_API_KEY` in Vercel/env. Model default `llama-3.1-8b-instant`.
+1. **xAI Grok** — `XAI_API_KEY` or `GROK_API_KEY` (optional `XAI_MODEL` / `GROK_MODEL`, default `grok-3-mini`)
+2. **Groq** — `GROQ_API_KEY` (optional `GROQ_MODEL`, default `llama-3.1-8b-instant`)
+3. **Heuristic** — no key; narrative advice from live GetAxe numbers
 
-## Limits
+## Vercel / `.env`
 
-15 messages per business per UTC day (in-memory). Raise or bill later for paid plans.
+```env
+# xAI (Grok) — https://console.x.ai
+XAI_API_KEY=xai-...
+XAI_MODEL=grok-3-mini
 
-## Env
+# OR same key under this name:
+# GROK_API_KEY=xai-...
 
+# Optional free alternative:
+# GROQ_API_KEY=gsk_...
+# GROQ_MODEL=llama-3.1-8b-instant
 ```
-GROQ_API_KEY=gsk_...
-GROQ_MODEL=llama-3.1-8b-instant
-```
+
+Redeploy after setting env vars. If the UI still shows "On-device coach", the LLM call failed (wrong key name, invalid key, or model) and fell back.

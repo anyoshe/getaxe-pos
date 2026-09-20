@@ -6,7 +6,7 @@ import {
 
 export type AdvisorReply = {
   answer: string;
-  provider: "groq" | "heuristic" | "none";
+  provider: "xai" | "groq" | "heuristic" | "none";
   actions: { label: string; href: string }[];
   remainingToday: number;
 };
@@ -376,44 +376,48 @@ function defaultActions(ctx: BusinessAdvisorContext) {
   return actions.slice(0, 5);
 }
 
-async function callGroq(
-  question: string,
-  ctx: BusinessAdvisorContext,
-): Promise<string | null> {
-  const key = process.env.GROQ_API_KEY?.trim();
-  if (!key) return null;
-
-  const system = `You are GetAxe Business Advisor for an SME owner in Kenya (KES).
+const ADVISOR_SYSTEM = `You are GetAxe Business Advisor for an SME owner in Kenya (KES).
 The JSON business facts are LIVE figures from this business's GetAxe database. Treat them as accurate operational numbers.
 Write like a sharp business coach, not a report dump: short paragraphs, clear priorities, exact KES figures from the JSON only.
 Never invent amounts. End with 2-4 concrete actions inside GetAxe.
 If the owner asks how to improve or grow, rank the biggest risks (stock-outs, losses, expiry, slow stock, debts) using the data and tell them what to do first.
 Tone: Know, Control, Decide, Grow.`;
 
+type LlmResult = { text: string; provider: "xai" | "groq" };
+
+async function openaiCompatibleChat(opts: {
+  url: string;
+  apiKey: string;
+  model: string;
+  question: string;
+  ctx: BusinessAdvisorContext;
+  label: string;
+}): Promise<string | null> {
   const body = {
-    model: process.env.GROQ_MODEL?.trim() || "llama-3.1-8b-instant",
+    model: opts.model,
     temperature: 0.4,
     max_tokens: 900,
     messages: [
-      { role: "system", content: system },
+      { role: "system", content: ADVISOR_SYSTEM },
       {
         role: "user",
-        content: `Business facts (JSON):\n${formatContextForPrompt(ctx)}\n\nOwner question:\n${question}`,
+        content: `Business facts (JSON):\n${formatContextForPrompt(opts.ctx)}\n\nOwner question:\n${opts.question}`,
       },
     ],
   };
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(opts.url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${opts.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      console.error("[advisor] groq", res.status, await res.text());
+      const errText = await res.text().catch(() => "");
+      console.error(`[advisor] ${opts.label}`, res.status, errText.slice(0, 400));
       return null;
     }
     const data = (await res.json()) as {
@@ -421,9 +425,51 @@ Tone: Know, Control, Decide, Grow.`;
     };
     return data.choices?.[0]?.message?.content?.trim() || null;
   } catch (e) {
-    console.error("[advisor] groq error", e);
+    console.error(`[advisor] ${opts.label} error`, e);
     return null;
   }
+}
+
+/**
+ * Prefer xAI Grok (XAI_API_KEY / GROK_API_KEY), then Groq free tier (GROQ_API_KEY).
+ */
+async function callLlm(
+  question: string,
+  ctx: BusinessAdvisorContext,
+): Promise<LlmResult | null> {
+  const xaiKey =
+    process.env.XAI_API_KEY?.trim() ||
+    process.env.GROK_API_KEY?.trim() ||
+    process.env.XAI_KEY?.trim();
+  if (xaiKey) {
+    const text = await openaiCompatibleChat({
+      url: "https://api.x.ai/v1/chat/completions",
+      apiKey: xaiKey,
+      model:
+        process.env.XAI_MODEL?.trim() ||
+        process.env.GROK_MODEL?.trim() ||
+        "grok-3-mini",
+      question,
+      ctx,
+      label: "xai",
+    });
+    if (text) return { text, provider: "xai" };
+  }
+
+  const groqKey = process.env.GROQ_API_KEY?.trim();
+  if (groqKey) {
+    const text = await openaiCompatibleChat({
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      apiKey: groqKey,
+      model: process.env.GROQ_MODEL?.trim() || "llama-3.1-8b-instant",
+      question,
+      ctx,
+      label: "groq",
+    });
+    if (text) return { text, provider: "groq" };
+  }
+
+  return null;
 }
 
 export async function askBusinessAdvisor(
@@ -455,11 +501,11 @@ export async function askBusinessAdvisor(
   const ctx = await buildBusinessAdvisorContext(businessId);
   const left = consumeUsage(businessId);
 
-  const groq = await callGroq(q, ctx);
-  if (groq) {
+  const llm = await callLlm(q, ctx);
+  if (llm) {
     return {
-      answer: groq,
-      provider: "groq",
+      answer: llm.text,
+      provider: llm.provider,
       actions: defaultActions(ctx),
       remainingToday: left,
     };
