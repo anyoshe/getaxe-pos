@@ -252,7 +252,7 @@ export default async function DashboardPage() {
               {lowStockItems.map((item) => (
                 <li key={item.productId}>
                   <Link
-                    href="/inventory/stock"
+                    href="/dashboard/attention?kind=restock"
                     className="flex items-baseline justify-between gap-2 text-sm hover:text-primary"
                   >
                     <span className="line-clamp-1 font-medium">
@@ -272,7 +272,7 @@ export default async function DashboardPage() {
             </ul>
           )}
           <Link
-            href="/purchases/orders"
+            href="/dashboard/attention?kind=restock"
             className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
           >
             Create purchase order <ArrowRight className="h-3 w-3" />
@@ -309,7 +309,7 @@ export default async function DashboardPage() {
             </ul>
           )}
           <Link
-            href="/inventory/batches"
+            href="/dashboard/attention?kind=expiry"
             className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
           >
             View batches <ArrowRight className="h-3 w-3" />
@@ -417,7 +417,7 @@ export default async function DashboardPage() {
         <QuickActionCard
           title="Purchase order"
           description="Order what the restock list suggests."
-          href="/purchases/orders"
+          href="/dashboard/attention?kind=restock"
           icon={PackagePlus}
         />
         <QuickActionCard

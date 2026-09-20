@@ -12,7 +12,23 @@ import {
   type ProductOpt,
 } from "@/features/purchases/components/orders/purchase-orders-client";
 
-export default async function PurchaseOrdersPage() {
+export default async function PurchaseOrdersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ prefill?: string; open?: string }> | { prefill?: string; open?: string };
+}) {
+  const sp = await Promise.resolve(searchParams ?? {});
+  let initialPrefill: { productId: string; quantity: number; unitCost?: number; supplierId?: string | null }[] | undefined;
+  try {
+    if (sp.prefill) {
+      const parsed = JSON.parse(decodeURIComponent(sp.prefill));
+      if (Array.isArray(parsed)) initialPrefill = parsed;
+    }
+  } catch {
+    initialPrefill = undefined;
+  }
+  const openCreate = sp.open === "1" || !!initialPrefill?.length;
+
   const user = await getCurrentUser();
   if (!user) return null;
 
@@ -193,6 +209,8 @@ export default async function PurchaseOrdersPage() {
 
   return (
     <PurchaseOrdersClient
+      initialPrefill={initialPrefill}
+      openCreate={openCreate}
       orders={(orders as Array<Record<string, unknown>>).map((o) => ({
         id: String(o.id),
         orderNumber: String(o.orderNumber ?? ""),

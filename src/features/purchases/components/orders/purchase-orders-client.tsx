@@ -104,36 +104,76 @@ async function printPurchaseOrder(orderId: string, orderNumber: string) {
   }
 }
 
+export type PrefillLine = {
+  productId: string;
+  quantity: number;
+  unitCost?: number;
+  supplierId?: string | null;
+};
+
 export function PurchaseOrdersClient({
   orders,
   suppliers,
   products,
+  initialPrefill,
+  openCreate,
 }: {
   orders: PoRow[];
   suppliers: SupplierOpt[];
   products: ProductOpt[];
+  initialPrefill?: PrefillLine[];
+  openCreate?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [showCreate, setShowCreate] = useState(false);
-  const [supplierId, setSupplierId] = useState(suppliers[0]?.id ?? "");
-  const [notes, setNotes] = useState("");
+  const [showCreate, setShowCreate] = useState(!!openCreate || (initialPrefill?.length ?? 0) > 0);
+  const [supplierId, setSupplierId] = useState(() => {
+    const fromPrefill = initialPrefill?.find((p) => p.supplierId)?.supplierId;
+    return fromPrefill || suppliers[0]?.id || "";
+  });
+  const [notes, setNotes] = useState(
+    initialPrefill?.length
+      ? "Auto-filled from dashboard restock attention"
+      : "",
+  );
   const [query, setQuery] = useState("");
 
   const firstProduct = products[0];
   const firstUnit = defaultUnit(firstProduct);
 
-  const [lines, setLines] = useState<Line[]>(() => [
-    {
-      key: crypto.randomUUID(),
-      productId: firstProduct?.id ?? "",
-      unitId: firstUnit?.unitId ?? null,
-      quantity: 1,
-      costPerOrderUnit: firstProduct
-        ? firstProduct.costPerStockUnit * (firstUnit?.factorToStock ?? 1)
-        : 0,
-    },
-  ]);
+  const [lines, setLines] = useState<Line[]>(() => {
+    if (initialPrefill && initialPrefill.length > 0) {
+      return initialPrefill.map((p) => {
+        const product = products.find((x) => x.id === p.productId);
+        const unit = defaultUnit(product);
+        const factor = unit?.factorToStock ?? 1;
+        const cost =
+          p.unitCost != null && p.unitCost > 0
+            ? p.unitCost * factor
+            : product
+              ? product.costPerStockUnit * factor
+              : 0;
+        return {
+          key: crypto.randomUUID(),
+          productId: p.productId,
+          unitId: unit?.unitId ?? null,
+          quantity: Math.max(1, Number(p.quantity) || 1),
+          costPerOrderUnit: cost,
+        };
+      });
+    }
+    return [
+      {
+        key: crypto.randomUUID(),
+        productId: firstProduct?.id ?? "",
+        unitId: firstUnit?.unitId ?? null,
+        quantity: 1,
+        costPerOrderUnit: firstProduct
+          ? firstProduct.costPerStockUnit * (firstUnit?.factorToStock ?? 1)
+          : 0,
+      },
+    ];
+  });
 
   const productById = useMemo(() => {
     const m = new Map<string, ProductOpt>();

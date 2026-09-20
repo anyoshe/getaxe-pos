@@ -341,7 +341,7 @@ class DashboardService {
           .slice(0, 3)
           .map((i) => i.name)
           .join(", "),
-        href: "/inventory/stock",
+        href: "/dashboard/attention?kind=restock",
       });
     }
     if (expiringBatches.length > 0) {
@@ -352,7 +352,7 @@ class DashboardService {
           .slice(0, 2)
           .map((b) => `${b.productName} (${b.expiryDate})`)
           .join(" · "),
-        href: "/inventory/batches",
+        href: "/dashboard/attention?kind=expiry",
       });
     }
     if (openAr > 0.5) {
@@ -360,7 +360,7 @@ class DashboardService {
         kind: "receivable",
         title: `Customers owe KES ${openAr.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
         detail: "Open credit invoices — follow up collections",
-        href: "/sales/receivables",
+        href: "/dashboard/attention?kind=receivable",
       });
     }
     if (openAp > 0.5) {
@@ -368,7 +368,7 @@ class DashboardService {
         kind: "payable",
         title: `Supplier bills KES ${openAp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
         detail: "Unpaid payables — plan cash for suppliers",
-        href: "/purchases/supplier-invoices",
+        href: "/dashboard/attention?kind=payable",
       });
     }
     if (slowProducts.length > 0 && stockValue > 0) {
@@ -379,7 +379,7 @@ class DashboardService {
           .slice(0, 3)
           .map((s) => s.name)
           .join(", "),
-        href: "/reports/inventory",
+        href: "/dashboard/attention?kind=slow",
       });
     }
     if (attention.length === 0) {
