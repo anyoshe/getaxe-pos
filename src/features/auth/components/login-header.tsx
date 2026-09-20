@@ -19,7 +19,7 @@ export function LoginHeader() {
         </h1>
 
         <p className="mt-2 text-white/70">
-          Sign in to continue managing your business.
+          Sign in to see what is happening in your business.
         </p>
 
       </div>
