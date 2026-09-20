@@ -151,23 +151,25 @@ export default async function DashboardPage() {
         title="Needs your attention"
         description="Priorities for the owner — restock, expiry, money owed, and slow stock"
       />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {attention.map((item, idx) => (
           <Link
             key={`${item.kind}-${idx}`}
             href={item.href}
-            className={`group rounded-xl border p-4 shadow-sm transition hover:border-primary/40 ${attentionStyles(item.kind)}`}
+            className={`group flex h-full min-h-[140px] flex-col justify-between rounded-xl border p-4 shadow-sm transition hover:border-primary/40 ${attentionStyles(item.kind)}`}
           >
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-medium text-foreground">{item.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium leading-snug text-foreground">
+                  {item.title}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-3">
                   {item.detail}
                 </p>
               </div>
               <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" />
             </div>
-            <p className="mt-2 text-xs font-medium text-primary">
+            <p className="mt-3 text-xs font-medium text-primary">
               Review and decide →
             </p>
           </Link>

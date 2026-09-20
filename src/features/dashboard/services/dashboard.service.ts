@@ -376,94 +376,92 @@ class DashboardService {
       daysWithoutSale: 30,
     }));
 
-    const attention: AttentionItem[] = [];
-    if (lowStockItems.length > 0) {
-      attention.push({
-        kind: "restock",
-        title: `${lowStockItems.length} product${lowStockItems.length === 1 ? "" : "s"} need restock`,
-        detail: lowStockItems
-          .slice(0, 3)
-          .map((i) => i.name)
-          .join(", "),
-        href: "/dashboard/attention?kind=restock",
-      });
-    }
-    if (expiringBatches.length > 0) {
-      attention.push({
-        kind: "expiry",
-        title: `${expiringBatches.length} batch${expiringBatches.length === 1 ? "" : "es"} expiring within 90 days`,
-        detail: expiringBatches
-          .slice(0, 2)
-          .map((b) => `${b.productName} (${b.expiryDate})`)
-          .join(" · "),
-        href: "/dashboard/attention?kind=expiry",
-      });
-    }
-    attention.push({
-      kind: "receivable",
-      title:
-        openAr > 0.5
-          ? `Collect debts · KES ${openAr.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-          : "Collect debts · nothing outstanding",
-      detail:
-        openArCount > 0
-          ? `${openArCount} open credit invoice${openArCount === 1 ? "" : "s"} — follow up collections`
-          : "No open customer balances",
-      href: "/dashboard/attention?kind=receivable",
-    });
-    attention.push({
-      kind: "payable",
-      title:
-        openAp > 0.5
-          ? `Pay suppliers · KES ${openAp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-          : "Pay suppliers · nothing outstanding",
-      detail:
-        openApCount > 0
-          ? `${openApCount} unpaid supplier invoice${openApCount === 1 ? "" : "s"} — due dates inside`
-          : "No open supplier balances",
-      href: "/dashboard/attention?kind=payable",
-    });
-    attention.push({
-      kind: "expense",
-      title:
-        upcomingExpenseCount > 0
-          ? `Expenses · ${upcomingExpenseCount} in next 30 days`
-          : "Expenses · next 30 days",
-      detail:
-        upcomingExpenseCount > 0
-          ? `KES ${upcomingExpenseTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} scheduled / dated ahead`
-          : "Review recent and upcoming expense dates",
-      href: "/dashboard/attention?kind=expense",
-    });
-    if (slowProducts.length > 0 && stockValue > 0) {
-      attention.push({
-        kind: "slow",
-        title: `${slowProducts.length} stocked item${slowProducts.length === 1 ? "" : "s"} with no sales in 30 days`,
-        detail: slowProducts
-          .slice(0, 3)
-          .map((s) => s.name)
-          .join(", "),
-        href: "/dashboard/attention?kind=slow",
-      });
-    }
-        // Always surface restock / expiry cards (calm state when empty)
-    if (lowStockItems.length === 0) {
-      attention.unshift({
-        kind: "restock",
-        title: "Restock · stock levels healthy",
-        detail: "No products at or below reorder level",
-        href: "/dashboard/attention?kind=restock",
-      });
-    }
-    if (expiringBatches.length === 0) {
-      // keep expiry optional when no batches — still offer entry
-      attention.push({
-        kind: "expiry",
-        title: "Expiry · no batches in next 90 days",
-        detail: "Open to review batch list anytime",
-        href: "/dashboard/attention?kind=expiry",
-      });
-    }
+    const attention: AttentionItem[] = [
+      lowStockItems.length > 0
+        ? {
+            kind: "restock" as const,
+            title: `${lowStockItems.length} product${lowStockItems.length === 1 ? "" : "s"} need restock`,
+            detail: lowStockItems
+              .slice(0, 3)
+              .map((i) => i.name)
+              .join(", "),
+            href: "/dashboard/attention?kind=restock",
+          }
+        : {
+            kind: "restock" as const,
+            title: "Restock · stock levels healthy",
+            detail: "No products at or below reorder level",
+            href: "/dashboard/attention?kind=restock",
+          },
+      expiringBatches.length > 0
+        ? {
+            kind: "expiry" as const,
+            title: `${expiringBatches.length} batch${expiringBatches.length === 1 ? "" : "es"} expiring within 90 days`,
+            detail: expiringBatches
+              .slice(0, 2)
+              .map((b) => `${b.productName} (${b.expiryDate})`)
+              .join(" · "),
+            href: "/dashboard/attention?kind=expiry",
+          }
+        : {
+            kind: "expiry" as const,
+            title: "Expiry · no batches in next 90 days",
+            detail: "Open to review batch list anytime",
+            href: "/dashboard/attention?kind=expiry",
+          },
+      {
+        kind: "receivable" as const,
+        title:
+          openAr > 0.5
+            ? `Collect debts · KES ${openAr.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+            : "Collect debts · nothing outstanding",
+        detail:
+          openArCount > 0
+            ? `${openArCount} open credit invoice${openArCount === 1 ? "" : "s"} — follow up collections`
+            : "No open customer balances",
+        href: "/dashboard/attention?kind=receivable",
+      },
+      {
+        kind: "payable" as const,
+        title:
+          openAp > 0.5
+            ? `Pay suppliers · KES ${openAp.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+            : "Pay suppliers · nothing outstanding",
+        detail:
+          openApCount > 0
+            ? `${openApCount} unpaid supplier invoice${openApCount === 1 ? "" : "s"} — due dates inside`
+            : "No open supplier balances",
+        href: "/dashboard/attention?kind=payable",
+      },
+      {
+        kind: "expense" as const,
+        title:
+          upcomingExpenseCount > 0
+            ? `Expenses · ${upcomingExpenseCount} in next 30 days`
+            : "Expenses · next 30 days",
+        detail:
+          upcomingExpenseCount > 0
+            ? `KES ${upcomingExpenseTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} scheduled / dated ahead`
+            : "Review recent and upcoming expense dates",
+        href: "/dashboard/attention?kind=expense",
+      },
+      slowProducts.length > 0 && stockValue > 0
+        ? {
+            kind: "slow" as const,
+            title: `${slowProducts.length} stocked item${slowProducts.length === 1 ? "" : "s"} with no sales in 30 days`,
+            detail: slowProducts
+              .slice(0, 3)
+              .map((x) => x.name)
+              .join(", "),
+            href: "/dashboard/attention?kind=slow",
+          }
+        : {
+            kind: "slow" as const,
+            title: "Slow stock · none flagged",
+            detail: "No stocked items without sales in 30 days",
+            href: "/dashboard/attention?kind=slow",
+          },
+    ];
 
     return {
       summary: {
