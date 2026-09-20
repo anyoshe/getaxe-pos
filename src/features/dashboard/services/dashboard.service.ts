@@ -7,6 +7,7 @@ import type {
   OwnerDashboard,
   SlowProductItem,
   TopProductItem,
+  ProfitProductItem,
 } from "../types";
 
 import { db } from "@/db";
@@ -376,7 +377,85 @@ class DashboardService {
       daysWithoutSale: 30,
     }));
 
-    const attention: AttentionItem[] = [
+
+    // --- Gross profit (same basis as sales performance report: revenue − costPrice × qty) ---
+    const monthStart = new Date(today);
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    async function profitByProduct(from: Date, to: Date) {
+      const lines = await db
+        .select({
+          productId: products.id,
+          name: products.name,
+          sku: products.sku,
+          quantity: sql<string>`coalesce(sum(coalesce(${saleItems.quantityStock}, ${saleItems.quantity})), 0)`,
+          revenue: sql<string>`coalesce(sum(${saleItems.total}::numeric), 0)`,
+          costPrice: products.costPrice,
+        })
+        .from(saleItems)
+        .innerJoin(sales, eq(saleItems.saleId, sales.id))
+        .innerJoin(products, eq(saleItems.productId, products.id))
+        .where(
+          and(
+            eq(saleItems.businessId, businessId),
+            eq(sales.status, "COMPLETED"),
+            gte(sales.soldAt, from),
+            lt(sales.soldAt, to),
+          ),
+        )
+        .groupBy(products.id, products.name, products.sku, products.costPrice)
+        .catch(() => []);
+
+      return (lines as {
+        productId: string;
+        name: string;
+        sku: string | null;
+        quantity: string;
+        revenue: string;
+        costPrice: string | number | null;
+      }[]).map((l) => {
+        const quantity = Number(l.quantity ?? 0);
+        const revenue = Number(l.revenue ?? 0);
+        const unitCost = Number(l.costPrice ?? 0);
+        const cost = unitCost * quantity;
+        const margin = revenue - cost;
+        const marginPct = revenue > 0 ? (margin / revenue) * 100 : 0;
+        return {
+          productId: l.productId,
+          name: l.name,
+          sku: l.sku,
+          quantity,
+          revenue,
+          cost,
+          margin,
+          marginPct,
+        } satisfies ProfitProductItem;
+      });
+    }
+
+    const [monthProfitRows, todayProfitRows] = await Promise.all([
+      profitByProduct(monthStart, tomorrow),
+      profitByProduct(today, tomorrow),
+    ]);
+
+    const revenueMonth = monthProfitRows.reduce((a, r) => a + r.revenue, 0);
+    const grossProfitMonth = monthProfitRows.reduce((a, r) => a + r.margin, 0);
+    const revenueToday = todayProfitRows.reduce((a, r) => a + r.revenue, 0);
+    const grossProfitToday = todayProfitRows.reduce((a, r) => a + r.margin, 0);
+
+    const topProfitProducts = [...monthProfitRows]
+      .filter((r) => r.margin > 0)
+      .sort((a, b) => b.margin - a.margin)
+      .slice(0, 5);
+
+    const lossProducts = [...monthProfitRows]
+      .filter((r) => r.margin < -0.009)
+      .sort((a, b) => a.margin - b.margin)
+      .slice(0, 10);
+
+
+        const attention: AttentionItem[] = [
       lowStockItems.length > 0
         ? {
             kind: "restock" as const,
@@ -484,12 +563,18 @@ class DashboardService {
         upcomingExpenseTotal,
         openArCount,
         openApCount,
+        grossProfitMonth,
+        grossProfitToday,
+        revenueMonth,
+        revenueToday,
       },
       attention,
       lowStockItems,
       expiringBatches,
       topProducts,
       slowProducts,
+      topProfitProducts,
+      lossProducts,
     };
   }
 }

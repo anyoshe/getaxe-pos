@@ -20,7 +20,24 @@ export interface DashboardSummary {
   upcomingExpenseTotal: number;
   openArCount: number;
   openApCount: number;
+  /** Gross profit = sale line revenue − product costPrice × stock qty */
+  grossProfitMonth: number;
+  grossProfitToday: number;
+  revenueMonth: number;
+  revenueToday: number;
 }
+
+export interface ProfitProductItem {
+  productId: string;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  revenue: number;
+  cost: number;
+  margin: number;
+  marginPct: number;
+}
+
 
 /** Owner decision cues — surface “what to do next” on the home screen. */
 export type AttentionKind =
@@ -77,4 +94,7 @@ export interface OwnerDashboard {
   expiringBatches: ExpiringBatchItem[];
   topProducts: TopProductItem[];
   slowProducts: SlowProductItem[];
+  topProfitProducts: ProfitProductItem[];
+  lossProducts: ProfitProductItem[];
 }
+

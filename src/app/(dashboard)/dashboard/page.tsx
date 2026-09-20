@@ -59,6 +59,8 @@ export default async function DashboardPage() {
     expiringBatches,
     topProducts,
     slowProducts,
+    topProfitProducts,
+    lossProducts,
   } = dashboard;
   const saleCount = summary.todaySalesCount ?? 0;
   const incomplete =
@@ -178,7 +180,7 @@ export default async function DashboardPage() {
 
       <SectionHeader
         title="Money in the business"
-        description="Tills, collections, and open balances — same sources as Cash & bank / AP / AR"
+        description="Cash, stock capital, and real gross profit from sales vs product cost"
       />
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {[
@@ -239,6 +241,105 @@ export default async function DashboardPage() {
             </p>
           </Link>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Link
+          href="/dashboard/profit?period=month"
+          className="group flex min-h-[140px] flex-col justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4 shadow-sm transition hover:border-emerald-500/50"
+        >
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">
+              Gross profit · this month
+            </p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+              KES{" "}
+              {Number(summary.grossProfitMonth ?? 0).toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              })}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Today: KES{" "}
+              {Number(summary.grossProfitToday ?? 0).toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              })}{" "}
+              · revenue month{" "}
+              {Number(summary.revenueMonth ?? 0).toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              })}
+            </p>
+          </div>
+          <p className="text-xs font-medium text-primary">
+            Products that made profit →
+          </p>
+        </Link>
+
+        <div className="flex min-h-[140px] flex-col rounded-xl border border-border bg-card p-4 shadow-sm">
+          <p className="text-xs font-medium text-muted-foreground">
+            Top 5 by profit · this month
+          </p>
+          {(topProfitProducts ?? []).length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              No profitable sales this month yet.
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {(topProfitProducts ?? []).map((p) => (
+                <li
+                  key={p.productId}
+                  className="flex items-baseline justify-between gap-2 text-sm"
+                >
+                  <span className="line-clamp-1 font-medium">{p.name}</span>
+                  <span className="shrink-0 tabular-nums text-emerald-700 dark:text-emerald-400">
+                    +
+                    {p.margin.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link
+            href="/dashboard/profit?period=month&view=top"
+            className="mt-auto pt-2 text-xs font-medium text-primary hover:underline"
+          >
+            Full profit list →
+          </Link>
+        </div>
+
+        <div className="flex min-h-[140px] flex-col rounded-xl border border-rose-500/25 bg-rose-500/5 p-4 shadow-sm">
+          <p className="text-xs font-medium text-muted-foreground">
+            Sold at a loss · this month
+          </p>
+          {(lossProducts ?? []).length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              No loss-making lines this month.
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {(lossProducts ?? []).slice(0, 5).map((p) => (
+                <li
+                  key={p.productId}
+                  className="flex items-baseline justify-between gap-2 text-sm"
+                >
+                  <span className="line-clamp-1 font-medium">{p.name}</span>
+                  <span className="shrink-0 tabular-nums text-rose-700 dark:text-rose-400">
+                    {p.margin.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link
+            href="/dashboard/profit?period=month&view=loss"
+            className="mt-auto pt-2 text-xs font-medium text-primary hover:underline"
+          >
+            Review loss lines →
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
