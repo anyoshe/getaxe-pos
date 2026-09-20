@@ -225,6 +225,12 @@ export function MobileSidebar() {
             );
           })}
         </nav>
+
+        <div className="shrink-0 border-t border-border px-3 py-1.5 dark:border-slate-800">
+          <p className="text-center text-[9px] leading-tight tracking-wide text-muted-foreground/80">
+            Powered by GetAxe Technologies · All rights reserved
+          </p>
+        </div>
       </SheetContent>
     </Sheet>
   );

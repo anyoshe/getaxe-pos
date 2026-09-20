@@ -111,11 +111,6 @@ export function Sidebar({ user }: SidebarProps) {
     return result;
   }, [filteredNavigation]);
 
-  const businessLabel =
-    (user as { business?: { name?: string | null } | null }).business?.name ??
-    user.name ??
-    "Workspace";
-
   return (
     <aside
       className={cn(
@@ -126,9 +121,6 @@ export function Sidebar({ user }: SidebarProps) {
     >
       <div className="shrink-0 border-b border-border/80 px-5 py-4 dark:border-slate-800">
         <Logo />
-        <p className="mt-1 truncate text-[11px] font-medium tracking-wide text-muted-foreground">
-          {businessLabel}
-        </p>
       </div>
 
       <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
@@ -158,12 +150,9 @@ export function Sidebar({ user }: SidebarProps) {
         })}
       </nav>
 
-      <div className="shrink-0 border-t border-border/80 px-4 py-3 dark:border-slate-800">
-        <p className="truncate text-[11px] text-muted-foreground">
-          Signed in as{" "}
-          <span className="font-medium text-muted-foreground dark:text-muted-foreground">
-            {user.name ?? user.email}
-          </span>
+      <div className="shrink-0 border-t border-border/80 px-3 py-1.5 dark:border-slate-800">
+        <p className="text-center text-[9px] leading-tight tracking-wide text-muted-foreground/80">
+          Powered by GetAxe Technologies · All rights reserved
         </p>
       </div>
     </aside>

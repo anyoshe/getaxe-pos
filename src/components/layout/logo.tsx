@@ -5,34 +5,16 @@ interface LogoProps {
   compact?: boolean;
 }
 
-export function Logo({
-  compact = false,
-}: LogoProps) {
+export function Logo({ compact = false }: LogoProps) {
   return (
     <Link
       href="/dashboard"
-      className="
-        flex
-        items-center
-        gap-3
-        group
-      "
+      className="group flex items-center gap-3"
     >
-
       <div
         className="
-          relative
-          h-12
-          w-12
-          shrink-0
-          rounded-xl
-          bg-white
-          p-1
-          shadow-sm
-          ring-1
-          ring-primary/15
-          transition
-          group-hover:shadow-md
+          relative h-12 w-12 shrink-0 rounded-xl bg-white p-1 shadow-sm
+          ring-1 ring-primary/15 transition group-hover:shadow-md
         "
       >
         <Image
@@ -40,41 +22,17 @@ export function Logo({
           alt="GetAxe"
           fill
           priority
-          className="
-            object-contain
-            p-1
-          "
+          className="object-contain p-1"
         />
       </div>
 
-
       {!compact && (
         <div className="leading-tight">
-
-          <h1
-            className="
-              text-base
-              font-bold
-              tracking-tight
-              text-primary
-            "
-          >
-            GetAxe Technologies
-          </h1>
-
-
-          <p
-            className="
-              text-xs
-              text-muted-foreground
-            "
-          >
-            Business Management Platform
+          <p className="max-w-[9.5rem] text-xs font-medium leading-snug tracking-wide text-muted-foreground">
+            Business Management Solution
           </p>
-
         </div>
       )}
-
     </Link>
   );
 }
