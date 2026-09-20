@@ -15,7 +15,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
   disposeExpiringBatchAction,
@@ -260,18 +261,20 @@ export function AttentionCenter({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/sales/pos">
-                        <ShoppingCart className="mr-1 h-4 w-4" />
+                    <Link
+                      href="/sales/pos"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      <ShoppingCart className="mr-1 h-4 w-4" />
                         Sell first (POS)
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/inventory/promotions">
-                        <Percent className="mr-1 h-4 w-4" />
+                    </Link>
+                    <Link
+                      href="/inventory/promotions"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      <Percent className="mr-1 h-4 w-4" />
                         Discount / promo
-                      </Link>
-                    </Button>
+                    </Link>
                     <Button
                       variant="destructive"
                       size="sm"
@@ -296,12 +299,13 @@ export function AttentionCenter({
               Open credit invoices — collect payment and print receipt from
               receivables.
             </p>
-            <Button asChild>
-              <Link href="/sales/receivables">
-                <Banknote className="mr-2 h-4 w-4" />
+            <Link
+                      href="/sales/receivables"
+                      className={cn(buttonVariants({ variant: "default" }))}
+                    >
+                      <Banknote className="mr-2 h-4 w-4" />
                 Open collections
-              </Link>
-            </Button>
+                    </Link>
           </div>
           {bundle.receivables.length === 0 ? (
             <Empty text="No open customer balances." />
@@ -350,9 +354,12 @@ export function AttentionCenter({
                         {money(r.balanceDue)}
                       </td>
                       <td className="p-3">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href="/sales/receivables">Collect</Link>
-                        </Button>
+                        <Link
+                      href="/sales/receivables"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      Collect
+                    </Link>
                       </td>
                     </tr>
                   ))}
@@ -369,12 +376,13 @@ export function AttentionCenter({
             <p className="text-sm text-muted-foreground">
               Unpaid supplier invoices with due dates — pay from Cash & bank.
             </p>
-            <Button asChild>
-              <Link href="/purchases/supplier-invoices">
-                <FileText className="mr-2 h-4 w-4" />
+            <Link
+                      href="/purchases/supplier-invoices"
+                      className={cn(buttonVariants({ variant: "default" }))}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
                 Supplier invoices
-              </Link>
-            </Button>
+                    </Link>
           </div>
           {bundle.payables.length === 0 ? (
             <Empty text="No open supplier balances." />
@@ -418,9 +426,12 @@ export function AttentionCenter({
                         {money(p.balanceDue)}
                       </td>
                       <td className="p-3">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href="/purchases/supplier-invoices">Pay</Link>
-                        </Button>
+                        <Link
+                      href="/purchases/supplier-invoices"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      Pay
+                    </Link>
                       </td>
                     </tr>
                   ))}
@@ -464,9 +475,12 @@ export function AttentionCenter({
                       <td className="p-3 tabular-nums">{s.quantity}</td>
                       <td className="p-3 tabular-nums">{money(s.stockValue)}</td>
                       <td className="p-3">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href="/sales/pos">Push on POS</Link>
-                        </Button>
+                        <Link
+                      href="/sales/pos"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      Push on POS
+                    </Link>
                       </td>
                     </tr>
                   ))}
@@ -484,12 +498,13 @@ export function AttentionCenter({
               Expenses in the last 14 days and next 30 days (by expense date).
               Record new ones under Finance.
             </p>
-            <Button asChild>
-              <Link href="/finance/expenses">
-                <AlertTriangle className="mr-2 h-4 w-4" />
+            <Link
+                      href="/finance/expenses"
+                      className={cn(buttonVariants({ variant: "default" }))}
+                    >
+                      <AlertTriangle className="mr-2 h-4 w-4" />
                 Expenses
-              </Link>
-            </Button>
+                    </Link>
           </div>
           {bundle.expenses.length === 0 ? (
             <Empty text="No expenses in this window." />
