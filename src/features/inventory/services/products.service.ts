@@ -8,6 +8,14 @@ export class ProductService {
     return productRepository.findAll(businessId);
   }
 
+  /** Active products only — use on POS for faster first paint */
+  async getProductsForPos(businessId: string) {
+    if (typeof (productRepository as { findAllForPos?: (id: string) => unknown }).findAllForPos === "function") {
+      return productRepository.findAllForPos(businessId);
+    }
+    return productRepository.findAll(businessId);
+  }
+
   async getProduct(id: string, businessId: string) {
     const product = await productRepository.findById(id, businessId);
 

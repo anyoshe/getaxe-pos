@@ -17,12 +17,14 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Fetch effective permission objects & extract codes
-  const userPermissions = await rolePermissionService.getUserPermissions(user.id);
+  const [userPermissions, enabledCapabilities] = await Promise.all([
+    rolePermissionService.getUserPermissions(user.id),
+    new BusinessCapabilityRepository()
+      .listEnabled(user.businessId)
+      .catch(() => [] as string[]),
+  ]);
+
   const permissionCodes = userPermissions.map((p) => p.code);
-  const enabledCapabilities = await new BusinessCapabilityRepository()
-    .listEnabled(user.businessId)
-    .catch(() => [] as string[]);
 
   return (
     <PermissionsProvider permissions={permissionCodes}>

@@ -42,7 +42,53 @@ function toDatabaseUpdate(
 }
 
 export class ProductRepository extends BaseRepository {
+  /**
+   * Lean product list for POS: active products only, minimal joins.
+   * Full catalogue with accounts/pharmacy catalogues stays on findAll().
+   */
+  async findAllForPos(businessId: string) {
+    const rows = await this.database.query.products.findMany({
+      where: and(
+        eq(products.businessId, businessId),
+        eq(products.active, true),
+      ),
+      columns: {
+        id: true,
+        businessId: true,
+        name: true,
+        sku: true,
+        barcode: true,
+        productType: true,
+        costPrice: true,
+        trackInventory: true,
+        trackBatch: true,
+        trackExpiry: true,
+        serialized: true,
+        salesUnitId: true,
+        stockUnitId: true,
+        purchaseUnitId: true,
+        categoryId: true,
+        active: true,
+      },
+      with: {
+        salesUnit: {
+          columns: { id: true, code: true, name: true },
+        },
+        stockUnit: {
+          columns: { id: true, code: true, name: true },
+        },
+        purchaseUnit: {
+          columns: { id: true, code: true, name: true },
+        },
+      },
+      orderBy: (table, { asc }) => [asc(table.name)],
+    });
+
+    return rows.map((r) => toDomainProduct(r as typeof r & { costPrice: string | null }));
+  }
+
   async findAll(businessId: string) {
+
     const rows = await this.database.query.products.findMany({
       where: eq(products.businessId, businessId),
 

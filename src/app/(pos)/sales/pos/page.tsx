@@ -56,7 +56,7 @@ export default async function FullScreenPosPage() {
     stockRows,
     batchRows,
   ] = await Promise.all([
-    productService.getProducts(user.businessId),
+    productService.getProductsForPos(user.businessId),
     warehousesService.getWarehouses(user.businessId),
     branchesService.getBranches(user.businessId),
     saleRepository.findRecent(user.businessId, 12),
