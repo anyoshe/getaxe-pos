@@ -1,5 +1,5 @@
 {
-  "name": "GetAxe Business Management",
+  "name": "GetAxe Business Management System",
   "short_name": "GetAxe",
   "start_url": "/dashboard",
   "scope": "/",
@@ -7,7 +7,7 @@
   "orientation": "any",
   "background_color": "#0f172a",
   "theme_color": "#2563eb",
-  "description": "Know. Control. Decide. Grow. — GetAxe POS & business management",
+  "description": "Know. Control. Decide. Grow. — GetAxe Business Management System",
   "categories": ["business", "finance", "productivity"],
   "icons": [
     {

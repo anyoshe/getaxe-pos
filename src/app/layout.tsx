@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GetAxe POS",
-  description: "GetAxe point of sale and ERP",
+  title: {
+    default: "GetAxe Business Management System",
+    template: "%s · GetAxe",
+  },
+  description:
+    "Know what is happening in your business, stay in control, and make decisions with facts.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -31,10 +35,10 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "GetAxe",
+    title: "GetAxe Business System",
     statusBarStyle: "default",
   },
-  applicationName: "GetAxe",
+  applicationName: "GetAxe Business Management System",
   other: {
     "mobile-web-app-capable": "yes",
   },
