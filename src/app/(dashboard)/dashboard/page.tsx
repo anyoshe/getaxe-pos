@@ -310,11 +310,11 @@ export default async function DashboardPage() {
 
         <div className="flex min-h-[140px] flex-col rounded-xl border border-rose-500/25 bg-rose-500/5 p-4 shadow-sm">
           <p className="text-xs font-medium text-muted-foreground">
-            Sold at a loss · this month
+            Sold at cost or loss · this month
           </p>
           {(lossProducts ?? []).length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              No loss-making lines this month.
+              No lines sold at cost or below this month.
             </p>
           ) : (
             <ul className="mt-2 space-y-1.5">

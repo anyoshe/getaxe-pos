@@ -92,10 +92,13 @@ export class ProductRepository extends BaseRepository {
         barcode: true,
         productType: true,
         costPrice: true,
+        lastPurchaseCost: true,
+        markupPercent: true,
         trackInventory: true,
         trackBatch: true,
         trackExpiry: true,
         serialized: true,
+        isControlled: true,
         salesUnitId: true,
         stockUnitId: true,
         purchaseUnitId: true,
@@ -103,6 +106,9 @@ export class ProductRepository extends BaseRepository {
         active: true,
       },
       with: {
+        category: {
+          columns: { id: true, name: true, markupPercent: true },
+        },
         salesUnit: {
           columns: { id: true, code: true, name: true },
         },
@@ -116,7 +122,122 @@ export class ProductRepository extends BaseRepository {
       orderBy: (table, { asc }) => [asc(table.name)],
     });
 
-    return rows.map((r) => toDomainProduct(r as typeof r & { costPrice: string | null }));
+    const productIds = rows.map((r) => r.id);
+    const allLists = await this.database.query.priceLists.findMany({
+      where: and(
+        eq(priceLists.businessId, businessId),
+        eq(priceLists.active, true),
+      ),
+    });
+    const defaultList =
+      allLists.find((l) => l.isDefault) ?? allLists[0] ?? null;
+    const wholesaleList =
+      allLists.find(
+        (l) =>
+          /wholesale|ws|trade/i.test(l.code) ||
+          /wholesale|trade/i.test(l.name),
+      ) ?? null;
+
+    const priceRows =
+      productIds.length === 0
+        ? []
+        : await this.database
+            .select({
+              productId: productPrices.productId,
+              price: productPrices.price,
+              minimumQuantity: productPrices.minimumQuantity,
+              priceListId: productPrices.priceListId,
+              unitId: productPrices.unitId,
+            })
+            .from(productPrices)
+            .where(
+              and(
+                eq(productPrices.businessId, businessId),
+                eq(productPrices.active, true),
+                inArray(productPrices.productId, productIds),
+              ),
+            );
+
+    const byProduct = new Map<string, typeof priceRows>();
+    for (const row of priceRows) {
+      const list = byProduct.get(row.productId) ?? [];
+      list.push(row);
+      byProduct.set(row.productId, list);
+    }
+
+    return rows.map((r) => {
+      const domain = toDomainProduct(
+        r as typeof r & {
+          costPrice: string | null;
+          lastPurchaseCost?: string | null;
+          markupPercent?: string | null;
+        },
+      );
+      const sorted = [...(byProduct.get(r.id) ?? [])].sort(
+        (a, b) => Number(a.minimumQuantity) - Number(b.minimumQuantity),
+      );
+      const pickFromList = (listId: string | undefined) => {
+        if (!listId) return null;
+        const forList = sorted.filter((p) => p.priceListId === listId);
+        return (
+          forList.find((p) => Number(p.minimumQuantity) <= 1) ??
+          forList[0] ??
+          null
+        );
+      };
+      const retailRow =
+        pickFromList(defaultList?.id) ??
+        sorted.find((p) => Number(p.minimumQuantity) <= 1) ??
+        sorted[0] ??
+        null;
+      const wholesaleRow = pickFromList(wholesaleList?.id);
+
+      let retailPrice = retailRow ? Number(retailRow.price) : null;
+      let wholesalePrice = wholesaleRow
+        ? Number(wholesaleRow.price)
+        : null;
+
+      // Never use cost as sell. If no list price, suggest cost × (1 + markup%).
+      const cost = domain.costPrice != null ? Number(domain.costPrice) : 0;
+      const prodM =
+        domain.markupPercent != null ? Number(domain.markupPercent) : null;
+      const catM =
+        r.category?.markupPercent != null
+          ? Number(r.category.markupPercent)
+          : null;
+      const markup =
+        prodM != null && Number.isFinite(prodM)
+          ? prodM
+          : catM != null && Number.isFinite(catM)
+            ? catM
+            : null;
+      const suggested =
+        cost > 0 && markup != null
+          ? Math.round(cost * (1 + markup / 100) * 100) / 100
+          : null;
+
+      if (!(retailPrice != null && Number.isFinite(retailPrice) && retailPrice > 0)) {
+        retailPrice = suggested;
+      }
+      if (!(wholesalePrice != null && Number.isFinite(wholesalePrice) && wholesalePrice > 0)) {
+        wholesalePrice = retailPrice;
+      }
+
+      return {
+        ...domain,
+        category: r.category
+          ? {
+              id: r.category.id,
+              name: r.category.name,
+              markupPercent: r.category.markupPercent,
+            }
+          : null,
+        sellingPrice: retailPrice,
+        retailPrice,
+        wholesalePrice,
+        costPrice: domain.costPrice,
+      };
+    });
   }
 
   async findAll(businessId: string) {

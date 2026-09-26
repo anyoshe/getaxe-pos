@@ -73,6 +73,6 @@ export async function getProfitDetailAction(period: "month" | "today") {
     marginPct: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
     all: rows.sort((a, b) => b.margin - a.margin),
     profitable: rows.filter((r) => r.margin > 0).sort((a, b) => b.margin - a.margin),
-    losses: rows.filter((r) => r.margin < -0.009).sort((a, b) => a.margin - b.margin),
+    losses: rows.filter((r) => r.margin <= 0.009).sort((a, b) => a.margin - b.margin),
   };
 }

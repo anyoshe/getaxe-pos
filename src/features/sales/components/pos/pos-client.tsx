@@ -65,6 +65,8 @@ export type PosProduct = {
   unitPrice: number;
   retailPrice: number;
   wholesalePrice: number;
+  /** Book / average cost per stock unit — used to prevent selling at/below cost */
+  costPrice?: number;
   active: boolean;
 };
 
@@ -434,6 +436,13 @@ export function PosClient({
       const factor = u?.factorToStock && u.factorToStock > 0 ? u.factorToStock : 1;
       const onHand = stockOnHand(p.id);
       const isService = p.productType === "service" || !p.trackInventory;
+      const linePrice = priceFor(p, u?.unitId ?? null, factor);
+      if (!isService && !(linePrice > 0)) {
+        toast.error(
+          `No retail selling price for ${p.name}. Set price under Product prices (or category markup + Apply), then refresh POS.`,
+        );
+        return;
+      }
 
       setCart((prev) => {
         const existing = prev.find(
@@ -672,6 +681,28 @@ export function PosClient({
       if (cart.length === 0) {
         toast.error("Cart is empty.");
         return;
+      }
+      for (const line of cart) {
+        const prod = sellable.find((x) => x.id === line.productId);
+        if (!prod || prod.productType === "service") continue;
+        const cost = Number(prod.costPrice ?? 0);
+        // Compare unit sell price to cost per stock unit adjusted by pack factor
+        const factor = line.factorToStock > 0 ? line.factorToStock : 1;
+        const costForLineUnit = cost * factor;
+        if (cost > 0 && line.unitPrice + 1e-9 < costForLineUnit) {
+          toast.error(
+            `${line.name}: selling price (${line.unitPrice.toFixed(2)}) is below cost (${costForLineUnit.toFixed(2)} for this unit). Update Product prices (retail) before completing.`,
+          );
+          setMobileStep("items");
+          return;
+        }
+        if (cost > 0 && Math.abs(line.unitPrice - costForLineUnit) < 0.009) {
+          toast.error(
+            `${line.name}: price equals cost — set a marked-up retail price under Product prices so you do not sell at cost.`,
+          );
+          setMobileStep("items");
+          return;
+        }
       }
       for (const line of cart) {
         const prod = sellable.find((x) => x.id === line.productId);

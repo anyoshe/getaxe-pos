@@ -10,6 +10,7 @@ import { db } from "@/db";
 import { and, asc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { productUnits } from "@/db/schema/inventory/product_units";
 import { productPrices } from "@/db/schema/inventory/product_prices";
+import { priceLists } from "@/db/schema/inventory/price_lists";
 import { units } from "@/db/schema/settings/units";
 import { PosClient } from "@/features/sales/components/pos/pos-client";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
@@ -99,12 +100,18 @@ export default async function FullScreenPosPage() {
         productId: productPrices.productId,
         unitId: productPrices.unitId,
         price: productPrices.price,
+        priceListId: productPrices.priceListId,
+        isDefault: priceLists.isDefault,
+        listCode: priceLists.code,
+        listName: priceLists.name,
       })
       .from(productPrices)
+      .innerJoin(priceLists, eq(productPrices.priceListId, priceLists.id))
       .where(
         and(
           eq(productPrices.businessId, user.businessId),
           eq(productPrices.active, true),
+          eq(priceLists.active, true),
         ),
       ),
     // Same source of truth as Inventory → Stock on Hand
@@ -264,14 +271,35 @@ export default async function FullScreenPosPage() {
     batchesByProductWarehouse[row.productId] = byWh;
   }
 
+  // Prefer default (retail) list for unit-specific prices; skip wholesale list rows
   const pricesByProductUnit: Record<string, Record<string, number>> = {};
-  for (const row of priceRows as Array<{
-    productId: string;
-    unitId: string | null;
-    price: string;
-  }>) {
+  const retailPriceRows = (
+    priceRows as Array<{
+      productId: string;
+      unitId: string | null;
+      price: string;
+      isDefault: boolean | null;
+      listCode: string | null;
+      listName: string | null;
+    }>
+  ).filter((row) => {
+    const code = (row.listCode ?? "").toLowerCase();
+    const name = (row.listName ?? "").toLowerCase();
+    const isWholesale =
+      /wholesale|ws|trade/.test(code) || /wholesale|trade/.test(name);
+    if (isWholesale) return false;
+    return true;
+  });
+  // Prefer isDefault rows when both exist for same unit
+  const ranked = [...retailPriceRows].sort((a, b) => {
+    const ad = a.isDefault ? 0 : 1;
+    const bd = b.isDefault ? 0 : 1;
+    return ad - bd;
+  });
+  for (const row of ranked) {
     if (!row.unitId) continue;
     const byU = pricesByProductUnit[row.productId] ?? {};
+    if (byU[row.unitId] != null) continue; // keep preferred (default) first
     byU[row.unitId] = Number(row.price) || 0;
     pricesByProductUnit[row.productId] = byU;
   }
@@ -312,14 +340,16 @@ export default async function FullScreenPosPage() {
         const wholesale = Number(
           (p as { wholesalePrice?: number | null }).wholesalePrice ?? NaN,
         );
+        // Never fall back to cost — avoid selling at cost/loss by default
         const retailPrice =
-          Number.isFinite(retail) && retail > 0
-            ? retail
-            : Number(p.costPrice ?? 0);
+          Number.isFinite(retail) && retail > 0 ? retail : 0;
         const wholesalePrice =
           Number.isFinite(wholesale) && wholesale > 0
             ? wholesale
-            : retailPrice;
+            : retailPrice > 0
+              ? retailPrice
+              : 0;
+        const costPrice = Number(p.costPrice ?? 0);
 
         const cat = (p as { category?: { id?: string; name?: string } | null }).category;
         return {
@@ -340,6 +370,7 @@ export default async function FullScreenPosPage() {
           unitPrice: retailPrice,
           retailPrice,
           wholesalePrice,
+          costPrice: Number.isFinite(costPrice) ? costPrice : 0,
           active: p.active !== false,
         };
       })}
