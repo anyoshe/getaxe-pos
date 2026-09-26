@@ -10,7 +10,12 @@ import { getSession } from "./session";
 export const getCurrentUser = cache(async () => {
   const session = await getSession();
   if (process.env.NODE_ENV === "development") {
-    console.log("SESSION:", session ? { userId: session.userId, businessId: session.businessId } : null);
+    console.log(
+      "SESSION:",
+      session
+        ? { userId: session.userId, businessId: session.businessId }
+        : null,
+    );
   }
   if (!session) {
     return null;
@@ -18,14 +23,25 @@ export const getCurrentUser = cache(async () => {
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.userId),
-   
     with: {
       role: true,
       business: true,
     },
-    
   });
+
   if (!user || !user.active) {
+    return null;
+  }
+
+  // Session business must match the user row — prevents cross-tenant bleed
+  // if JWT and DB ever diverge.
+  if (user.businessId !== session.businessId) {
+    console.error(
+      "Session businessId mismatch; forcing re-login",
+      session.userId,
+      session.businessId,
+      user.businessId,
+    );
     return null;
   }
 
@@ -39,17 +55,15 @@ export const getCurrentUser = cache(async () => {
 
   return {
     ...user,
+    businessId: session.businessId,
     initials,
     session,
   };
 });
 
-export type CurrentUser =
-  NonNullable<
-    Awaited<
-      ReturnType<typeof getCurrentUser>
-    >
-  >;
+export type CurrentUser = NonNullable<
+  Awaited<ReturnType<typeof getCurrentUser>>
+>;
 
 export async function requireCurrentUser() {
   const user = await getCurrentUser();

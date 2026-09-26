@@ -27,7 +27,16 @@ export class UserRepository {
   }
 
   async findActiveByEmail(email: string) {
-    const result = await Repository.db
+    const result = await this.findAllActiveByEmail(email);
+    return result[0] ?? null;
+  }
+
+  /**
+   * Same email may exist on multiple businesses (unique per business only).
+   * Login must verify password against each candidate — not take limit(1).
+   */
+  async findAllActiveByEmail(email: string) {
+    return Repository.db
       .select({
         id: users.id,
         businessId: users.businessId,
@@ -40,6 +49,8 @@ export class UserRepository {
         passwordHash: users.passwordHash,
 
         active: users.active,
+        lastLoginAt: users.lastLoginAt,
+        updatedAt: users.updatedAt,
 
         roleName: roles.name,
         roleSystem: roles.isSystem,
@@ -52,10 +63,14 @@ export class UserRepository {
           eq(users.active, true),
           eq(roles.active, true),
         ),
-      )
-      .limit(1);
+      );
+  }
 
-    return result[0] ?? null;
+  async touchLastLogin(userId: string) {
+    await Repository.db
+      .update(users)
+      .set({ lastLoginAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   async findMany(

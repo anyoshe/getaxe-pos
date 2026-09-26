@@ -175,14 +175,14 @@ export function CategoryForm({
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-4">
         <FormTextField
-          control={form.control}
+          form={form}
           name="name"
           label="Category name"
           required
         />
 
         <FormTextarea
-          control={form.control}
+          form={form}
           name="description"
           label="Description"
         />
@@ -190,7 +190,7 @@ export function CategoryForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <FormTextField
-              control={form.control}
+              form={form}
               name="markupPercent"
               label="Retail markup %"
               type="number"
@@ -218,7 +218,7 @@ export function CategoryForm({
 
           <div className="space-y-2">
             <FormTextField
-              control={form.control}
+              form={form}
               name="wholesaleMarkupPercent"
               label="Wholesale markup %"
               type="number"

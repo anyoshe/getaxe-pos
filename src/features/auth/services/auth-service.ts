@@ -17,15 +17,33 @@ export type AuthenticationResult =
 export async function authenticateUser(
   credentials: LoginInput,
 ): Promise<AuthenticationResult> {
-  // ── Existing ERP user (setup already completed) ─────────────────
-  const user = await userRepository.findActiveByEmail(credentials.email);
+  // Same email can exist on multiple businesses — match by password, not limit(1).
+  const candidates = await userRepository.findAllActiveByEmail(
+    credentials.email,
+  );
 
-  if (user) {
-    const validPassword = await verifyPassword(
-      credentials.password,
-      user.passwordHash,
-    );
-    if (!validPassword) return { type: "INVALID" };
+  if (candidates.length > 0) {
+    const matches: typeof candidates = [];
+    for (const user of candidates) {
+      const validPassword = await verifyPassword(
+        credentials.password,
+        user.passwordHash,
+      );
+      if (validPassword) matches.push(user);
+    }
+
+    if (matches.length === 0) return { type: "INVALID" };
+
+    // Prefer most recently used account when the same email+password exists
+    // on more than one business (avoids silently logging into the wrong shop).
+    matches.sort((a, b) => {
+      const ta = (a.lastLoginAt ?? a.updatedAt)?.getTime?.() ?? 0;
+      const tb = (b.lastLoginAt ?? b.updatedAt)?.getTime?.() ?? 0;
+      return tb - ta;
+    });
+    const user = matches[0]!;
+
+    await userRepository.touchLastLogin(user.id).catch(() => undefined);
 
     return {
       type: "USER",
@@ -55,10 +73,6 @@ export async function authenticateUser(
   if (!invitation) return { type: "INVALID" };
   if (invitation.status === "COMPLETED") return { type: "INVALID" };
 
-  /**
-   * Platform issues a temporary password with status INVITED.
-   * Owner must choose their own password before business setup.
-   */
   if (invitation.status === "INVITED") {
     if (invitation.passwordHash) {
       const validTemp = await verifyPassword(
@@ -74,7 +88,6 @@ export async function authenticateUser(
     };
   }
 
-  // PASSWORD_CREATED — own password set; continue to /setup
   if (invitation.status === "PASSWORD_CREATED") {
     if (!invitation.passwordHash) {
       return {

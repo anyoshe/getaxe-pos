@@ -18,7 +18,11 @@ import { seedPharmacyCataloguesForBusiness } from "@/features/pharmacy/services/
 async function requireCapabilitiesManager() {
   const user = await getCurrentUser();
   if (!user) {
-    throw new Error("Unauthenticated");
+    return {
+      user: null as null,
+      denied: true as const,
+      message: "Session expired. Sign in again to manage capabilities.",
+    };
   }
 
   const allowed =
@@ -153,6 +157,7 @@ export async function setCapabilityEnabledAction(input: unknown) {
       "/purchases/receiving",
       "/dashboard",
       "/inventory/pharmacy-catalogues",
+      "/inventory/promotions",
       "/inventory/manufacturers",
       "/customers/loyalty",
       "/settings/warehouses",
