@@ -97,6 +97,9 @@ export type PosProductUnit = {
   isSalesDefault: boolean;
   isStockUnit: boolean;
   label: string;
+  allowSale?: boolean;
+  unitCode?: string | null;
+  unitName?: string | null;
 };
 
 type CartLine = {
@@ -219,19 +222,19 @@ export function PosClient({
               barcode: raw.barcode,
               categoryId: raw.categoryId,
               categoryName: raw.categoryName,
-              productType: raw.productType as PosProduct["productType"],
+              productType: String(raw.productType ?? "physical"),
               trackInventory: raw.trackInventory,
               trackBatch: raw.trackBatch,
               trackExpiry: raw.trackExpiry,
               serialized: raw.serialized,
               isControlled: raw.isControlled,
-              salesUnitId: raw.salesUnitId,
-              stockUnitId: raw.stockUnitId,
               costPrice: raw.costPrice,
-              retailPrice: raw.retailPrice,
-              wholesalePrice: raw.wholesalePrice,
-              sellingPrice: raw.sellingPrice,
-              active: raw.active,
+              retailPrice: Number(raw.retailPrice ?? 0),
+              wholesalePrice: Number(raw.wholesalePrice ?? 0),
+              unitPrice: Number(
+                raw.sellingPrice ?? raw.retailPrice ?? 0
+              ),
+              active: raw.active !== false,
             });
           }
           return Array.from(map.values());
