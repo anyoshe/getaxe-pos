@@ -22,6 +22,8 @@ import {
     InventoryUnitOfWork,
 } from "@/features/inventory/services/unit-of-work";
 
+import { applyReceiveCosting } from "@/features/inventory/services/apply-receive-costing";
+
 export class GoodsReceiptService {
 
     async receiveGoods(
@@ -32,7 +34,7 @@ export class GoodsReceiptService {
             request
         );
 
-        return Repository.withTransaction(
+        const result = await Repository.withTransaction(
             async (tx) => {
 
                 const uow =
@@ -181,6 +183,25 @@ export class GoodsReceiptService {
 
             }
         );
+
+        try {
+            for (const item of request.items) {
+                const qty = Number(item.quantity);
+                const cost = Number(item.unitCost);
+                if (!(qty > 0) || !Number.isFinite(cost) || cost < 0) continue;
+                await applyReceiveCosting({
+                    businessId: request.receipt.businessId,
+                    productId: item.productId,
+                    qtyReceivedStock: qty,
+                    receiptCostPerStockUnit: cost,
+                    applySuggestedSellPrice: true,
+                });
+            }
+        } catch (e) {
+            console.error("[GRN costing]", e);
+        }
+
+        return result;
 
     }
 

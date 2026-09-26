@@ -14,6 +14,7 @@ import {
   resolveToStock,
   costPerStockUnit,
 } from "../services/unit-conversion.service";
+import { applyReceiveCosting } from "../services/apply-receive-costing";
 
 /**
  * Ad-hoc stock receive (opening stock / purchase without full GRN).
@@ -244,6 +245,36 @@ export async function receiveStockAction(input: unknown) {
     revalidatePath("/inventory/stock");
     revalidatePath("/inventory/stock-movements");
     revalidatePath("/inventory/products");
+    revalidatePath("/inventory/product-prices");
+
+    // Moving average + last purchase; suggest sell via category markup when unlocked
+    let costingNote: string | null = null;
+    try {
+      const receiptCost =
+        unitCostStock != null
+          ? unitCostStock
+          : data.unitCost != null
+            ? Number(data.unitCost)
+            : Number(product.costPrice ?? 0);
+      if (receiptCost >= 0 && Number(quantityStock) > 0) {
+        const costing = await applyReceiveCosting({
+          businessId: user.businessId,
+          productId: product.id,
+          qtyReceivedStock: Number(quantityStock),
+          receiptCostPerStockUnit: receiptCost,
+          applySuggestedSellPrice: true,
+        });
+        if (costing?.suggestedSellPrice != null) {
+          costingNote = costing.priceLocked
+            ? `Avg cost ${costing.newAverageCost.toFixed(2)}; price locked (suggested ${costing.suggestedSellPrice.toFixed(2)}).`
+            : `Avg cost ${costing.newAverageCost.toFixed(2)}; sell updated to ${costing.suggestedSellPrice.toFixed(2)} (${costing.markupPercent}% markup).`;
+        } else if (costing) {
+          costingNote = `Avg cost updated to ${costing.newAverageCost.toFixed(2)} (set category markup % to auto-price).`;
+        }
+      }
+    } catch (e) {
+      console.error("[receive costing]", e);
+    }
 
     // Opening stock: book inventory against owner equity (not AP)
     if (data.movementType === "OPENING_STOCK") {
@@ -272,12 +303,15 @@ export async function receiveStockAction(input: unknown) {
 
     return {
       success: true as const,
-      message: product.serialized
-        ? `Received ${data.quantity} of ${product.name} with ${serialNumbers.length} serial(s).`
-        : `Received ${data.quantity} of ${product.name}.`,
+      message: (
+        product.serialized
+          ? `Received ${data.quantity} of ${product.name} with ${serialNumbers.length} serial(s).`
+          : `Received ${data.quantity} of ${product.name}.`
+      ) + (costingNote ? ` ${costingNote}` : ""),
       batchId: (result as { batch: { id: string } }).batch.id,
       movementId: (result as { movement: { id: string } }).movement.id,
       serialCount: (result as { serials?: unknown[] }).serials?.length ?? 0,
+      costingNote,
     };
   } catch (error) {
     return {

@@ -30,6 +30,12 @@ export async function createCategoryAction(
         formData.get("description") ||
         null,
 
+      markupPercent:
+        formData.get("markupPercent") === "" ||
+        formData.get("markupPercent") == null
+          ? null
+          : Number(formData.get("markupPercent")),
+
       active: true,
     });
 
@@ -43,8 +49,15 @@ export async function createCategoryAction(
   }
 
   try {
+    const payload = {
+      ...parsed.data,
+      markupPercent:
+        parsed.data.markupPercent == null
+          ? null
+          : String(parsed.data.markupPercent),
+    };
     await categoryService.createCategory(
-      parsed.data
+      payload as typeof parsed.data & { markupPercent: string | null }
     );
 
     revalidatePath(

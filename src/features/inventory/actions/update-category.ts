@@ -47,6 +47,12 @@ export async function updateCategoryAction(
       description:
         formData.get("description") || null,
 
+      markupPercent:
+        formData.get("markupPercent") === "" ||
+        formData.get("markupPercent") == null
+          ? null
+          : Number(formData.get("markupPercent")),
+
       active:
         formData.get("active") === "true",
     });
@@ -61,9 +67,16 @@ export async function updateCategoryAction(
   }
 
   try {
+    const payload = {
+      ...parsed.data,
+      markupPercent:
+        parsed.data.markupPercent == null
+          ? null
+          : String(parsed.data.markupPercent),
+    };
     await categoryService.updateCategory(
       id,
-      parsed.data
+      payload as typeof parsed.data & { markupPercent: string | null }
     );
 
     revalidatePath(

@@ -105,10 +105,28 @@ export const products = pgTable(
 
     packSize: text("pack_size"),
 
+    /** Book / moving-average cost per stock unit (updated on receive). */
     costPrice: numeric("cost_price", {
       precision: 12,
       scale: 2,
     }),
+
+    /** Most recent GRN / receive unit cost per stock unit. */
+    lastPurchaseCost: numeric("last_purchase_cost", {
+      precision: 12,
+      scale: 4,
+    }),
+
+    /** Optional product-level markup % override (on cost). Null = use category. */
+    markupPercent: numeric("markup_percent", {
+      precision: 8,
+      scale: 2,
+    }),
+
+    /** When true, receive does not auto-update default sell price. */
+    priceLocked: boolean("price_locked")
+      .default(false)
+      .notNull(),
 
     // Inventory Behaviour
 

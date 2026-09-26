@@ -34,6 +34,7 @@ import type {
 interface CategoryFormValues {
   name: string;
   description: string;
+  markupPercent: string;
   active: boolean;
 }
 
@@ -65,6 +66,11 @@ export function CategoryForm({
         description:
           category?.description ?? "",
 
+        markupPercent:
+          category?.markupPercent != null
+            ? String(category.markupPercent)
+            : "",
+
         active:
           category?.active ?? true,
       },
@@ -77,6 +83,11 @@ export function CategoryForm({
 
       description:
         category?.description ?? "",
+
+      markupPercent:
+        category?.markupPercent != null
+          ? String(category.markupPercent)
+          : "",
 
       active:
         category?.active ?? true,
@@ -103,6 +114,11 @@ export function CategoryForm({
       formData.set(
         "description",
         values.description
+      );
+
+      formData.set(
+        "markupPercent",
+        values.markupPercent.trim()
       );
 
       formData.set(
@@ -162,6 +178,14 @@ export function CategoryForm({
           label="Description"
           placeholder="Describe this category..."
           rows={4}
+        />
+
+        <FormTextField
+          form={form}
+          name="markupPercent"
+          label="Default markup % (on cost)"
+          placeholder="e.g. 30 for 30%"
+          description="Used when receiving stock: sell ≈ avg cost × (1 + markup%). Leave blank to price manually."
         />
 
         <FormCheckbox

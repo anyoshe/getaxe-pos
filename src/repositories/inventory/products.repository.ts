@@ -9,18 +9,33 @@ import { BaseRepository } from "../base";
 
 type DatabaseProductInsert = InferInsertModel<typeof products>;
 
-export type ProductInsert = Omit<DatabaseProductInsert, "costPrice"> & {
+export type ProductInsert = Omit<
+  DatabaseProductInsert,
+  "costPrice" | "lastPurchaseCost" | "markupPercent"
+> & {
   costPrice?: number | null;
+  lastPurchaseCost?: number | null;
+  markupPercent?: number | null;
 };
+
+function numOrNull(v: string | number | null | undefined): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 function toDomainProduct<
   T extends {
     costPrice: string | null;
+    lastPurchaseCost?: string | null;
+    markupPercent?: string | null;
   },
 >(product: T) {
   return {
     ...product,
-    costPrice: product.costPrice === null ? null : Number(product.costPrice),
+    costPrice: numOrNull(product.costPrice),
+    lastPurchaseCost: numOrNull(product.lastPurchaseCost ?? null),
+    markupPercent: numOrNull(product.markupPercent ?? null),
   };
 }
 
@@ -28,17 +43,34 @@ function toDatabaseInsert(data: ProductInsert): DatabaseProductInsert {
   return {
     ...data,
     costPrice: data.costPrice == null ? null : data.costPrice.toString(),
+    lastPurchaseCost:
+      data.lastPurchaseCost == null ? null : data.lastPurchaseCost.toString(),
+    markupPercent:
+      data.markupPercent == null ? null : data.markupPercent.toString(),
   };
 }
 
 function toDatabaseUpdate(
   data: Partial<ProductInsert>,
 ): Partial<DatabaseProductInsert> {
-  return {
-    ...data,
-    costPrice:
-      data.costPrice == null ? data.costPrice : data.costPrice.toString(),
-  };
+  const out: Partial<DatabaseProductInsert> = { ...data } as Partial<DatabaseProductInsert>;
+  if ("costPrice" in data) {
+    out.costPrice =
+      data.costPrice == null ? data.costPrice : data.costPrice.toString();
+  }
+  if ("lastPurchaseCost" in data) {
+    out.lastPurchaseCost =
+      data.lastPurchaseCost == null
+        ? data.lastPurchaseCost
+        : data.lastPurchaseCost.toString();
+  }
+  if ("markupPercent" in data) {
+    out.markupPercent =
+      data.markupPercent == null
+        ? data.markupPercent
+        : data.markupPercent.toString();
+  }
+  return out;
 }
 
 export class ProductRepository extends BaseRepository {

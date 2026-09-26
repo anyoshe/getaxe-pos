@@ -15,6 +15,13 @@ export const createCategorySchema = z.object({
     .nullable()
     .optional(),
 
+  markupPercent: z.coerce
+    .number()
+    .min(0)
+    .max(1000)
+    .nullable()
+    .optional(),
+
   active: z.boolean(),
 });
 
@@ -31,6 +38,13 @@ export const updateCategorySchema = z.object({
   description: z
     .string()
     .trim()
+    .nullable()
+    .optional(),
+
+  markupPercent: z.coerce
+    .number()
+    .min(0)
+    .max(1000)
     .nullable()
     .optional(),
 

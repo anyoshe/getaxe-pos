@@ -4,6 +4,7 @@ import {
   text,
   boolean,
   timestamp,
+  numeric,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -27,6 +28,12 @@ export const categories = pgTable(
       .notNull(),
 
     description: text("description"),
+
+    /** Default markup % on cost for products in this category (e.g. 30 = 30%). */
+    markupPercent: numeric("markup_percent", {
+      precision: 8,
+      scale: 2,
+    }),
 
     active: boolean("active")
       .default(true)
