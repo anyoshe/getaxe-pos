@@ -36,6 +36,26 @@ export interface ProfitProductItem {
   cost: number;
   margin: number;
   marginPct: number;
+  /** Invoice numbers where a line sold at/below cost (line-level). */
+  atCostInvoices?: string[];
+  atCostLineCount?: number;
+}
+
+/** One completed sale line sold at cost or below cost. */
+export interface LossSaleLine {
+  saleItemId: string;
+  saleId: string;
+  invoiceNumber: string;
+  soldAt: string;
+  productId: string;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+  revenue: number;
+  unitCost: number;
+  cost: number;
+  margin: number;
 }
 
 
@@ -96,5 +116,6 @@ export interface OwnerDashboard {
   slowProducts: SlowProductItem[];
   topProfitProducts: ProfitProductItem[];
   lossProducts: ProfitProductItem[];
+  lossSaleLines?: LossSaleLine[];
 }
 

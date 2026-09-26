@@ -29,6 +29,10 @@ import { customerRepository } from "@/repositories/sales/customer.repository";
 import { nairobiDayBounds } from "@/lib/timezone";
 import { financeService } from "@/features/finance/services/finance.service";
 import {
+  aggregateAtCostProducts,
+  findAtCostOrLossLines,
+} from "./at-cost-sales";
+import {
   countLowStockProducts,
   getLowStockProducts,
 } from "@/features/inventory/queries/low-stock.query";
@@ -449,10 +453,20 @@ class DashboardService {
       .sort((a, b) => b.margin - a.margin)
       .slice(0, 5);
 
-    const lossProducts = [...monthProfitRows]
+    const lossSaleLines = await findAtCostOrLossLines(
+      businessId,
+      monthStart,
+      tomorrow,
+      150,
+    );
+    const lossFromLines = aggregateAtCostProducts(lossSaleLines).slice(0, 15);
+    const lossIds = new Set(lossFromLines.map((p) => p.productId));
+    const lossFromAgg = [...monthProfitRows]
       .filter((r) => r.margin <= 0.009)
+      .filter((r) => !lossIds.has(r.productId))
       .sort((a, b) => a.margin - b.margin)
       .slice(0, 10);
+    const lossProducts = [...lossFromLines, ...lossFromAgg].slice(0, 15);
 
 
         const attention: AttentionItem[] = [
@@ -575,6 +589,7 @@ class DashboardService {
       slowProducts,
       topProfitProducts,
       lossProducts,
+      lossSaleLines,
     };
   }
 }

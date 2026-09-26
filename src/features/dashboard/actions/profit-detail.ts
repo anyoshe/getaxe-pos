@@ -9,6 +9,10 @@ import { saleItems } from "@/db/schema/sales/sale_items";
 import { products } from "@/db/schema/inventory/products";
 import { nairobiDayBounds } from "@/lib/timezone";
 import type { ProfitProductItem } from "../types";
+import {
+  aggregateAtCostProducts,
+  findAtCostOrLossLines,
+} from "../services/at-cost-sales";
 
 export async function getProfitDetailAction(period: "month" | "today") {
   const user = await requireCurrentUser();
@@ -63,6 +67,21 @@ export async function getProfitDetailAction(period: "month" | "today") {
     };
   });
 
+  const atCostLines = await findAtCostOrLossLines(
+    user.businessId,
+    from,
+    to,
+    300,
+  );
+  const lossesFromLines = aggregateAtCostProducts(atCostLines);
+  const lossIds = new Set(lossesFromLines.map((p) => p.productId));
+  const lossesAgg = rows
+    .filter((r) => r.margin <= 0.009)
+    .filter((r) => !lossIds.has(r.productId));
+  const losses = [...lossesFromLines, ...lossesAgg].sort(
+    (a, b) => a.margin - b.margin,
+  );
+
   const revenue = rows.reduce((a, r) => a + r.revenue, 0);
   const grossProfit = rows.reduce((a, r) => a + r.margin, 0);
 
@@ -72,7 +91,11 @@ export async function getProfitDetailAction(period: "month" | "today") {
     grossProfit,
     marginPct: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
     all: rows.sort((a, b) => b.margin - a.margin),
-    profitable: rows.filter((r) => r.margin > 0).sort((a, b) => b.margin - a.margin),
-    losses: rows.filter((r) => r.margin <= 0.009).sort((a, b) => a.margin - b.margin),
+    profitable: rows
+      .filter((r) => r.margin > 0)
+      .sort((a, b) => b.margin - a.margin),
+    losses,
+    /** Every invoice line sold at or below book cost — for audit */
+    lossLines: atCostLines,
   };
 }

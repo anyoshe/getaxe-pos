@@ -61,6 +61,7 @@ export default async function DashboardPage() {
     slowProducts,
     topProfitProducts,
     lossProducts,
+    lossSaleLines,
   } = dashboard;
   const saleCount = summary.todaySalesCount ?? 0;
   const incomplete =
@@ -312,32 +313,51 @@ export default async function DashboardPage() {
           <p className="text-xs font-medium text-muted-foreground">
             Sold at cost or loss · this month
           </p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            Each invoice line at/below cost is flagged (not only overall product
+            loss).
+          </p>
           {(lossProducts ?? []).length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">
               No lines sold at cost or below this month.
             </p>
           ) : (
-            <ul className="mt-2 space-y-1.5">
+            <ul className="mt-2 space-y-2">
               {(lossProducts ?? []).slice(0, 5).map((p) => (
-                <li
-                  key={p.productId}
-                  className="flex items-baseline justify-between gap-2 text-sm"
-                >
-                  <span className="line-clamp-1 font-medium">{p.name}</span>
-                  <span className="shrink-0 tabular-nums text-rose-700 dark:text-rose-400">
-                    {p.margin.toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })}
-                  </span>
+                <li key={p.productId} className="text-sm">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="line-clamp-1 font-medium">{p.name}</span>
+                    <span className="shrink-0 tabular-nums text-rose-700 dark:text-rose-400">
+                      {p.margin.toLocaleString(undefined, {
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  </div>
+                  {(p.atCostInvoices?.length || p.atCostLineCount) ? (
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                      {p.atCostLineCount
+                        ? `${p.atCostLineCount} line(s)`
+                        : null}
+                      {p.atCostInvoices?.length
+                        ? ` · ${p.atCostInvoices.slice(0, 3).join(", ")}`
+                        : null}
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>
+          )}
+          {(lossSaleLines?.length ?? 0) > 0 && (
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              {(lossSaleLines ?? []).length} invoice line(s) at/below cost this
+              month.
+            </p>
           )}
           <Link
             href="/dashboard/profit?period=month&view=loss"
             className="mt-auto pt-2 text-xs font-medium text-primary hover:underline"
           >
-            Review loss lines →
+            Review loss lines &amp; invoices →
           </Link>
         </div>
       </div>
