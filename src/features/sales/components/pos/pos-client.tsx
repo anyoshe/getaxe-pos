@@ -1,5 +1,6 @@
-import { searchPosProductsAction } from "@/features/sales/actions/search-pos-products";
 "use client";
+
+import { searchPosProductsAction } from "@/features/sales/actions/search-pos-products";
 
 import {
   applyPromotion,
