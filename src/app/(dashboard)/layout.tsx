@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { rolePermissionService } from "@/services/security/role-permission.service";
+import {
+  getEnabledCapabilitiesCached,
+  getUserPermissionCodesCached,
+} from "@/lib/auth/request-cache";
 import { AppShell } from "@/components/layout/app-shell";
 import { PermissionsProvider } from "@/providers/permissions-provider";
 import { CapabilitiesProvider } from "@/providers/capabilities-provider";
-import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 
 export default async function DashboardLayout({
   children,
@@ -17,14 +19,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const [userPermissions, enabledCapabilities] = await Promise.all([
-    rolePermissionService.getUserPermissions(user.id),
-    new BusinessCapabilityRepository()
-      .listEnabled(user.businessId)
-      .catch(() => [] as string[]),
+  const [permissionCodes, enabledCapabilities] = await Promise.all([
+    getUserPermissionCodesCached(user.id),
+    getEnabledCapabilitiesCached(user.businessId),
   ]);
-
-  const permissionCodes = userPermissions.map((p) => p.code);
 
   return (
     <PermissionsProvider permissions={permissionCodes}>

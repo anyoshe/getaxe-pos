@@ -172,23 +172,29 @@ export class BusinessCapabilityRepository {
         eq(businessCapabilities.businessId, businessId),
         eq(businessCapabilities.enabled, true),
       ),
+      columns: { capabilityId: true },
     });
 
-    // Map UUID rows back to catalogue ids when possible
-    const allCaps = await db.query.capabilities.findMany();
-    const uuidToCatalogue = new Map(
-      allCaps.map((c) => [c.id, c.capabilityId]),
+    const raw = rows.map((r) => r.capabilityId);
+    // Fast path: modern schema stores catalogue ids (e.g. inventory.serial-numbers)
+    const needsUuidMap = raw.some((id) => id && !id.includes("."));
+    let ids = raw;
+    if (needsUuidMap) {
+      const allCaps = await db.query.capabilities.findMany({
+        columns: { id: true, capabilityId: true },
+      });
+      const uuidToCatalogue = new Map(
+        allCaps.map((c) => [c.id, c.capabilityId]),
+      );
+      ids = raw.map((asCatalogue) => {
+        if (asCatalogue.includes(".")) return asCatalogue;
+        return uuidToCatalogue.get(asCatalogue) ?? asCatalogue;
+      });
+    }
+
+    return Array.from(new Set(ids.filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b),
     );
-
-    const ids = rows.map((row) => {
-      const asCatalogue = row.capabilityId;
-      if (asCatalogue.includes(".")) {
-        return asCatalogue;
-      }
-      return uuidToCatalogue.get(asCatalogue) ?? asCatalogue;
-    });
-
-    return Array.from(new Set(ids)).sort((a, b) => a.localeCompare(b));
   }
 
   private async ensureCapabilityRow(capabilityId: string) {

@@ -48,7 +48,7 @@ export class ProductContextService {
       drugStrengths,
       prescriptionTypes,
     ] = await Promise.all([
-      categoryRepository.findAll(businessId),
+      categoryRepository.findAllActive(businessId),
       supplierRepository.findAll(businessId),
       unitsRepository.findAll(businessId),
       new BusinessCapabilityRepository().listEnabled(businessId),
@@ -73,7 +73,7 @@ export class ProductContextService {
         pharmacyReferenceRepository.listDrugCategories(businessId),
         pharmacyReferenceRepository.listDrugStrengths(businessId),
         pharmacyReferenceRepository.listPrescriptionTypes(businessId),
-        categoryRepository.findAll(businessId),
+        categoryRepository.findAllActive(businessId),
       ]);
       dosageForms = refreshed[0];
       drugCategories = refreshed[1];
