@@ -184,6 +184,8 @@ export function PosClient({
   const [serialsMap, setSerialsMap] = useState(serialsByProductWarehouse);
   const [searching, setSearching] = useState(false);
 
+  const [query, setQuery] = useState("");
+
   useEffect(() => {
     setCatalog(products);
   }, [products]);
@@ -291,7 +293,6 @@ export function PosClient({
     return map;
   }, [sellable]);
 
-  const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [catalogLayout, setCatalogLayout] = useState<"grid" | "list" | "compact">(
     "grid",
