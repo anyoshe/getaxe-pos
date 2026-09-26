@@ -16,6 +16,8 @@ import {
 } from "../services/product-costing";
 import { ensureProductCostingSchema } from "../services/ensure-product-costing-schema";
 
+export type MarkupTarget = "retail" | "wholesale";
+
 export type MarkupPreviewLine = {
   productId: string;
   name: string;
@@ -27,16 +29,70 @@ export type MarkupPreviewLine = {
   skippedReason?: string;
 };
 
+async function resolvePriceList(
+  businessId: string,
+  target: MarkupTarget,
+): Promise<{ id: string; name: string } | null> {
+  if (target === "retail") {
+    const defaultList = await db.query.priceLists.findFirst({
+      where: and(
+        eq(priceLists.businessId, businessId),
+        eq(priceLists.isDefault, true),
+        eq(priceLists.active, true),
+      ),
+    });
+    if (defaultList) return { id: defaultList.id, name: defaultList.name };
+    const any = await db.query.priceLists.findFirst({
+      where: and(
+        eq(priceLists.businessId, businessId),
+        eq(priceLists.active, true),
+      ),
+    });
+    return any ? { id: any.id, name: any.name } : null;
+  }
+
+  // Wholesale / trade / WS
+  const all = await db.query.priceLists.findMany({
+    where: and(
+      eq(priceLists.businessId, businessId),
+      eq(priceLists.active, true),
+    ),
+  });
+  const match = all.find(
+    (l) =>
+      /wholesale|ws|trade/i.test(l.code ?? "") ||
+      /wholesale|trade/i.test(l.name ?? ""),
+  );
+  if (match) return { id: match.id, name: match.name };
+
+  // Auto-create a Wholesale list so apply can succeed
+  const [created] = await db
+    .insert(priceLists)
+    .values({
+      businessId,
+      name: "Wholesale",
+      code: "WS",
+      isDefault: false,
+      active: true,
+    })
+    .returning();
+  return created ? { id: created.id, name: created.name } : null;
+}
+
 /**
- * Apply category (or product override) markup to default price list:
- * sell ≈ cost × (1 + markup%). Shows cost → previous → new for confirmation.
+ * Apply category markup to retail (default) or wholesale price list:
+ * sell ≈ cost × (1 + markup%).
+ * Retail uses category.markupPercent (product.markupPercent override).
+ * Wholesale uses category.wholesaleMarkupPercent only (no product override yet).
  */
 export async function applyCategoryMarkupAction(input: {
   categoryId: string;
-  /** If true, write suggested prices; if false, only preview. */
   commit: boolean;
+  /** Default retail. */
+  target?: MarkupTarget;
 }) {
   const user = await requireAuthorizedUser("categories.update");
+  const target: MarkupTarget = input.target === "wholesale" ? "wholesale" : "retail";
 
   await ensureProductCostingSchema();
 
@@ -52,27 +108,32 @@ export async function applyCategoryMarkupAction(input: {
   }
 
   const catMarkup =
-    category.markupPercent != null ? Number(category.markupPercent) : null;
+    target === "wholesale"
+      ? category.wholesaleMarkupPercent != null
+        ? Number(category.wholesaleMarkupPercent)
+        : null
+      : category.markupPercent != null
+        ? Number(category.markupPercent)
+        : null;
+
   if (catMarkup == null || !Number.isFinite(catMarkup) || catMarkup < 0) {
     return {
       success: false as const,
       message:
-        "Set a default markup % on this category and save first, then apply.",
+        target === "wholesale"
+          ? "Set a wholesale markup % on this category and save first, then apply."
+          : "Set a retail markup % on this category and save first, then apply.",
     };
   }
 
-  const defaultList = await db.query.priceLists.findFirst({
-    where: and(
-      eq(priceLists.businessId, user.businessId),
-      eq(priceLists.isDefault, true),
-      eq(priceLists.active, true),
-    ),
-  });
-
-  if (!defaultList) {
+  const list = await resolvePriceList(user.businessId, target);
+  if (!list) {
     return {
       success: false as const,
-      message: "Create an active default price list under Product prices first.",
+      message:
+        target === "wholesale"
+          ? "Could not find or create a Wholesale price list."
+          : "Create an active default (retail) price list under Product prices first.",
     };
   }
 
@@ -97,12 +158,15 @@ export async function applyCategoryMarkupAction(input: {
   let appliedCount = 0;
 
   for (const p of productRows) {
-    const productMarkup =
-      p.markupPercent != null ? Number(p.markupPercent) : null;
-    const markup =
-      productMarkup != null && Number.isFinite(productMarkup)
-        ? productMarkup
-        : catMarkup;
+    // Product-level markup only overrides retail
+    let markup = catMarkup;
+    if (target === "retail") {
+      const productMarkup =
+        p.markupPercent != null ? Number(p.markupPercent) : null;
+      if (productMarkup != null && Number.isFinite(productMarkup)) {
+        markup = productMarkup;
+      }
+    }
 
     const avg = p.costPrice != null ? Number(p.costPrice) : 0;
     const last =
@@ -113,7 +177,7 @@ export async function applyCategoryMarkupAction(input: {
       where: and(
         eq(productPrices.businessId, user.businessId),
         eq(productPrices.productId, p.id),
-        eq(productPrices.priceListId, defaultList.id),
+        eq(productPrices.priceListId, list.id),
         eq(productPrices.active, true),
       ),
     });
@@ -161,7 +225,7 @@ export async function applyCategoryMarkupAction(input: {
         await db.insert(productPrices).values({
           businessId: user.businessId,
           productId: p.id,
-          priceListId: defaultList.id,
+          priceListId: list.id,
           price: priceStr,
           minimumQuantity: "1",
           active: true,
@@ -190,11 +254,13 @@ export async function applyCategoryMarkupAction(input: {
 
   return {
     success: true as const,
-    message: input.commit
-      ? `Applied markup ${catMarkup}% to ${appliedCount} product price(s).`
-      : `Preview: ${lines.filter((l) => !l.skippedReason).length} product(s) would update at ${catMarkup}% markup.`,
+    target,
+    priceListName: list.name,
     markupPercent: catMarkup,
-    lines,
     appliedCount,
+    lines,
+    message: input.commit
+      ? `Applied ${target} markup (${catMarkup}%) to ${appliedCount} product(s) on “${list.name}”.`
+      : `Preview: ${lines.filter((l) => !l.skippedReason).length} product(s) → ${target} list “${list.name}” @ ${catMarkup}%.`,
   };
 }

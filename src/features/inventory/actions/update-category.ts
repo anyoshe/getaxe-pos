@@ -12,7 +12,7 @@ import { ensureProductCostingSchema } from "../services/ensure-product-costing-s
 function dbErrorMessage(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
   if (
-    /markup_percent|last_purchase_cost|price_locked|column .* does not exist/i.test(
+    /markup_percent|wholesale_markup_percent|last_purchase_cost|price_locked|column .* does not exist/i.test(
       msg,
     )
   ) {
@@ -57,11 +57,13 @@ export async function updateCategoryAction(id: string, formData: FormData) {
   }
 
   const rawMarkup = formStr(formData.get("markupPercent"));
+  const rawWs = formStr(formData.get("wholesaleMarkupPercent"));
   const rawDesc = formStr(formData.get("description"));
   const parsed = updateCategorySchema.safeParse({
     name: formStr(formData.get("name")),
     description: rawDesc.trim() === "" ? null : rawDesc,
     markupPercent: rawMarkup.trim() === "" ? null : rawMarkup,
+    wholesaleMarkupPercent: rawWs.trim() === "" ? null : rawWs,
     active: formStr(formData.get("active")) === "true",
   });
 
@@ -87,6 +89,10 @@ export async function updateCategoryAction(id: string, formData: FormData) {
         parsed.data.markupPercent == null
           ? null
           : String(parsed.data.markupPercent),
+      wholesaleMarkupPercent:
+        parsed.data.wholesaleMarkupPercent == null
+          ? null
+          : String(parsed.data.wholesaleMarkupPercent),
     });
 
     revalidatePath("/inventory/categories");

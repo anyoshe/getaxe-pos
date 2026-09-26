@@ -7,7 +7,7 @@ let ensurePromise: Promise<void> | null = null;
 
 /**
  * Idempotent: adds markup / moving-average columns if missing (e.g. Neon
- * never ran migration 0036). Safe to call on every request; runs once per
+ * never ran migration 0036/0037). Safe to call on every request; runs once per
  * serverless isolate after success.
  */
 export async function ensureProductCostingSchema(): Promise<void> {
@@ -24,7 +24,8 @@ export async function ensureProductCostingSchema(): Promise<void> {
       `);
       await db.execute(sql`
         ALTER TABLE categories
-          ADD COLUMN IF NOT EXISTS markup_percent numeric(8, 2)
+          ADD COLUMN IF NOT EXISTS markup_percent numeric(8, 2),
+          ADD COLUMN IF NOT EXISTS wholesale_markup_percent numeric(8, 2)
       `);
       await db.execute(sql`
         UPDATE products
@@ -32,7 +33,6 @@ export async function ensureProductCostingSchema(): Promise<void> {
         WHERE cost_price IS NOT NULL
           AND last_purchase_cost IS NULL
       `);
-      // Best-effort migration bookkeeping (table may not exist on some envs)
       try {
         await db.execute(sql`
           CREATE TABLE IF NOT EXISTS app_migrations (
@@ -47,6 +47,14 @@ export async function ensureProductCostingSchema(): Promise<void> {
           VALUES (
             '0036_product_costing_markup.sql',
             '3e6d7e1d115ae1ef5aeb1f7043968fbd7f296323d3473f9ed0416eb930cc63d6'
+          )
+          ON CONFLICT (filename) DO NOTHING
+        `);
+        await db.execute(sql`
+          INSERT INTO app_migrations (filename, checksum)
+          VALUES (
+            '0037_category_wholesale_markup.sql',
+            'wholesale_markup_percent_v1'
           )
           ON CONFLICT (filename) DO NOTHING
         `);

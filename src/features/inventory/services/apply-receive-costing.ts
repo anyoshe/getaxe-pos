@@ -9,6 +9,7 @@ import { priceLists } from "@/db/schema/inventory/price_lists";
 
 import {
   projectCostAfterReceive,
+  suggestSellPrice,
   type CostUpdateResult,
   type PricingCostBasis,
 } from "./product-costing";
@@ -25,7 +26,7 @@ export type ApplyReceiveCostingInput = {
 
 /**
  * After stock is received: update moving average + last purchase cost,
- * optionally push suggested sell price to the default price list.
+ * optionally push suggested sell prices to default (retail) and wholesale lists.
  */
 export async function applyReceiveCosting(
   input: ApplyReceiveCostingInput,
@@ -71,13 +72,21 @@ export async function applyReceiveCosting(
   }
 
   let categoryMarkup: number | null = null;
+  let wholesaleMarkup: number | null = null;
   if (product.categoryId) {
     const cat = await db.query.categories.findFirst({
       where: eq(categories.id, product.categoryId),
-      columns: { markupPercent: true },
+      columns: {
+        markupPercent: true,
+        wholesaleMarkupPercent: true,
+      },
     });
     categoryMarkup =
       cat?.markupPercent != null ? Number(cat.markupPercent) : null;
+    wholesaleMarkup =
+      cat?.wholesaleMarkupPercent != null
+        ? Number(cat.wholesaleMarkupPercent)
+        : null;
   }
 
   const projection = projectCostAfterReceive({
@@ -109,39 +118,96 @@ export async function applyReceiveCosting(
 
   if (
     input.applySuggestedSellPrice &&
-    !projection.priceLocked &&
-    projection.suggestedSellPrice != null &&
-    projection.suggestedSellPrice > 0
+    !projection.priceLocked
   ) {
-    await upsertDefaultSellPrice({
-      businessId: input.businessId,
-      productId: input.productId,
-      price: projection.suggestedSellPrice,
-    });
+    if (
+      projection.suggestedSellPrice != null &&
+      projection.suggestedSellPrice > 0
+    ) {
+      await upsertSellPriceOnList({
+        businessId: input.businessId,
+        productId: input.productId,
+        price: projection.suggestedSellPrice,
+        target: "retail",
+      });
+    }
+
+    if (
+      wholesaleMarkup != null &&
+      Number.isFinite(wholesaleMarkup) &&
+      wholesaleMarkup >= 0
+    ) {
+      const basis = projection.newAverageCost;
+      if (basis > 0) {
+        const wsSell = suggestSellPrice(basis, wholesaleMarkup);
+        if (wsSell > 0) {
+          await upsertSellPriceOnList({
+            businessId: input.businessId,
+            productId: input.productId,
+            price: wsSell,
+            target: "wholesale",
+          });
+        }
+      }
+    }
   }
 
   return projection;
 }
 
-async function upsertDefaultSellPrice(input: {
+async function upsertSellPriceOnList(input: {
   businessId: string;
   productId: string;
   price: number;
+  target: "retail" | "wholesale";
 }) {
-  const defaultList = await db.query.priceLists.findFirst({
-    where: and(
-      eq(priceLists.businessId, input.businessId),
-      eq(priceLists.isDefault, true),
-      eq(priceLists.active, true),
-    ),
-  });
-  if (!defaultList) return;
+  let listId: string | null = null;
+
+  if (input.target === "retail") {
+    const defaultList = await db.query.priceLists.findFirst({
+      where: and(
+        eq(priceLists.businessId, input.businessId),
+        eq(priceLists.isDefault, true),
+        eq(priceLists.active, true),
+      ),
+    });
+    listId = defaultList?.id ?? null;
+  } else {
+    const all = await db.query.priceLists.findMany({
+      where: and(
+        eq(priceLists.businessId, input.businessId),
+        eq(priceLists.active, true),
+      ),
+    });
+    const match = all.find(
+      (l) =>
+        /wholesale|ws|trade/i.test(l.code ?? "") ||
+        /wholesale|trade/i.test(l.name ?? ""),
+    );
+    if (match) {
+      listId = match.id;
+    } else {
+      const [created] = await db
+        .insert(priceLists)
+        .values({
+          businessId: input.businessId,
+          name: "Wholesale",
+          code: "WS",
+          isDefault: false,
+          active: true,
+        })
+        .returning();
+      listId = created?.id ?? null;
+    }
+  }
+
+  if (!listId) return;
 
   const existing = await db.query.productPrices.findFirst({
     where: and(
       eq(productPrices.businessId, input.businessId),
       eq(productPrices.productId, input.productId),
-      eq(productPrices.priceListId, defaultList.id),
+      eq(productPrices.priceListId, listId),
       eq(productPrices.active, true),
     ),
   });
@@ -156,7 +222,7 @@ async function upsertDefaultSellPrice(input: {
     await db.insert(productPrices).values({
       businessId: input.businessId,
       productId: input.productId,
-      priceListId: defaultList.id,
+      priceListId: listId,
       price: priceStr,
       minimumQuantity: "1",
       active: true,

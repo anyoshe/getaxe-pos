@@ -29,10 +29,19 @@ export function CategoryTable({ data, onEdit, onDelete }: CategoryTableProps) {
         },
         {
           key: "markupPercent",
-          title: "Markup %",
+          title: "Retail %",
           render: (category) =>
             category.markupPercent != null && category.markupPercent !== ""
               ? `${Number(category.markupPercent)}%`
+              : "—",
+        },
+        {
+          key: "wholesaleMarkupPercent",
+          title: "Wholesale %",
+          render: (category) =>
+            category.wholesaleMarkupPercent != null &&
+            category.wholesaleMarkupPercent !== ""
+              ? `${Number(category.wholesaleMarkupPercent)}%`
               : "—",
         },
         {

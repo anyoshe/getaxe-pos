@@ -10,7 +10,7 @@ import { ensureProductCostingSchema } from "../services/ensure-product-costing-s
 
 function dbErrorMessage(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
-  if (/markup_percent|last_purchase_cost|price_locked|column .* does not exist/i.test(msg)) {
+  if (/markup_percent|wholesale_markup_percent|last_purchase_cost|price_locked|column .* does not exist/i.test(msg)) {
     return "Database is missing pricing columns. Run migration 0036_product_costing_markup on production (Neon SQL), then try again.";
   }
   return msg || "Failed to create category.";
@@ -20,12 +20,15 @@ export async function createCategoryAction(formData: FormData) {
   const user = await requireAuthorizedUser("categories.create");
 
   const rawMarkup = formData.get("markupPercent");
+  const rawWs = formData.get("wholesaleMarkupPercent");
   const parsed = createCategorySchema.safeParse({
     businessId: user.businessId,
     name: formData.get("name"),
     description: formData.get("description") || null,
     markupPercent:
       rawMarkup === "" || rawMarkup == null ? null : String(rawMarkup),
+    wholesaleMarkupPercent:
+      rawWs === "" || rawWs == null ? null : String(rawWs),
     active: formData.get("active") === "true",
   });
 
@@ -53,6 +56,10 @@ export async function createCategoryAction(formData: FormData) {
         parsed.data.markupPercent == null
           ? null
           : String(parsed.data.markupPercent),
+      wholesaleMarkupPercent:
+        parsed.data.wholesaleMarkupPercent == null
+          ? null
+          : String(parsed.data.wholesaleMarkupPercent),
     });
 
     revalidatePath("/inventory/categories");

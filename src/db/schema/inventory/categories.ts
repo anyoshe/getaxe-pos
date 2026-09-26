@@ -29,8 +29,14 @@ export const categories = pgTable(
 
     description: text("description"),
 
-    /** Default markup % on cost for products in this category (e.g. 30 = 30%). */
+    /** Default retail markup % on cost (e.g. 30 = 30%). Writes default price list. */
     markupPercent: numeric("markup_percent", {
+      precision: 8,
+      scale: 2,
+    }),
+
+    /** Wholesale markup % on cost. Writes wholesale/trade price list only. */
+    wholesaleMarkupPercent: numeric("wholesale_markup_percent", {
       precision: 8,
       scale: 2,
     }),

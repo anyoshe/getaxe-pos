@@ -22,6 +22,8 @@ export const createCategorySchema = z.object({
 
   markupPercent: markupPercentSchema.optional(),
 
+  wholesaleMarkupPercent: markupPercentSchema.optional(),
+
   active: z.boolean(),
 });
 
@@ -37,6 +39,8 @@ export const updateCategorySchema = z.object({
   description: z.string().trim().nullable().optional(),
 
   markupPercent: markupPercentSchema.optional(),
+
+  wholesaleMarkupPercent: markupPercentSchema.optional(),
 
   active: z.boolean(),
 });
