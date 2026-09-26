@@ -3,20 +3,14 @@ import { productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { branchesService } from "@/features/settings/services/branches.service";
 import { saleRepository } from "@/repositories/sales/sales.repository";
-import { productSerials } from "@/db/schema/inventory/product_serials";
-import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
-import { productBatches } from "@/db/schema/inventory/product_batches";
 import { db } from "@/db";
-import { and, asc, eq, gt, isNull, or, sql } from "drizzle-orm";
-import { productUnits } from "@/db/schema/inventory/product_units";
-import { productPrices } from "@/db/schema/inventory/product_prices";
-import { priceLists } from "@/db/schema/inventory/price_lists";
-import { units } from "@/db/schema/settings/units";
+import { eq } from "drizzle-orm";
 import { PosClient } from "@/features/sales/components/pos/pos-client";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { promotionsRepository } from "@/repositories/inventory/promotions.repository";
 import { businesses } from "@/db/schema/core/businesses";
 import { financeService } from "@/features/finance/services/finance.service";
+import { loadPosSupport } from "@/features/sales/actions/search-pos-products";
 
 export default async function FullScreenPosPage() {
   const user = await getCurrentUser();
@@ -46,115 +40,22 @@ export default async function FullScreenPosPage() {
     ? await promotionsRepository.listActiveForPos(user.businessId).catch(() => [])
     : [];
 
-  const [
-    products,
-    warehouses,
-    branches,
-    sales,
-    availableSerialRows,
-    productUnitRows,
-    priceRows,
-    stockRows,
-    batchRows,
-  ] = await Promise.all([
-    productService.getProductsForPos(user.businessId),
+  const INITIAL_POS_PRODUCTS = 48;
+
+  const [seedProducts, warehouses, branches, sales] = await Promise.all([
+    productService.getProductsForPos(user.businessId, {
+      limit: INITIAL_POS_PRODUCTS,
+    }),
     warehousesService.getWarehouses(user.businessId),
     branchesService.getBranches(user.businessId),
     saleRepository.findRecent(user.businessId, 12),
-    db
-      .select({
-        productId: productSerials.productId,
-        warehouseId: productSerials.warehouseId,
-        serialNumber: productSerials.serialNumber,
-      })
-      .from(productSerials)
-      .where(
-        and(
-          eq(productSerials.businessId, user.businessId),
-          eq(productSerials.status, "AVAILABLE"),
-        ),
-      ),
-    db
-      .select({
-        productId: productUnits.productId,
-        unitId: productUnits.unitId,
-        factorToStock: productUnits.factorToStock,
-        isSalesDefault: productUnits.isSalesDefault,
-        isStockUnit: productUnits.isStockUnit,
-        allowSale: productUnits.allowSale,
-        unitCode: units.code,
-        unitName: units.name,
-      })
-      .from(productUnits)
-      .innerJoin(units, eq(productUnits.unitId, units.id))
-      .where(
-        and(
-          eq(productUnits.businessId, user.businessId),
-          eq(productUnits.active, true),
-          isNull(productUnits.validTo),
-          or(eq(productUnits.allowSale, true), eq(productUnits.isStockUnit, true)),
-        ),
-      ),
-    db
-      .select({
-        productId: productPrices.productId,
-        unitId: productPrices.unitId,
-        price: productPrices.price,
-        priceListId: productPrices.priceListId,
-        isDefault: priceLists.isDefault,
-        listCode: priceLists.code,
-        listName: priceLists.name,
-      })
-      .from(productPrices)
-      .innerJoin(priceLists, eq(productPrices.priceListId, priceLists.id))
-      .where(
-        and(
-          eq(productPrices.businessId, user.businessId),
-          eq(productPrices.active, true),
-          eq(priceLists.active, true),
-        ),
-      ),
-    // Same source of truth as Inventory → Stock on Hand
-    db
-      .select({
-        productId: inventoryBalances.productId,
-        warehouseId: inventoryBalances.warehouseId,
-        quantity: sql<string>`coalesce(sum(${inventoryBalances.quantity}), 0)`,
-      })
-      .from(inventoryBalances)
-      .where(
-        and(
-          eq(inventoryBalances.businessId, user.businessId),
-          gt(inventoryBalances.quantity, "0"),
-        ),
-      )
-      .groupBy(inventoryBalances.productId, inventoryBalances.warehouseId),
-    db
-      .select({
-        productId: inventoryBalances.productId,
-        warehouseId: inventoryBalances.warehouseId,
-        batchId: inventoryBalances.batchId,
-        quantity: inventoryBalances.quantity,
-        batchNumber: productBatches.batchNumber,
-        expiryDate: productBatches.expiryDate,
-        manufactureDate: productBatches.manufactureDate,
-      })
-      .from(inventoryBalances)
-      .innerJoin(
-        productBatches,
-        eq(inventoryBalances.batchId, productBatches.id),
-      )
-      .where(
-        and(
-          eq(inventoryBalances.businessId, user.businessId),
-          gt(inventoryBalances.quantity, "0"),
-          eq(productBatches.active, true),
-        ),
-      )
-      .orderBy(asc(productBatches.expiryDate)),
   ]);
 
-  const unitsByProduct: Record<
+  const products = seedProducts;
+  const productIds = (products as { id: string }[]).map((p) => p.id);
+  const support = await loadPosSupport(user.businessId, productIds);
+
+  const unitsByProduct = support.productUnitsByProduct as Record<
     string,
     {
       unitId: string;
@@ -163,20 +64,24 @@ export default async function FullScreenPosPage() {
       isStockUnit: boolean;
       label: string;
     }[]
-  > = {};
-  for (const row of productUnitRows) {
-    const list = unitsByProduct[row.productId] ?? [];
-    list.push({
-      unitId: row.unitId,
-      factorToStock: Number(row.factorToStock),
-      isSalesDefault: row.isSalesDefault,
-      isStockUnit: row.isStockUnit,
-      label: row.unitName || row.unitCode,
-    });
-    unitsByProduct[row.productId] = list;
+  >;
+  // Normalize label field
+  for (const [pid, list] of Object.entries(support.productUnitsByProduct)) {
+    unitsByProduct[pid] = list.map((u) => ({
+      unitId: u.unitId,
+      factorToStock: u.factorToStock,
+      isSalesDefault: u.isSalesDefault,
+      isStockUnit: u.isStockUnit,
+      label: u.label || u.unitName || u.unitCode || "Unit",
+    }));
   }
 
-  // Ensure stock / sales units appear even if packaging was incomplete
+  const stockByProductWarehouse = support.stockByProductWarehouse;
+  const serialsByProduct = support.serialsByProduct;
+  const batchesByProductWarehouse = support.batchesByProductWarehouse;
+  const pricesByProductUnit = support.unitPricesByProduct;
+
+// Ensure stock / sales units appear even if packaging was incomplete
   for (const p of products as Array<{
     id: string;
     stockUnitId?: string | null;
@@ -215,93 +120,20 @@ export default async function FullScreenPosPage() {
   }
 
   /** productId -> warehouseId -> available serials */
+
   const serialsByProductWarehouse: Record<string, Record<string, string[]>> = {};
-  for (const row of availableSerialRows) {
-    const wid = row.warehouseId ?? "_";
-    const byWh = serialsByProductWarehouse[row.productId] ?? {};
-    const list = byWh[wid] ?? [];
-    list.push(row.serialNumber);
-    byWh[wid] = list;
-    serialsByProductWarehouse[row.productId] = byWh;
+  for (const [pid, list] of Object.entries(serialsByProduct)) {
+    const byWh: Record<string, string[]> = {};
+    for (const s of list) {
+      const wh = s.warehouseId ?? "_";
+      byWh[wh] = byWh[wh] ?? [];
+      byWh[wh].push(s.serialNumber);
+    }
+    serialsByProductWarehouse[pid] = byWh;
   }
-
-  /** productId -> warehouseId -> qty on hand (stock units) */
-  const stockByProductWarehouse: Record<string, Record<string, number>> = {};
-  for (const row of stockRows) {
-    const byWh = stockByProductWarehouse[row.productId] ?? {};
-    byWh[row.warehouseId] = Number(row.quantity) || 0;
-    stockByProductWarehouse[row.productId] = byWh;
-  }
-
-  // Flatten serials for default warehouse (client will re-filter on warehouse change)
   const availableSerials: Record<string, string[]> = {};
   for (const [pid, byWh] of Object.entries(serialsByProductWarehouse)) {
     availableSerials[pid] = Object.values(byWh).flat();
-  }
-
-  /** productId -> unitId -> price (explicit pack price if configured) */
-  /** productId -> warehouseId -> batches (FEFO ordered) */
-  const batchesByProductWarehouse: Record<
-    string,
-    Record<
-      string,
-      {
-        batchId: string;
-        batchNumber: string;
-        expiryDate: string | null;
-        manufactureDate: string | null;
-        quantity: number;
-      }[]
-    >
-  > = {};
-  for (const row of batchRows) {
-    if (!row.batchId) continue;
-    const byWh = batchesByProductWarehouse[row.productId] ?? {};
-    const list = byWh[row.warehouseId] ?? [];
-    list.push({
-      batchId: row.batchId,
-      batchNumber: row.batchNumber,
-      expiryDate: row.expiryDate ? String(row.expiryDate).slice(0, 10) : null,
-      manufactureDate: row.manufactureDate
-        ? String(row.manufactureDate).slice(0, 10)
-        : null,
-      quantity: Number(row.quantity) || 0,
-    });
-    byWh[row.warehouseId] = list;
-    batchesByProductWarehouse[row.productId] = byWh;
-  }
-
-  // Prefer default (retail) list for unit-specific prices; skip wholesale list rows
-  const pricesByProductUnit: Record<string, Record<string, number>> = {};
-  const retailPriceRows = (
-    priceRows as Array<{
-      productId: string;
-      unitId: string | null;
-      price: string;
-      isDefault: boolean | null;
-      listCode: string | null;
-      listName: string | null;
-    }>
-  ).filter((row) => {
-    const code = (row.listCode ?? "").toLowerCase();
-    const name = (row.listName ?? "").toLowerCase();
-    const isWholesale =
-      /wholesale|ws|trade/.test(code) || /wholesale|trade/.test(name);
-    if (isWholesale) return false;
-    return true;
-  });
-  // Prefer isDefault rows when both exist for same unit
-  const ranked = [...retailPriceRows].sort((a, b) => {
-    const ad = a.isDefault ? 0 : 1;
-    const bd = b.isDefault ? 0 : 1;
-    return ad - bd;
-  });
-  for (const row of ranked) {
-    if (!row.unitId) continue;
-    const byU = pricesByProductUnit[row.productId] ?? {};
-    if (byU[row.unitId] != null) continue; // keep preferred (default) first
-    byU[row.unitId] = Number(row.price) || 0;
-    pricesByProductUnit[row.productId] = byU;
   }
 
   return (

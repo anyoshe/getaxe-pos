@@ -1,3 +1,4 @@
+import { searchPosProductsAction } from "@/features/sales/actions/search-pos-products";
 "use client";
 
 import {
@@ -171,10 +172,110 @@ export function PosClient({
   const [pending, startTransition] = useTransition();
   const scanRef = useRef<HTMLInputElement>(null);
 
+  const [catalog, setCatalog] = useState(products);
+  const [stockMap, setStockMap] = useState(stockByProductWarehouse);
+  const [unitsMap, setUnitsMap] = useState(productUnitsByProduct);
+  const [pricesMap, setPricesMap] = useState(pricesByProductUnit);
+  const [batchesMap, setBatchesMap] = useState(batchesByProductWarehouse);
+  const [serialsMap, setSerialsMap] = useState(serialsByProductWarehouse);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    setCatalog(products);
+  }, [products]);
+
+  useEffect(() => {
+    setStockMap(stockByProductWarehouse);
+  }, [stockByProductWarehouse]);
+
   const sellable = useMemo(
-    () => products.filter((p) => p.active !== false),
-    [products],
+    () => catalog.filter((p) => p.active !== false),
+    [catalog],
   );
+
+  // Server search-first: load matches beyond the initial seed catalogue
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      void searchPosProductsAction({ query: q, limit: 30 }).then((r) => {
+        if (cancelled || !r.success) {
+          setSearching(false);
+          return;
+        }
+        setCatalog((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          for (const raw of r.products) {
+            map.set(raw.id, {
+              id: raw.id,
+              name: raw.name,
+              sku: raw.sku,
+              barcode: raw.barcode,
+              categoryId: raw.categoryId,
+              categoryName: raw.categoryName,
+              productType: raw.productType as PosProduct["productType"],
+              trackInventory: raw.trackInventory,
+              trackBatch: raw.trackBatch,
+              trackExpiry: raw.trackExpiry,
+              serialized: raw.serialized,
+              isControlled: raw.isControlled,
+              salesUnitId: raw.salesUnitId,
+              stockUnitId: raw.stockUnitId,
+              costPrice: raw.costPrice,
+              retailPrice: raw.retailPrice,
+              wholesalePrice: raw.wholesalePrice,
+              sellingPrice: raw.sellingPrice,
+              active: raw.active,
+            });
+          }
+          return Array.from(map.values());
+        });
+        const s = r.support;
+        setStockMap((prev) => ({ ...prev, ...s.stockByProductWarehouse }));
+        setUnitsMap((prev) => {
+          const next = { ...prev };
+          for (const [pid, list] of Object.entries(s.productUnitsByProduct)) {
+            next[pid] = list.map((u) => ({
+              unitId: u.unitId,
+              factorToStock: u.factorToStock,
+              isSalesDefault: u.isSalesDefault,
+              isStockUnit: u.isStockUnit,
+              allowSale: u.allowSale,
+              unitCode: u.unitCode,
+              unitName: u.unitName,
+              label: u.label || u.unitName || u.unitCode || "Unit",
+            }));
+          }
+          return next;
+        });
+        setPricesMap((prev) => ({ ...prev, ...s.unitPricesByProduct }));
+        setBatchesMap((prev) => ({ ...prev, ...s.batchesByProductWarehouse }));
+        setSerialsMap((prev) => {
+          const next = { ...prev };
+          for (const [pid, list] of Object.entries(s.serialsByProduct)) {
+            const byWh: Record<string, string[]> = { ...(next[pid] ?? {}) };
+            for (const ser of list) {
+              const wh = ser.warehouseId ?? "_";
+              byWh[wh] = [...(byWh[wh] ?? []), ser.serialNumber];
+            }
+            next[pid] = byWh;
+          }
+          return next;
+        });
+        setSearching(false);
+      });
+    }, 280);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
 
   const productByCode = useMemo(() => {
     const map = new Map<string, PosProduct>();
@@ -203,14 +304,14 @@ export function PosClient({
   );
 
   function stockOnHand(productId: string, whId: string = warehouseId): number {
-    return Number(stockByProductWarehouse[productId]?.[whId] ?? 0);
+    return Number(stockMap[productId]?.[whId] ?? 0);
   }
 
   function batchesFor(
     productId: string,
     whId: string = warehouseId,
   ): PosBatchOption[] {
-    return batchesByProductWarehouse[productId]?.[whId] ?? [];
+    return batchesMap[productId]?.[whId] ?? [];
   }
   const [paymentMethod, setPaymentMethod] = useState<
     "CASH" | "MPESA" | "CARD" | "BANK_TRANSFER" | "MOBILE_MONEY" | "CREDIT"
@@ -277,11 +378,10 @@ export function PosClient({
 
   useEffect(() => {
     const next: SerialsByProduct = {};
-    for (const [pid, byWh] of Object.entries(serialsByProductWarehouse)) {
+    for (const [pid, byWh] of Object.entries(serialsMap)) {
       next[pid] = byWh[warehouseId] ?? [];
     }
-    // If map empty, keep initial (backward compatible)
-    if (Object.keys(serialsByProductWarehouse).length === 0) {
+    if (Object.keys(serialsMap).length === 0) {
       setSerialPool(initialSerials);
       return;
     }
@@ -294,7 +394,7 @@ export function PosClient({
         ),
       })),
     );
-  }, [warehouseId, serialsByProductWarehouse, initialSerials]);
+  }, [warehouseId, serialsMap, initialSerials]);
 
   /**
    * Price for one sell unit:
@@ -307,7 +407,7 @@ export function PosClient({
         priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice;
       let raw = base;
       if (unitId) {
-        const explicit = pricesByProductUnit[p.id]?.[unitId];
+        const explicit = pricesMap[p.id]?.[unitId];
         if (explicit != null && explicit > 0) raw = explicit;
         else {
           const factor = factorToStock > 0 ? factorToStock : 1;
@@ -323,7 +423,7 @@ export function PosClient({
       }
       return applyPromotion(raw, p.id, activePromotions).price;
     },
-    [priceMode, pricesByProductUnit, activePromotions],
+    [priceMode, pricesMap, activePromotions],
   );
 
   // When switching retail/wholesale, update cart unit prices
@@ -418,7 +518,7 @@ export function PosClient({
   }
 
   function defaultUnitFor(productId: string): PosProductUnit | null {
-    const list = productUnitsByProduct[productId] ?? [];
+    const list = unitsMap[productId] ?? [];
     if (list.length === 0) return null;
     // Prefer piece/tablet (sales default or stock unit) — never force box/strip
     return (
@@ -505,11 +605,11 @@ export function PosClient({
         description: u ? `Added (${u.label})` : "Added to cart",
       });
     },
-    [priceFor, productUnitsByProduct],
+    [priceFor, unitsMap],
   );
 
   function setLineUnit(productId: string, unitId: string) {
-    const u = (productUnitsByProduct[productId] ?? []).find(
+    const u = (unitsMap[productId] ?? []).find(
       (x) => x.unitId === unitId,
     );
     if (!u) return;
@@ -1564,7 +1664,7 @@ export function PosClient({
                       {cart.map((line) => {
                         const options = freeSerials(line.productId);
                         const units =
-                          productUnitsByProduct[line.productId] ?? [];
+                          unitsMap[line.productId] ?? [];
                         const lineTotal = line.quantity * line.unitPrice;
                         const needsBatch =
                           (line.trackBatch || line.trackExpiry) &&
@@ -1843,7 +1943,7 @@ export function PosClient({
             ) : (
               cart.map((line) => {
                 const options = freeSerials(line.productId);
-                const units = productUnitsByProduct[line.productId] ?? [];
+                const units = unitsMap[line.productId] ?? [];
                 const lineTotal = line.quantity * line.unitPrice;
                 return (
                   <div

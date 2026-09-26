@@ -8,12 +8,19 @@ export class ProductService {
     return productRepository.findAll(businessId);
   }
 
-  /** Active products only — use on POS for faster first paint */
-  async getProductsForPos(businessId: string) {
-    if (typeof (productRepository as { findAllForPos?: (id: string) => unknown }).findAllForPos === "function") {
-      return productRepository.findAllForPos(businessId);
-    }
-    return productRepository.findAll(businessId);
+  /** Active products for POS — optional search + limit (search-first). */
+  async getProductsForPos(
+    businessId: string,
+    options?: { search?: string; limit?: number; offset?: number },
+  ) {
+    return productRepository.findAllForPos(businessId, options);
+  }
+
+  async getProductsPage(
+    businessId: string,
+    options?: { search?: string; page?: number; pageSize?: number },
+  ) {
+    return productRepository.findPage(businessId, options);
   }
 
   async getProduct(id: string, businessId: string) {
