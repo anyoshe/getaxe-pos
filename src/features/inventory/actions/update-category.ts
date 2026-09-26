@@ -7,13 +7,27 @@ import { requirePermission } from "@/lib/auth/permissions";
 
 import { updateCategorySchema } from "../schemas/categories";
 import { categoryService } from "../services";
+import { ensureProductCostingSchema } from "../services/ensure-product-costing-schema";
 
 function dbErrorMessage(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
-  if (/markup_percent|last_purchase_cost|price_locked|column .* does not exist/i.test(msg)) {
-    return "Database is missing pricing columns. Run migration 0036_product_costing_markup on production (Neon SQL), then try again.";
+  if (
+    /markup_percent|last_purchase_cost|price_locked|column .* does not exist/i.test(
+      msg,
+    )
+  ) {
+    return "Database is missing pricing columns. Open Categories once (auto-migrate) or run migration 0036 on Neon, then try again.";
+  }
+  if (/permission|categories\.update/i.test(msg)) {
+    return "You do not have permission to update Categories.";
   }
   return msg || "Failed to update category.";
+}
+
+function formStr(v: FormDataEntryValue | null): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  return "";
 }
 
 export async function updateCategoryAction(id: string, formData: FormData) {
@@ -32,13 +46,23 @@ export async function updateCategoryAction(id: string, formData: FormData) {
     };
   }
 
-  const rawMarkup = formData.get("markupPercent");
+  // Ensure DB columns exist (self-heal production if 0036 never ran)
+  try {
+    await ensureProductCostingSchema();
+  } catch (error) {
+    return {
+      success: false as const,
+      message: dbErrorMessage(error),
+    };
+  }
+
+  const rawMarkup = formStr(formData.get("markupPercent"));
+  const rawDesc = formStr(formData.get("description"));
   const parsed = updateCategorySchema.safeParse({
-    name: formData.get("name"),
-    description: formData.get("description") || null,
-    markupPercent:
-      rawMarkup === "" || rawMarkup == null ? null : String(rawMarkup),
-    active: formData.get("active") === "true",
+    name: formStr(formData.get("name")),
+    description: rawDesc.trim() === "" ? null : rawDesc,
+    markupPercent: rawMarkup.trim() === "" ? null : rawMarkup,
+    active: formStr(formData.get("active")) === "true",
   });
 
   if (!parsed.success) {
@@ -55,7 +79,7 @@ export async function updateCategoryAction(id: string, formData: FormData) {
   }
 
   try {
-    const payload = {
+    await categoryService.updateCategory(id, {
       name: parsed.data.name,
       description: parsed.data.description ?? null,
       active: parsed.data.active,
@@ -63,9 +87,7 @@ export async function updateCategoryAction(id: string, formData: FormData) {
         parsed.data.markupPercent == null
           ? null
           : String(parsed.data.markupPercent),
-    };
-
-    await categoryService.updateCategory(id, payload);
+    });
 
     revalidatePath("/inventory/categories");
     revalidatePath("/inventory/products");

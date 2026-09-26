@@ -14,6 +14,7 @@ import {
   costBasisForPricing,
   suggestSellPrice,
 } from "../services/product-costing";
+import { ensureProductCostingSchema } from "../services/ensure-product-costing-schema";
 
 export type MarkupPreviewLine = {
   productId: string;
@@ -36,6 +37,8 @@ export async function applyCategoryMarkupAction(input: {
   commit: boolean;
 }) {
   const user = await requireAuthorizedUser("categories.update");
+
+  await ensureProductCostingSchema();
 
   const category = await db.query.categories.findFirst({
     where: and(

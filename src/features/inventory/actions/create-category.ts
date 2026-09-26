@@ -6,6 +6,7 @@ import { requireAuthorizedUser } from "@/lib/auth/authorize";
 
 import { createCategorySchema } from "../schemas/categories";
 import { categoryService } from "../services";
+import { ensureProductCostingSchema } from "../services/ensure-product-costing-schema";
 
 function dbErrorMessage(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
@@ -42,6 +43,7 @@ export async function createCategoryAction(formData: FormData) {
   }
 
   try {
+    await ensureProductCostingSchema();
     await categoryService.createCategory({
       businessId: parsed.data.businessId,
       name: parsed.data.name,

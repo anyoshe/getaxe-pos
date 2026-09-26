@@ -10,6 +10,7 @@ import {
 import { unitsService } from "@/features/settings/services/units.service";
 
 import { ProductPricesClient } from "@/features/inventory/components/product-prices";
+import { ensureProductCostingSchema } from "@/features/inventory/services/ensure-product-costing-schema";
 
 function isMissingColumnError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
@@ -25,6 +26,12 @@ export default async function Page() {
 
   if (!user) {
     return null;
+  }
+
+  try {
+    await ensureProductCostingSchema();
+  } catch {
+    // fall through; query errors still handled below
   }
 
   try {
