@@ -2,11 +2,13 @@
 
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
 import {
   useForm,
+  useWatch,
 } from "react-hook-form";
 
 import {
@@ -128,6 +130,33 @@ export function ProductPriceForm({
     setError(null);
   }, [productPrice, form]);
 
+
+  const selectedProductId = useWatch({ control: form.control, name: "productId" });
+  const pricingHint = useMemo(() => {
+    const product = products.find((p) => p.id === selectedProductId);
+    if (!product) return null;
+    const costRaw = product.costPrice;
+    const cost =
+      costRaw != null && Number.isFinite(Number(costRaw)) ? Number(costRaw) : null;
+    const prodM = (product as { markupPercent?: number | string | null }).markupPercent;
+    const catM = (product as { category?: { markupPercent?: number | string | null } | null })
+      .category?.markupPercent;
+    let markup: number | null = null;
+    let markupSource = "";
+    if (prodM != null && prodM !== "" && Number.isFinite(Number(prodM))) {
+      markup = Number(prodM);
+      markupSource = "product";
+    } else if (catM != null && catM !== "" && Number.isFinite(Number(catM))) {
+      markup = Number(catM);
+      markupSource = "category";
+    }
+    const suggested =
+      cost != null && markup != null
+        ? Math.round(cost * (1 + markup / 100) * 100) / 100
+        : null;
+    return { cost, markup, markupSource, suggested, name: product.name };
+  }, [products, selectedProductId]);
+
   async function onSubmit(
     values: ProductPriceFormValues
   ) {
@@ -218,6 +247,53 @@ export function ProductPriceForm({
             `${product.name}${product.sku ? ` (${product.sku})` : ""}`
           }
         />
+
+        {pricingHint && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+            <p className="font-medium text-foreground">Cost &amp; markup</p>
+            <div className="mt-2 grid gap-1 font-mono text-xs sm:grid-cols-3 sm:text-sm">
+              <div>
+                <span className="text-muted-foreground">Cost </span>
+                {pricingHint.cost != null
+                  ? pricingHint.cost.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                  : "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Markup </span>
+                {pricingHint.markup != null
+                  ? `${pricingHint.markup}% (${pricingHint.markupSource})`
+                  : "— not set"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Suggested sell </span>
+                <span className="font-semibold">
+                  {pricingHint.suggested != null
+                    ? pricingHint.suggested.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    : "—"}
+                </span>
+              </div>
+            </div>
+            {pricingHint.suggested != null && (
+              <button
+                type="button"
+                className="mt-2 text-xs font-medium text-primary underline-offset-2 hover:underline"
+                onClick={() =>
+                  form.setValue("price", String(pricingHint.suggested), {
+                    shouldDirty: true,
+                  })
+                }
+              >
+                Use suggested sell as price
+              </button>
+            )}
+          </div>
+        )}
 
         <FormSearchableSelect
           control={form.control}
