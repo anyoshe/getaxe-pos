@@ -85,6 +85,19 @@ export class ProductPriceRepository extends BaseRepository {
     return price;
   }
 
+
+  async deactivate(id: string, businessId: string) {
+    const [price] = await this.database
+      .update(productPrices)
+      .set({ active: false, updatedAt: new Date() })
+      .where(
+        and(eq(productPrices.id, id), eq(productPrices.businessId, businessId)),
+      )
+      .returning();
+
+    return price;
+  }
+
   async exists(
     businessId: string,
     productId: string,
