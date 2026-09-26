@@ -90,7 +90,7 @@ export function CategoriesClient({
   return (
     <CrudPage
       title="Categories"
-      description="Manage inventory categories."
+      description="All categories including archived. Set retail/wholesale markup on each — products keep their category even after archive."
       createLabel="Create Category"
       onCreate={() => {
         setSelectedCategory(null);

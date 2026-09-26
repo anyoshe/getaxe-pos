@@ -20,6 +20,23 @@ export function CategoryTable({ data, onEdit, onDelete }: CategoryTableProps) {
         {
           key: "name",
           title: "Name",
+          render: (category) => (
+            <div>
+              <div className="font-medium">{category.name}</div>
+              {!category.active ? (
+                <div className="text-[10px] text-amber-600 dark:text-amber-400">
+                  Archived — still used by products; edit to set markup or
+                  reactivate
+                </div>
+              ) : null}
+            </div>
+          ),
+        },
+        {
+          key: "productCount",
+          title: "Products",
+          render: (category) =>
+            category.productCount != null ? String(category.productCount) : "—",
         },
         {
           key: "description",
