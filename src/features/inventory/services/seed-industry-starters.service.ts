@@ -18,6 +18,10 @@ import {
   type IndustryStarterKitId,
   type IndustryStarterProduct,
 } from "../constants/industry-starters/default-industry-starters";
+import {
+  filterKitsList,
+  resolveIndustryKitsForBusinessType,
+} from "../constants/industry-starters/kit-by-business-type";
 
 async function ensureProductCategory(
   businessId: string,
@@ -79,10 +83,19 @@ async function ensureCommonUnits(businessId: string) {
   }
 }
 
-export function listIndustryStarterTemplates(kit?: IndustryStarterKitId) {
-  const list = kit
+export function listIndustryStarterTemplates(
+  kit?: IndustryStarterKitId,
+  allowedKits?: IndustryStarterKitId[] | "all",
+) {
+  let list = kit
     ? listIndustryStarterByKit(kit)
     : DEFAULT_INDUSTRY_STARTER_PRODUCTS;
+
+  if (allowedKits && allowedKits !== "all") {
+    const set = new Set(allowedKits);
+    list = list.filter((p) => set.has(p.kit));
+  }
+
   return list.map((p) => ({
     kit: p.kit,
     code: p.code,
@@ -99,8 +112,20 @@ export function listIndustryStarterTemplates(kit?: IndustryStarterKitId) {
 export async function listIndustryStarterStatusForBusiness(
   businessId: string,
   kit?: IndustryStarterKitId,
+  options?: { businessType?: string | null },
 ) {
-  const templates = listIndustryStarterTemplates(kit);
+  const resolved = resolveIndustryKitsForBusinessType(
+    options?.businessType ?? null,
+  );
+  const allowedKits =
+    resolved === "pharmacy-only"
+      ? ([] as IndustryStarterKitId[])
+      : filterKitsList(resolved);
+
+  const templates = listIndustryStarterTemplates(
+    kit,
+    resolved === "all" ? "all" : allowedKits,
+  );
   const existing = await db.query.products.findMany({
     where: eq(products.businessId, businessId),
     columns: { sku: true },
@@ -114,6 +139,18 @@ export async function listIndustryStarterStatusForBusiness(
     ...t,
     alreadyInCatalogue: skuSet.has(t.sku.toUpperCase()),
   }));
+}
+
+export function getStarterKitModeForBusinessType(
+  businessType: string | null | undefined,
+) {
+  const resolved = resolveIndustryKitsForBusinessType(businessType);
+  return {
+    mode: resolved,
+    allowedKits: filterKitsList(resolved),
+    isPharmacyOnly: resolved === "pharmacy-only",
+    showAllIndustryKits: resolved === "all",
+  };
 }
 
 export async function addIndustryStarterProductsForBusiness(

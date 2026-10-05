@@ -26,26 +26,43 @@ export type IndustryStarterRow = {
   alreadyInCatalogue: boolean;
 };
 
-const KITS: IndustryStarterKitId[] = [
-  "hardware",
-  "agrovet",
-  "motorbike",
-  "auto",
-];
-
 export function StarterKitsClient({
   products,
+  allowedKits,
+  showAllTabs = false,
+  businessType = null,
 }: {
   products: IndustryStarterRow[];
+  allowedKits: IndustryStarterKitId[];
+  showAllTabs?: boolean;
+  businessType?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [kit, setKit] = useState<IndustryStarterKitId | "all">("hardware");
+
+  const kitTabs = useMemo(() => {
+    if (showAllTabs) {
+      return [
+        "hardware",
+        "agrovet",
+        "motorbike",
+        "auto",
+      ] as IndustryStarterKitId[];
+    }
+    return allowedKits.length > 0
+      ? allowedKits
+      : (["hardware"] as IndustryStarterKitId[]);
+  }, [allowedKits, showAllTabs]);
+
+  const defaultKit: IndustryStarterKitId | "all" =
+    kitTabs.length === 1 ? kitTabs[0]! : kitTabs[0] ?? "hardware";
+
+  const [kit, setKit] = useState<IndustryStarterKitId | "all">(defaultKit);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     for (const p of products) {
-      if (!p.alreadyInCatalogue && p.kit === "hardware") init[p.code] = true;
+      if (!p.alreadyInCatalogue && p.kit === defaultKit) init[p.code] = true;
     }
     return init;
   });
@@ -119,14 +136,20 @@ export function StarterKitsClient({
           Industry starter kits
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Product masters only — no stock and no shared serials. Select lines
-          for your shop type, add them, then receive opening stock or GRN for
-          quantities you actually hold. Complete units (bikes / 3-wheelers) are
-          marked serialized.
+          Product masters only — no stock and no shared serials. Kits are
+          filtered by your business type
+          {businessType ? (
+            <>
+              {" "}
+              (<span className="font-medium text-foreground">{businessType}</span>
+              )
+            </>
+          ) : null}
+          . Select lines, add them, then receive opening stock or GRN.
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {KITS.map((id) => (
+          {kitTabs.map((id) => (
             <Button
               key={id}
               type="button"
@@ -137,21 +160,23 @@ export function StarterKitsClient({
               {INDUSTRY_STARTER_KIT_META[id].label}
             </Button>
           ))}
-          <Button
-            type="button"
-            size="sm"
-            variant={kit === "all" ? "default" : "outline"}
-            onClick={() => onKitChange("all")}
-          >
-            All kits
-          </Button>
+          {showAllTabs || kitTabs.length > 1 ? (
+            <Button
+              type="button"
+              size="sm"
+              variant={kit === "all" ? "default" : "outline"}
+              onClick={() => onKitChange("all")}
+            >
+              All shown kits
+            </Button>
+          ) : null}
         </div>
 
-        {kit !== "all" && (
+        {kit !== "all" && INDUSTRY_STARTER_KIT_META[kit] ? (
           <p className="mt-2 text-xs text-muted-foreground">
             {INDUSTRY_STARTER_KIT_META[kit].description}
           </p>
-        )}
+        ) : null}
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input
