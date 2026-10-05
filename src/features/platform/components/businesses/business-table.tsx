@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 
 import { getBusinessesAction } from "../../actions/get-businesses";
+import { enterBusinessSupportAccessAction } from "../../actions/support-access";
 
 type Biz = {
   id: string;
@@ -17,12 +21,32 @@ type Biz = {
 
 export function BusinessTable() {
   const [rows, setRows] = useState<Biz[]>([]);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     void getBusinessesAction().then((r) => {
       if (r.success) setRows(r.data);
     });
   }, []);
+
+  function openSupport(id: string, name: string) {
+    setPendingId(id);
+    startTransition(async () => {
+      try {
+        const result = await enterBusinessSupportAccessAction(id);
+        // redirect() throws; only handle soft failures
+        if (result && !result.success) {
+          toast.error(result.message);
+        }
+      } catch {
+        // Next.js redirect aborts — expected on success
+      } finally {
+        setPendingId(null);
+      }
+    });
+    toast.message(`Opening ${name} for support…`);
+  }
 
   return (
     <div className="space-y-6">
@@ -32,9 +56,11 @@ export function BusinessTable() {
         </p>
         <h1 className="text-2xl font-bold tracking-tight">Businesses</h1>
         <p className="text-sm text-muted-foreground">
-          Tenants created after owners complete setup. Type drives capability
-          profiles (pharmacy, retail, hardware, …) with DEFAULT for unknown
-          types.
+          Tenants created after owners complete setup. Use{" "}
+          <span className="font-medium text-foreground">Open for support</span>{" "}
+          to enter a business as its administrator so you can view settings,
+          guide setup, and diagnose issues. A banner shows while you are in
+          support mode.
         </p>
       </div>
 
@@ -48,12 +74,16 @@ export function BusinessTable() {
               <th className="p-3 font-semibold">Currency</th>
               <th className="p-3 font-semibold">Status</th>
               <th className="p-3 font-semibold">Created</th>
+              <th className="p-3 font-semibold text-right">Support</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-10 text-center text-muted-foreground">
+                <td
+                  colSpan={7}
+                  className="p-10 text-center text-muted-foreground"
+                >
                   No businesses yet. Invite an owner and have them complete
                   /setup.
                 </td>
@@ -84,6 +114,19 @@ export function BusinessTable() {
                   </td>
                   <td className="p-3 text-muted-foreground">
                     {new Date(b.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="p-3 text-right">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={!b.active || (pending && pendingId === b.id)}
+                      onClick={() => openSupport(b.id, b.name)}
+                    >
+                      {pending && pendingId === b.id
+                        ? "Opening…"
+                        : "Open for support"}
+                    </Button>
                   </td>
                 </tr>
               ))

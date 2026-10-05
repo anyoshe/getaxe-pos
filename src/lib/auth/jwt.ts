@@ -11,6 +11,11 @@ export interface SessionPayload extends JWTPayload {
   businessId: string;
   roleId: string;
   email: string;
+  /** Platform super-admin viewing/assisting this tenant */
+  supportAccess?: boolean;
+  /** Platform user id who opened support session */
+  platformUserId?: string;
+  platformUserEmail?: string;
 }
 
 export async function signJwt(

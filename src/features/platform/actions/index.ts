@@ -4,3 +4,4 @@ export * from "./reset-owner-password";
 export * from "./get-platform-stats";
 export * from "./get-businesses";
 export * from "./platform-login";
+export * from "./support-access";

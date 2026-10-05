@@ -4,6 +4,7 @@ import type { CurrentUser } from "@/lib/auth/current-user";
 
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { SupportAccessBanner } from "./support-access-banner";
 import { BusinessAdvisorChat } from "@/features/advisor/components/business-advisor-chat";
 
 interface AppShellProps {
@@ -17,6 +18,8 @@ interface AppShellProps {
  * - Desktop (lg+): fixed-width sidebar + content column
  */
 export function AppShell({ children, user }: AppShellProps) {
+  const support = Boolean(user.session?.supportAccess);
+
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-muted/50 dark:bg-slate-950">
       {/* Desktop / large tablet sidebar */}
@@ -25,6 +28,13 @@ export function AppShell({ children, user }: AppShellProps) {
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {support ? (
+          <SupportAccessBanner
+            businessName={user.business?.name}
+            platformEmail={user.session?.platformUserEmail}
+            actingAsEmail={user.email}
+          />
+        ) : null}
         <Topbar user={user} />
 
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
