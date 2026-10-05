@@ -107,6 +107,12 @@ export const navigation: NavigationItem[] = [
       permission: "products.view",
     },
     {
+      label: "Starter kits",
+      href: "/inventory/starter-kits",
+      icon: Package,
+      permission: "products.view",
+    },
+    {
       label: "Categories",
       href: "/inventory/categories",
       icon: FolderTree,
