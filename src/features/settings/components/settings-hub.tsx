@@ -13,6 +13,12 @@ import {
 
 const cards = [
   {
+    href: "/settings/setup-guide",
+    title: "Business setup guide",
+    desc: "Step-by-step: where to click until ready to sell",
+    icon: ClipboardList,
+  },
+  {
     href: "/settings/readiness",
     title: "Go-live readiness",
     desc: "Checklist: branch, stock, till, products, POS",

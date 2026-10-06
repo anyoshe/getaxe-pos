@@ -318,3 +318,7 @@ When this list is complete, the business is **100% ready to start selling** on G
 - In-app **Dashboard** attention cards and **Business advisor** chat use live numbers.  
 - Platform support can **Open for support** into your business to guide load of products and stock without you guessing menus.  
 - Keep this manual with your staff SOP (`docs/STAFF_SOP.md`) at the till for daily habits after go-live.
+
+## In-app setup guide
+Owners should use **Settings → Setup guide** for the full step-by-step path with links into each screen. This markdown file is the offline companion.
+
