@@ -470,14 +470,15 @@ class DashboardService {
 
 
         const attention: AttentionItem[] = [
-      lowStockItems.length > 0
+      // Use full lowStock count (same as StatCard), not the preview list (sliced to 8)
+      lowStock > 0
         ? {
             kind: "restock" as const,
-            title: `${lowStockItems.length} product${lowStockItems.length === 1 ? "" : "s"} need restock`,
+            title: `${lowStock} product${lowStock === 1 ? "" : "s"} need restock`,
             detail: lowStockItems
               .slice(0, 3)
               .map((i) => i.name)
-              .join(", "),
+              .join(", ") || "Open restock list for full detail",
             href: "/dashboard/attention?kind=restock",
           }
         : {
