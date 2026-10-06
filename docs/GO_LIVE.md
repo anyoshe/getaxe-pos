@@ -71,3 +71,7 @@ Document your internal admin, DB host, and backup location here after deployment
 2. **`GET /api/health`** must return `ok: true` behind your proxy.
 3. **eTIMS**: v1 is **structurally ready** (PIN, invoices, audit) but **not device-certified**. Do not advertise eTIMS compliance until a KRA-approved integrator/device is connected (v2).
 4. Run `ensureFinanceDefaults` path by opening Cash & bank once after deploy so tills re-map to 1000/1100/1110/1120/1130.
+
+## Existing business onboarding
+See **docs/USER_MANUAL_EXISTING_BUSINESS.md** — step-by-step until 100% ready to sell (chemist, hardware, fish depot, etc.).
+
