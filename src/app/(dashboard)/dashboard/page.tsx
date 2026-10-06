@@ -129,10 +129,10 @@ export default async function DashboardPage() {
               </p>
             </div>
             <Link
-              href="/settings/readiness"
+              href="/settings/setup-guide"
               className="text-sm font-medium text-primary hover:underline"
             >
-              Open settings →
+              Open setup wizard →
             </Link>
           </div>
           <ul className="mt-3 grid gap-1 sm:grid-cols-2">

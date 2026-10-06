@@ -415,7 +415,7 @@ export const navigation: NavigationItem[] = [
         permission: "business.view",
       },
       {
-        label: "Setup guide",
+        label: "Setup wizard",
         href: "/settings/setup-guide",
         icon: ClipboardList,
         permission: "business.view",

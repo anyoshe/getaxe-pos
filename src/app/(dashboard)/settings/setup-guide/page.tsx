@@ -5,9 +5,16 @@ import { businessRepository } from "@/repositories/core/business.repository";
 
 export const dynamic = "force-dynamic";
 
-export default async function SetupGuidePage() {
+export default async function SetupGuidePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mode?: string }> | { mode?: string };
+}) {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  const sp = await Promise.resolve(searchParams ?? {});
+  const initialMode = sp.mode === "list" ? "list" : "wizard";
 
   const [readiness, business] = await Promise.all([
     getSetupReadiness(user.businessId),
@@ -19,13 +26,13 @@ export default async function SetupGuidePage() {
       <SetupGuideClient
         businessName={business?.name ?? user.business?.name ?? null}
         businessType={
-          (business as { businessType?: string } | null)?.businessType ??
-          null
+          (business as { businessType?: string } | null)?.businessType ?? null
         }
         score={readiness.score}
         checks={readiness.checks}
         requiredDone={readiness.requiredDone}
         requiredTotal={readiness.requiredTotal}
+        initialMode={initialMode}
       />
     </div>
   );
