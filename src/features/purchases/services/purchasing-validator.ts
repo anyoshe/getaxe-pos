@@ -1,3 +1,5 @@
+import { qty } from "@/lib/quantity";
+
 import type {
   ApprovePurchaseOrderRequest,
   CreatePurchaseOrderRequest,
@@ -39,7 +41,7 @@ export class PurchasingValidator {
         );
       }
 
-      if (item.quantity <= 0) {
+      if (qty(item.quantity) <= 0) {
         throw new Error(
           "Quantity must be greater than zero."
         );
@@ -103,7 +105,7 @@ export class PurchasingValidator {
         );
       }
 
-      if (item.quantity <= 0) {
+      if (qty(item.quantity) <= 0) {
         throw new Error(
           "Quantity must be greater than zero."
         );
@@ -155,7 +157,7 @@ export class PurchasingValidator {
         );
       }
 
-      if (item.quantity <= 0) {
+      if (qty(item.quantity) <= 0) {
         throw new Error(
           "Quantity must be greater than zero."
         );
