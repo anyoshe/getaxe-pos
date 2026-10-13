@@ -5,9 +5,11 @@ import { z } from "zod";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 import { productBatchRepository } from "@/repositories/inventory/product-batches.repository";
+import { productRepository } from "@/repositories/inventory/products.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "../services/unit-conversion.service";
 import { inventoryService } from "../services/inventory.service";
+import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
 
 const schema = z.object({
   batchId: z.uuid(),
@@ -55,6 +57,11 @@ export async function adjustStockAction(input: unknown) {
       batch.productId,
     );
     if (productUnits.length > 0 && data.unitId) {
+      const product = await productRepository.findById(batch.productId, user.businessId);
+      const allowDecimals = await productAllowsDecimalQty(user.businessId, {
+        stockUnitId: product?.stockUnitId,
+        transactionUnitId: data.unitId,
+      });
       const resolved = resolveToStock({
         productUnits: productUnits.map((u) => ({
           unitId: u.unitId,
@@ -67,7 +74,7 @@ export async function adjustStockAction(input: unknown) {
         })),
         unitId: data.unitId,
         quantityEntered: absEntered,
-        allowDecimals: true,
+        allowDecimals,
       });
       quantityStock = resolved.quantityStock;
       conversionFactor = resolved.factorToStock;

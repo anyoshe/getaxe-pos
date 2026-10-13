@@ -6,6 +6,7 @@ import { warehousesRepository } from "@/repositories/settings/warehouses.reposit
 import { unitsRepository } from "@/repositories/settings/units.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "../services/unit-conversion.service";
+import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
 
 export type OpeningStockRowResult = {
   index: number;
@@ -213,11 +214,15 @@ export async function validateOpeningStockImportAction(
           openUnitId && factors.some((f) => f.unitId === openUnitId);
         if (factors.length > 0 && unitConfigured) {
           try {
+            const allowDecimals = await productAllowsDecimalQty(businessId, {
+              stockUnitId: product.stockUnitId,
+              transactionUnitId: openUnitId,
+            });
             const resolved = resolveToStock({
               productUnits: factors,
               unitId: openUnitId,
               quantityEntered: qty,
-              allowDecimals: true,
+              allowDecimals,
             });
             quantityStock = resolved.quantityStock;
             unitId = resolved.unitId;

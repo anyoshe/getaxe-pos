@@ -2,7 +2,8 @@
 
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 
-import { normalizeStockQty, qtyStr } from "@/lib/quantity";
+import { assertQtyForUnit, normalizeStockQty, qtyStr } from "@/lib/quantity";
+import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
 import { revalidatePath } from "next/cache";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
@@ -99,8 +100,21 @@ export async function receiveStockAction(input: unknown) {
     };
   }
 
-  // Normalize entered qty → stock units
-  let quantityStock = normalizeStockQty(Number(data.quantity));
+  // Normalize entered qty → stock units (decimals only for mass/volume stock units)
+  const allowDecimals = await productAllowsDecimalQty(user.businessId, {
+    stockUnitId: product.stockUnitId,
+    transactionUnitId: data.unitId ?? product.purchaseUnitId ?? product.stockUnitId,
+  });
+  try {
+    assertQtyForUnit(Number(data.quantity), allowDecimals, "Receive quantity");
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Invalid quantity.",
+    };
+  }
+
+  let quantityStock = normalizeStockQty(Number(data.quantity), { allowDecimals });
   let quantityEntered = Number(data.quantity);
   let conversionFactor = 1;
   let enteredUnitId: string | null =
@@ -133,9 +147,9 @@ export async function receiveStockAction(input: unknown) {
           unitId: preferredUnit ?? undefined,
           quantityEntered: Number(data.quantity),
           requirePurchase: !isOpening,
-          allowDecimals: true,
+          allowDecimals,
         });
-        quantityStock = normalizeStockQty(resolved.quantityStock);
+        quantityStock = normalizeStockQty(resolved.quantityStock, { allowDecimals });
         quantityEntered = resolved.quantityEntered;
         conversionFactor = resolved.factorToStock;
         enteredUnitId = resolved.unitId;
@@ -145,9 +159,12 @@ export async function receiveStockAction(input: unknown) {
             conversionFactor,
           );
         }
-      } catch {
+      } catch (convErr) {
+        if (convErr instanceof Error && convErr.message.includes("non-integer")) {
+          return { success: false as const, message: convErr.message };
+        }
         // Packaging matrix incomplete — treat entered qty as stock units
-        quantityStock = normalizeStockQty(Number(data.quantity));
+        quantityStock = normalizeStockQty(Number(data.quantity), { allowDecimals });
         quantityEntered = Number(data.quantity);
         conversionFactor = 1;
         enteredUnitId = product.stockUnitId ?? preferredUnit ?? null;

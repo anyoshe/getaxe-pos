@@ -19,11 +19,13 @@ import { goodsReceiptService } from "../services/goods-receipt.service";
 import { supplierReturnService } from "../services/supplier-return.service";
 import { purchaseOrderRepository } from "@/repositories/purchasing/purchase-orders.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
+import { productRepository } from "@/repositories/inventory/products.repository";
 import {
   resolveToStock,
   costPerStockUnit,
 } from "@/features/inventory/services/unit-conversion.service";
-import { qtyStr } from "@/lib/quantity";
+import { assertQtyForUnit, qtyStr } from "@/lib/quantity";
+import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
 
 const lineSchema = z.object({
   productId: z.uuid(),
@@ -65,6 +67,16 @@ export async function createPurchaseOrderAction(input: unknown) {
 
     // Optional: convert purchase unit → stock qty for ordered quantity consistency with inventory
     try {
+      const product = await productRepository.findById(
+        line.productId,
+        user.businessId,
+      );
+      const allowDecimals = await productAllowsDecimalQty(user.businessId, {
+        stockUnitId: product?.stockUnitId,
+        transactionUnitId: line.unitId,
+      });
+      assertQtyForUnit(line.quantity, allowDecimals, "Order quantity");
+
       const units = await productUnitRepository.listByProduct(
         user.businessId,
         line.productId,
@@ -81,8 +93,7 @@ export async function createPurchaseOrderAction(input: unknown) {
           })),
           unitId: line.unitId,
           quantityEntered: line.quantity,
-          // Any product packaging unit may be used on a PO (box, strip, carton…)
-          allowDecimals: true,
+          allowDecimals,
         });
         qty = resolved.quantityStock;
         cost = costPerStockUnit(line.unitCost, resolved.factorToStock);
@@ -278,6 +289,16 @@ export async function receivePurchaseOrderAction(input: unknown) {
     let qty = line.quantity;
     let cost = line.unitCost;
     try {
+      const product = await productRepository.findById(
+        line.productId,
+        user.businessId,
+      );
+      const allowDecimals = await productAllowsDecimalQty(user.businessId, {
+        stockUnitId: product?.stockUnitId,
+        transactionUnitId: line.unitId,
+      });
+      assertQtyForUnit(line.quantity, allowDecimals, "Receive quantity");
+
       const units = await productUnitRepository.listByProduct(
         user.businessId,
         line.productId,
@@ -294,7 +315,7 @@ export async function receivePurchaseOrderAction(input: unknown) {
           })),
           unitId: line.unitId,
           quantityEntered: line.quantity,
-          allowDecimals: true,
+          allowDecimals,
         });
         qty = resolved.quantityStock;
         cost = costPerStockUnit(line.unitCost, resolved.factorToStock);

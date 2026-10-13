@@ -102,3 +102,16 @@ describe("unit conversion", () => {
     );
   });
 });
+
+it("rejects fractional stock for count units", () => {
+  assert.throws(
+    () =>
+      toStockQuantity(1.5, 1, { allowDecimals: false }),
+    /non-integer|whole/i,
+  );
+});
+
+it("allows fractional stock for mass units", () => {
+  const q = toStockQuantity(4.5, 1, { allowDecimals: true });
+  assert.equal(q, 4.5);
+});

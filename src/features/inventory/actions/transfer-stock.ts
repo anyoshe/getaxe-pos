@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { productRepository } from "@/repositories/inventory/products.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "../services/unit-conversion.service";
 import { inventoryService } from "../services/inventory.service";
+import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
 
 const schema = z.object({
   productId: z.uuid(),
@@ -48,6 +50,11 @@ export async function transferStockAction(input: unknown) {
       data.productId,
     );
     if (productUnits.length > 0 && data.unitId) {
+      const product = await productRepository.findById(data.productId, user.businessId);
+      const allowDecimals = await productAllowsDecimalQty(user.businessId, {
+        stockUnitId: product?.stockUnitId,
+        transactionUnitId: data.unitId,
+      });
       const resolved = resolveToStock({
         productUnits: productUnits.map((u) => ({
           unitId: u.unitId,
@@ -60,7 +67,7 @@ export async function transferStockAction(input: unknown) {
         })),
         unitId: data.unitId,
         quantityEntered: data.quantity,
-        allowDecimals: true,
+        allowDecimals,
       });
       quantityStock = resolved.quantityStock;
     }

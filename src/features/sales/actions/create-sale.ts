@@ -19,7 +19,8 @@ import { formatDateTimeNairobi, nowNairobiWallClock } from "@/lib/timezone";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "@/features/inventory/services/unit-conversion.service";
-import { normalizeStockQty, qtyStr } from "@/lib/quantity";
+import { assertQtyForUnit, normalizeStockQty, qtyStr } from "@/lib/quantity";
+import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
 import { salesService } from "../services";
 
 const lineSchema = z.object({
@@ -144,21 +145,44 @@ export async function createSaleAction(input: unknown) {
 
         if (matrix.length > 0) {
           try {
+            const allowDecimals = await productAllowsDecimalQty(user.businessId, {
+              stockUnitId: product.stockUnitId,
+              transactionUnitId: requestedUnit,
+            });
+            assertQtyForUnit(Number(line.quantity), allowDecimals, product.name);
             const resolved = resolveToStock({
               productUnits: matrix,
               unitId: requestedUnit,
               quantityEntered: Number(line.quantity),
-              allowDecimals: true,
+              allowDecimals,
             });
-            quantityStock = normalizeStockQty(resolved.quantityStock);
+            quantityStock = normalizeStockQty(resolved.quantityStock, { allowDecimals });
             quantityEntered = resolved.quantityEntered;
             conversionFactor = resolved.factorToStock;
             lineUnitId = resolved.unitId;
-          } catch {
+          } catch (convErr) {
+            if (convErr instanceof Error && (
+              convErr.message.includes("whole number") ||
+              convErr.message.includes("non-integer")
+            )) {
+              return { success: false as const, message: convErr.message };
+            }
             // Last resort: sell in stock units (qty as entered, factor 1)
             const stockId = product.stockUnitId ?? requestedUnit;
+            const allowDecimals = await productAllowsDecimalQty(user.businessId, {
+              stockUnitId: product.stockUnitId,
+              transactionUnitId: stockId,
+            });
+            try {
+              assertQtyForUnit(Number(line.quantity), allowDecimals, product.name);
+            } catch (e) {
+              return {
+                success: false as const,
+                message: e instanceof Error ? e.message : "Invalid quantity.",
+              };
+            }
             quantityEntered = Number(line.quantity);
-            quantityStock = normalizeStockQty(quantityEntered);
+            quantityStock = normalizeStockQty(quantityEntered, { allowDecimals });
             conversionFactor = 1;
             lineUnitId = stockId;
           }
