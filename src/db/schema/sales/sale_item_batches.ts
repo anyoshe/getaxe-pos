@@ -1,6 +1,7 @@
 import {
   pgTable,
   uuid,
+  numeric,
   index,
   uniqueIndex,
   check,
