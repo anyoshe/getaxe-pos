@@ -7,7 +7,7 @@
  * Requires DATABASE_URL. Destroys ALL tenant data (businesses, sales, stock, …).
  * Always re-seeds roles, permissions, super-admin, units, currencies, capabilities.
  */
-import "dotenv/config";
+import "./load-env";
 import { Pool } from "pg";
 import { spawn } from "child_process";
 import path from "path";

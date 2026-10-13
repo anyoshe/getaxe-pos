@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
-import "dotenv/config";
+import "./load-env";
 
 
 const pool = new Pool({
