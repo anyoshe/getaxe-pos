@@ -116,9 +116,10 @@ export default async function GoodsReceivingPage({
         items?: Array<{
           id: string;
           productId: string;
-          quantity: number;
-          receivedQuantity: number;
-          unitCost: string;
+          /** Drizzle numeric columns serialize as string */
+          quantity: string | number;
+          receivedQuantity: string | number;
+          unitCost: string | number;
         }>;
       };
       return {
