@@ -127,7 +127,9 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
     setLoading(false);
 
     if (result.success) {
-      toast.success(user ? "User updated successfully." : "User created successfully.");
+      toast.success(
+        user ? "User updated successfully." : "User created successfully.",
+      );
       onSuccess?.();
     } else {
       toast.error(
@@ -138,128 +140,140 @@ export function UserForm({ user, onSuccess }: UserFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="grid gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
-          <Input
-            id="name"
-            name="name"
-            defaultValue={user?.name ?? ""}
-            placeholder="Enter full name"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            defaultValue={user?.email ?? ""}
-            placeholder="name@company.com"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
-            id="phone"
-            name="phone"
-            defaultValue={user?.phone ?? ""}
-            placeholder="Optional phone"
-          />
-        </div>
-
-        {!user ? (
+    <form
+      onSubmit={handleSubmit}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      {/* Scrollable fields — button stays outside this region */}
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
+        <div className="grid gap-4">
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" required />
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              name="name"
+              defaultValue={user?.name ?? ""}
+              placeholder="Enter full name"
+              required
+            />
           </div>
-        ) : null}
 
-        <div className="space-y-2">
-          <Label htmlFor="roleId">Role</Label>
-          <select
-            id="roleId"
-            className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-            required
-          >
-            <option value="" disabled>
-              {roles.length === 0 ? "Loading roles…" : "Select role"}
-            </option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              defaultValue={user?.email ?? ""}
+              placeholder="name@company.com"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              name="phone"
+              defaultValue={user?.phone ?? ""}
+              placeholder="Optional phone"
+            />
+          </div>
+
+          {!user ? (
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required />
+            </div>
+          ) : null}
+
+          <div className="space-y-2">
+            <Label htmlFor="roleId">Role</Label>
+            <select
+              id="roleId"
+              className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              value={roleId}
+              onChange={(e) => setRoleId(e.target.value)}
+              required
+            >
+              <option value="" disabled>
+                {roles.length === 0 ? "Loading roles…" : "Select role"}
               </option>
-            ))}
-          </select>
-          {roleId && roles.length > 0 ? (
-            <p className="text-xs font-medium text-primary">
-              Selected: {roles.find((r) => r.id === roleId)?.name ?? roleId}
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+            {roleId && roles.length > 0 ? (
+              <p className="text-xs font-medium text-primary">
+                Selected: {roles.find((r) => r.id === roleId)?.name ?? roleId}
+              </p>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Base access comes from the role. Optional: grant or block extra
+              rights for this person only (without changing the role).
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+          <h4 className="text-sm font-semibold text-primary">
+            Extra permissions (optional)
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            Rights beyond the role — e.g. one cashier can view stock while
+            another cannot.
+          </p>
+          <RolePermissionsPicker
+            permissions={allPermissions}
+            selectedIds={extraGrants}
+            onChange={setExtraGrants}
+            compact
+          />
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-destructive/20 bg-destructive/5 p-3">
+          <h4 className="text-sm font-semibold text-destructive">
+            Blocked permissions (optional)
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            Deny rights the role normally has — without creating a new role.
+          </p>
+          <RolePermissionsPicker
+            permissions={allPermissions}
+            selectedIds={denies}
+            onChange={setDenies}
+            compact
+          />
+          {rolePermissionIds.length > 0 ? (
+            <p className="text-[11px] text-muted-foreground">
+              This role currently has {rolePermissionIds.length} permissions.
+              Blocks only affect this user.
             </p>
           ) : null}
-          <p className="text-xs text-muted-foreground">
-            Base access comes from the role. Below you can give this person extra
-            rights or block some role rights without changing other users on the
-            same role (e.g. Risper vs Axel as cashiers).
-          </p>
         </div>
       </div>
 
-      <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <h4 className="font-semibold text-primary">
-          Extra permissions (this user only)
-        </h4>
-        <p className="text-xs text-muted-foreground">
-          Add rights beyond the role — e.g. let Risper view stock while Axel stays
-          a standard cashier.
+      {/* Always visible — no scroll past the action */}
+      <div className="shrink-0 border-t bg-background px-4 py-3">
+        <button
+          type="submit"
+          disabled={loading || !roleId}
+          className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading
+            ? user
+              ? "Updating…"
+              : "Creating…"
+            : user
+              ? "Update User"
+              : "Create User"}
+        </button>
+        <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+          Scroll above for name, role, and optional permission overrides.
         </p>
-        <RolePermissionsPicker
-          permissions={allPermissions}
-          selectedIds={extraGrants}
-          onChange={setExtraGrants}
-        />
       </div>
-
-      <div className="space-y-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-        <h4 className="font-semibold text-destructive">
-          Blocked permissions (this user only)
-        </h4>
-        <p className="text-xs text-muted-foreground">
-          Deny rights the role normally has — e.g. block returns for one cashier
-          without creating a new role.
-        </p>
-        <RolePermissionsPicker
-          permissions={allPermissions}
-          selectedIds={denies}
-          onChange={setDenies}
-        />
-        {rolePermissionIds.length > 0 ? (
-          <p className="text-[11px] text-muted-foreground">
-            This role currently has {rolePermissionIds.length} permissions. Blocks
-            only affect this user.
-          </p>
-        ) : null}
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading || !roleId}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading
-          ? user
-            ? "Updating..."
-            : "Creating..."
-          : user
-            ? "Update User"
-            : "Create User"}
-      </button>
     </form>
   );
 }

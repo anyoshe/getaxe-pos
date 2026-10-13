@@ -19,11 +19,14 @@ export function RolePermissionsPicker({
   selectedIds,
   onChange,
   readOnly,
+  /** Shorter list height for user dialog (avoids huge empty scroll) */
+  compact,
 }: {
   permissions: PermissionOption[];
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   readOnly?: boolean;
+  compact?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
@@ -97,7 +100,13 @@ export function RolePermissionsPicker({
         ) : null}
       </div>
 
-      <div className="max-h-[28rem] space-y-4 overflow-y-auto rounded-xl border p-3">
+      <div
+        className={
+          compact
+            ? "max-h-40 space-y-3 overflow-y-auto rounded-xl border p-2 sm:max-h-48"
+            : "max-h-[28rem] space-y-4 overflow-y-auto rounded-xl border p-3"
+        }
+      >
         {grouped.length === 0 ? (
           <p className="p-4 text-center text-sm text-muted-foreground">
             No permissions match.
