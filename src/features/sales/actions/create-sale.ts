@@ -19,7 +19,7 @@ import { formatDateTimeNairobi, nowNairobiWallClock } from "@/lib/timezone";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "@/features/inventory/services/unit-conversion.service";
-import { normalizeStockQty } from "@/lib/quantity";
+import { normalizeStockQty, qtyStr } from "@/lib/quantity";
 import { salesService } from "../services";
 
 const lineSchema = z.object({
