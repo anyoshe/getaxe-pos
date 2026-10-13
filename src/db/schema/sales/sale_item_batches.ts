@@ -1,7 +1,6 @@
 import {
   pgTable,
   uuid,
-  integer,
   index,
   uniqueIndex,
   check,
@@ -32,7 +31,7 @@ export const saleItemBatches = pgTable(
         onDelete: "restrict",
       }),
 
-    quantity: integer("quantity")
+    quantity: numeric("quantity", { precision: 18, scale: 6 })
       .notNull(),
   },
   (table) => ({

@@ -29,7 +29,7 @@ export function assertValidFactor(factor: number, label = "Conversion factor") {
 
 /**
  * Convert entered quantity in a product unit into canonical stock units.
- * Rounds to integer stock qty for count-based balances (current schema).
+ * Default: integer stock qty for count products. Pass allowDecimals for kg/L/g/ml.
  */
 export function toStockQuantity(
   quantityEntered: number,

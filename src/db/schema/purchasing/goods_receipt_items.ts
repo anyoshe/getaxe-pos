@@ -1,7 +1,6 @@
 import {
   pgTable,
   uuid,
-  integer,
   numeric,
   date,
   text,
@@ -31,7 +30,7 @@ export const goodsReceiptItems = pgTable(
 
     expiryDate: date("expiry_date"),
 
-    quantity: integer("quantity")
+    quantity: numeric("quantity", { precision: 18, scale: 6 })
       .notNull(),
 
     unitCost: numeric("unit_cost", {

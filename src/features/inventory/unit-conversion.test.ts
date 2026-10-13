@@ -53,6 +53,40 @@ describe("unit conversion", () => {
     assert.equal(costPerStockUnit(800, 100), 8);
   });
 
+
+  it("allows decimal stock quantities for mass/volume", () => {
+    const r = resolveToStock({
+      productUnits: [
+        { unitId: "kg", factorToStock: 1, isStockUnit: true, allowPurchase: true },
+      ],
+      unitId: "kg",
+      quantityEntered: 4.5,
+      allowDecimals: true,
+      requirePurchase: true,
+    });
+    assert.equal(r.quantityStock, 4.5);
+
+    const r2 = resolveToStock({
+      productUnits: [
+        { unitId: "g", factorToStock: 1, isStockUnit: true },
+      ],
+      unitId: "g",
+      quantityEntered: 0.1244,
+      allowDecimals: true,
+    });
+    assert.equal(r2.quantityStock, 0.1244);
+
+    const r3 = resolveToStock({
+      productUnits: [
+        { unitId: "ltr", factorToStock: 1, isStockUnit: true },
+      ],
+      unitId: "ltr",
+      quantityEntered: 5.5,
+      allowDecimals: true,
+    });
+    assert.equal(r3.quantityStock, 5.5);
+  });
+
   it("rejects sale on purchase-only unit", () => {
     assert.throws(
       () =>

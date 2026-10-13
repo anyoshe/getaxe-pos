@@ -1,7 +1,6 @@
 import {
   pgTable,
   uuid,
-  integer,
   numeric,
   index,
 } from "drizzle-orm/pg-core";
@@ -26,11 +25,12 @@ export const purchaseOrderItems = pgTable(
       .notNull()
       .references(() => products.id),
 
-    quantity: integer("quantity")
+    /** Ordered qty in stock units (supports decimals for kg/L/g). */
+    quantity: numeric("quantity", { precision: 18, scale: 6 })
       .notNull(),
 
-    receivedQuantity: integer("received_quantity")
-      .default(0)
+    receivedQuantity: numeric("received_quantity", { precision: 18, scale: 6 })
+      .default("0")
       .notNull(),
 
     unitCost: numeric("unit_cost", {

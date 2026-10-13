@@ -34,6 +34,8 @@ describe("stock math (cycle count / issue / adjust)", () => {
   it("qty helpers round-trip for numeric columns", () => {
     assert.equal(qty("15.0000"), 15);
     assert.equal(qtyStr(90), "90");
+    assert.equal(qtyStr(4.5), "4.5");
+    assert.equal(qtyStr(0.1244), "0.1244");
     assert.equal(qty(null), 0);
   });
 

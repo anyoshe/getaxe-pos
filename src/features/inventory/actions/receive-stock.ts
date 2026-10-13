@@ -2,7 +2,7 @@
 
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
 
-import { qtyStr } from "@/lib/quantity";
+import { normalizeStockQty, qtyStr } from "@/lib/quantity";
 import { revalidatePath } from "next/cache";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
@@ -100,7 +100,7 @@ export async function receiveStockAction(input: unknown) {
   }
 
   // Normalize entered qty → stock units
-  let quantityStock = Math.round(Number(data.quantity));
+  let quantityStock = normalizeStockQty(Number(data.quantity));
   let quantityEntered = Number(data.quantity);
   let conversionFactor = 1;
   let enteredUnitId: string | null =
@@ -135,7 +135,7 @@ export async function receiveStockAction(input: unknown) {
           requirePurchase: !isOpening,
           allowDecimals: true,
         });
-        quantityStock = resolved.quantityStock;
+        quantityStock = normalizeStockQty(resolved.quantityStock);
         quantityEntered = resolved.quantityEntered;
         conversionFactor = resolved.factorToStock;
         enteredUnitId = resolved.unitId;
@@ -147,7 +147,7 @@ export async function receiveStockAction(input: unknown) {
         }
       } catch {
         // Packaging matrix incomplete — treat entered qty as stock units
-        quantityStock = Math.round(Number(data.quantity));
+        quantityStock = normalizeStockQty(Number(data.quantity));
         quantityEntered = Number(data.quantity);
         conversionFactor = 1;
         enteredUnitId = product.stockUnitId ?? preferredUnit ?? null;
@@ -175,6 +175,13 @@ export async function receiveStockAction(input: unknown) {
     .filter(Boolean);
 
   if (product.serialized) {
+    if (Math.abs(quantityStock - Math.round(quantityStock)) > 1e-9) {
+      return {
+        success: false as const,
+        message: "Serialized products must be received in whole stock units (no decimals).",
+      };
+    }
+    quantityStock = Math.round(quantityStock);
     if (serialNumbers.length !== quantityStock) {
       return {
         success: false as const,

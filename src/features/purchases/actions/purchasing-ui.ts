@@ -98,7 +98,7 @@ export async function createPurchaseOrderAction(input: unknown) {
     subtotal += lineTotal;
     items.push({
       productId: line.productId,
-      quantity: Math.round(qty) || qty,
+      quantity: qty,
       receivedQuantity: 0,
       unitCost: cost.toFixed(4),
       discount: "0",
@@ -328,7 +328,7 @@ export async function receivePurchaseOrderAction(input: unknown) {
     subtotal += total;
     items.push({
       productId: line.productId,
-      quantity: Math.round(qty) || qty,
+      quantity: qty,
       unitCost: cost.toFixed(4),
       batchNumber: line.batchNumber?.trim() || null,
       expiryDate: line.expiryDate?.trim() || null,
@@ -506,7 +506,7 @@ export async function createSupplierReturnAction(input: unknown) {
       },
       items: data.items.map((i) => ({
         productId: i.productId,
-        quantity: Math.round(i.quantity),
+        quantity: i.quantity,
         warehouseId: data.warehouseId,
         productBatchId: i.batchId ?? null,
         unitCost: (i.unitCost ?? 0).toFixed(2),

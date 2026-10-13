@@ -19,6 +19,7 @@ import { formatDateTimeNairobi, nowNairobiWallClock } from "@/lib/timezone";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "@/features/inventory/services/unit-conversion.service";
+import { normalizeStockQty } from "@/lib/quantity";
 import { salesService } from "../services";
 
 const lineSchema = z.object({
@@ -87,7 +88,7 @@ export async function createSaleAction(input: unknown) {
         };
       }
 
-      let quantityStock = Math.round(Number(line.quantity));
+      let quantityStock = Number(line.quantity);
       let quantityEntered = Number(line.quantity);
       let conversionFactor = 1;
       let lineUnitId: string | null = line.unitId ?? product.salesUnitId ?? product.stockUnitId ?? null;
@@ -149,7 +150,7 @@ export async function createSaleAction(input: unknown) {
               quantityEntered: Number(line.quantity),
               allowDecimals: true,
             });
-            quantityStock = resolved.quantityStock;
+            quantityStock = normalizeStockQty(resolved.quantityStock);
             quantityEntered = resolved.quantityEntered;
             conversionFactor = resolved.factorToStock;
             lineUnitId = resolved.unitId;
@@ -157,7 +158,7 @@ export async function createSaleAction(input: unknown) {
             // Last resort: sell in stock units (qty as entered, factor 1)
             const stockId = product.stockUnitId ?? requestedUnit;
             quantityEntered = Number(line.quantity);
-            quantityStock = quantityEntered;
+            quantityStock = normalizeStockQty(quantityEntered);
             conversionFactor = 1;
             lineUnitId = stockId;
           }
@@ -176,6 +177,13 @@ export async function createSaleAction(input: unknown) {
         const serials = (line.serialNumbers ?? [])
           .map((s) => s.trim())
           .filter(Boolean);
+        if (Math.abs(quantityStock - Math.round(quantityStock)) > 1e-9) {
+          return {
+            success: false as const,
+            message: `${product.name} is serialized — quantity must be a whole number of stock units.`,
+          };
+        }
+        quantityStock = Math.round(quantityStock);
         if (serials.length !== quantityStock) {
           return {
             success: false as const,

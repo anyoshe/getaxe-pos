@@ -1,7 +1,6 @@
 import {
   pgTable,
   uuid,
-  integer,
   numeric,
   index,
   check,
@@ -44,8 +43,8 @@ export const saleItems = pgTable(
         onDelete: "restrict",
       }),
 
-    /** Legacy: treated as stock qty when quantity_stock is null. */
-    quantity: integer("quantity")
+    /** Legacy: treated as stock qty when quantity_stock is null. Supports decimals. */
+    quantity: numeric("quantity", { precision: 18, scale: 6 })
       .notNull(),
 
     unitId: uuid("unit_id").references(() => units.id),
@@ -55,7 +54,7 @@ export const saleItems = pgTable(
       scale: 6,
     }),
 
-    quantityStock: integer("quantity_stock"),
+    quantityStock: numeric("quantity_stock", { precision: 18, scale: 6 }),
 
     conversionFactor: numeric("conversion_factor", {
       precision: 18,

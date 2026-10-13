@@ -1,7 +1,6 @@
 import {
   pgTable,
   uuid,
-  integer,
   numeric,
   index,
   uniqueIndex,
@@ -39,7 +38,7 @@ export const saleReturnItems = pgTable(
         onDelete: "restrict",
       }),
 
-    quantity: integer("quantity")
+    quantity: numeric("quantity", { precision: 18, scale: 6 })
       .notNull(),
 
     unitPrice: numeric("unit_price", {

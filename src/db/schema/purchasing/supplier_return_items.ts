@@ -1,7 +1,6 @@
 import {
   pgTable,
   uuid,
-  integer,
   numeric,
   index,
 } from "drizzle-orm/pg-core";
@@ -30,7 +29,7 @@ export const supplierReturnItems = pgTable(
     productBatchId: uuid("product_batch_id")
       .references(() => productBatches.id),
 
-    quantity: integer("quantity")
+    quantity: numeric("quantity", { precision: 18, scale: 6 })
       .notNull(),
 
     unitCost: numeric("unit_cost", {
