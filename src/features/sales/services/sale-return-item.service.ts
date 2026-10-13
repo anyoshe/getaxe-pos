@@ -1,3 +1,5 @@
+import { qty } from "@/lib/quantity";
+
 import {
     SalesUnitOfWork,
 } from "./unit-of-work";
@@ -63,7 +65,7 @@ export class SaleReturnItemService {
                     item.warehouseId,
 
                 quantity:
-                    item.quantity,
+                    qty(item.quantity),
 
                 userId:
                     saleReturn.createdBy,
