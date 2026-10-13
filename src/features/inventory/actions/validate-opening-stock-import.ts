@@ -7,6 +7,7 @@ import { unitsRepository } from "@/repositories/settings/units.repository";
 import { productUnitRepository } from "@/repositories/inventory/product-units.repository";
 import { resolveToStock } from "../services/unit-conversion.service";
 import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
+import { assertQtyForUnit } from "@/lib/quantity";
 
 export type OpeningStockRowResult = {
   index: number;
@@ -214,18 +215,25 @@ export async function validateOpeningStockImportAction(
           openUnitId && factors.some((f) => f.unitId === openUnitId);
         if (factors.length > 0 && unitConfigured) {
           try {
-            const allowDecimals = await productAllowsDecimalQty(businessId, {
+            const allowDecimals = await productAllowsDecimalQty(user.businessId, {
               stockUnitId: product.stockUnitId,
               transactionUnitId: openUnitId,
             });
-            const resolved = resolveToStock({
-              productUnits: factors,
-              unitId: openUnitId,
-              quantityEntered: qty,
-              allowDecimals,
-            });
-            quantityStock = resolved.quantityStock;
-            unitId = resolved.unitId;
+            try {
+              assertQtyForUnit(qty, allowDecimals, product.name);
+              const resolved = resolveToStock({
+                productUnits: factors,
+                unitId: openUnitId,
+                quantityEntered: qty,
+                allowDecimals,
+              });
+              quantityStock = resolved.quantityStock;
+              unitId = resolved.unitId;
+            } catch (e) {
+              errors.push(e instanceof Error ? e.message : "Invalid quantity.");
+              quantityStock = qty;
+              unitId = product.stockUnitId ?? openUnitId;
+            }
           } catch {
             quantityStock = qty;
             unitId = product.stockUnitId ?? openUnitId;
