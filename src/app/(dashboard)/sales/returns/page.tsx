@@ -65,7 +65,7 @@ export default async function ReturnsPage({
             id: i.id,
             productId: i.productId,
             productName: i.productName,
-            quantity: i.quantity,
+            quantity: Number(i.quantity),
             unitPrice: i.unitPrice,
             productBatchId: batch,
             serialized: Boolean(product?.serialized),
