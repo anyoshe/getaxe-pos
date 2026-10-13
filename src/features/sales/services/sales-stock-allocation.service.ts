@@ -1,3 +1,4 @@
+import { qtyStr } from "@/lib/quantity";
 import { SalesUnitOfWork } from "./unit-of-work";
 
 export interface AllocatedBatch {
@@ -66,7 +67,7 @@ export class SalesStockAllocationService {
         await uow.saleItemBatches.create({
           saleItemId: request.saleItemId,
           productBatchId: row.batchId,
-          quantity: allocated,
+          quantity: qtyStr(allocated),
         });
       }
 

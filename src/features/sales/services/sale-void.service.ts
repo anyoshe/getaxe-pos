@@ -1,3 +1,4 @@
+import { qty } from "@/lib/quantity";
 import {
     paymentService,
 } from "./payment.service";
@@ -96,7 +97,7 @@ export class SaleVoidService {
                             sale.warehouseId,
 
                         quantity:
-                            allocation.quantity,
+                            qty(allocation.quantity),
 
                         userId:
                             request.voidedBy,

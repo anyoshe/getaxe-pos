@@ -60,7 +60,7 @@ export class SalesService {
           businessId: sale.businessId,
           productId: saleItem.productId,
           warehouseId: sale.warehouseId,
-          quantity: saleItem.quantity,
+          quantity: qty(saleItem.quantity),
           saleItemId: saleItem.id,
           preferredBatchIds,
         });
