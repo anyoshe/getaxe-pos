@@ -1,3 +1,5 @@
+import { qty } from "@/lib/quantity";
+
 import type {
     CreateSaleRequest,
     PostSaleRequest,
@@ -51,7 +53,7 @@ export class SalesValidator {
                 );
             }
 
-            if (item.quantity <= 0) {
+            if (qty(item.quantity) <= 0) {
                 throw new Error(
                     "Quantity must be greater than zero."
                 );
@@ -183,7 +185,7 @@ export class SalesValidator {
                 );
             }
 
-            if (item.quantity <= 0) {
+            if (qty(item.quantity) <= 0) {
                 throw new Error(
                     "Return quantity must be greater than zero."
                 );

@@ -39,9 +39,9 @@ export class SalesService {
         .filter(Boolean);
 
       if (serials.length > 0) {
-        if (serials.length !== itemData.quantity) {
+        if (serials.length !== qty(itemData.quantity)) {
           throw new Error(
-            `Expected ${itemData.quantity} serial number(s) for product line.`,
+            `Expected ${qty(itemData.quantity)} serial number(s) for product line.`,
           );
         }
         if (new Set(serials).size !== serials.length) {
