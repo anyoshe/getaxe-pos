@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { qtyStr } from "@/lib/quantity";
 import { saleReturnService } from "../services";
 import { salesQueryService } from "../services/sales-query.service";
 
@@ -111,7 +112,7 @@ export async function createSaleReturnAction(input: unknown) {
         productBatchId: l.productBatchId!,
         productId: l.productId,
         warehouseId: l.warehouseId,
-        quantity: l.quantity,
+        quantity: qtyStr(l.quantity),
         unitPrice: l.unitPrice.toFixed(2),
         total: l.total.toFixed(2),
         serialNumbers: l.serialNumbers ?? [],

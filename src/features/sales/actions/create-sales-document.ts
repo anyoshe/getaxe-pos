@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
+import { qty, qtyStr } from "@/lib/quantity";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { productSerialRepository } from "@/repositories/inventory/product-serials.repository";
 import { saleRepository } from "@/repositories/sales/sales.repository";
@@ -151,7 +152,7 @@ export async function createSalesDocumentAction(input: unknown) {
         items: lines.map((l) => ({
           businessId: user.businessId,
           productId: l.productId,
-          quantity: l.quantity,
+          quantity: qtyStr(l.quantity),
           unitPrice: l.unitPrice,
           discount: l.discount,
           tax: l.tax,
@@ -235,7 +236,7 @@ export async function convertDocumentToSaleAction(input: unknown) {
       paymentMethod: parsed.data.paymentMethod,
       items: detail.items.map((i) => ({
         productId: i.productId,
-        quantity: i.quantity,
+        quantity: qty(i.quantity),
         unitPrice: Number(i.unitPrice),
         serialNumbers: serialMap[i.productId] ?? [],
       })),

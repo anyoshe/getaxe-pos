@@ -328,13 +328,13 @@ export async function createSaleAction(input: unknown) {
       items: lines.map((l) => ({
         businessId: user.businessId,
         productId: l.productId,
-        quantity: l.quantity,
+        quantity: qtyStr(l.quantity),
         unitId: (l as { unitId?: string | null }).unitId ?? null,
         quantityEntered:
           (l as { quantityEntered?: number }).quantityEntered != null
-            ? String((l as { quantityEntered?: number }).quantityEntered)
+            ? qtyStr((l as { quantityEntered?: number }).quantityEntered)
             : null,
-        quantityStock: Number(
+        quantityStock: qtyStr(
           (l as { quantityStock?: number }).quantityStock ?? l.quantity,
         ),
         conversionFactor:
