@@ -1,4 +1,4 @@
-import { and, eq, sql, desc, asc, isNotNull, gte, lt } from "drizzle-orm";
+import { and, eq, sql, desc, asc, isNotNull, gte, lt, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import { products } from "@/db/schema/inventory/products";
@@ -31,6 +31,7 @@ export type RestockLine = {
   suggestedOrderQty: number;
   costPrice: number;
   supplierId: string | null;
+  supplierName: string | null;
 };
 
 export type ExpiryLine = {
@@ -152,20 +153,36 @@ export async function loadAttentionBundle(
 
   if (kind === "restock") {
     const rows = await getLowStockProducts({ businessId }).catch(() => []);
+    const supplierIds = [
+      ...new Set(
+        rows
+          .map((r) => r.supplierId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const supplierNameById = new Map<string, string>();
+    if (supplierIds.length > 0) {
+      const supplierRows = await db
+        .select({ id: suppliers.id, name: suppliers.name })
+        .from(suppliers)
+        .where(
+          and(
+            eq(suppliers.businessId, businessId),
+            inArray(suppliers.id, supplierIds),
+          ),
+        )
+        .catch(() => []);
+      for (const s of supplierRows) supplierNameById.set(s.id, s.name);
+    }
+
     const map = new Map<string, RestockLine>();
-    for (const r of rows as {
-      productId: string;
-      productName: string;
-      sku: string | null;
-      currentQuantity: number;
-      reorderLevel: number | null;
-      costPrice?: number | string | null;
-    }[]) {
+    for (const r of rows) {
       const qty = Number(r.currentQuantity ?? 0);
       const reorder = Number(r.reorderLevel ?? 0);
       const suggested = Math.max(reorder * 2 - qty, reorder, 1);
       const existing = map.get(r.productId);
       if (!existing || qty < existing.quantity) {
+        const sid = r.supplierId ?? null;
         map.set(r.productId, {
           productId: r.productId,
           name: r.productName,
@@ -174,7 +191,8 @@ export async function loadAttentionBundle(
           reorderLevel: reorder,
           suggestedOrderQty: Math.ceil(suggested),
           costPrice: Number(r.costPrice ?? 0),
-          supplierId: null,
+          supplierId: sid,
+          supplierName: sid ? supplierNameById.get(sid) ?? null : null,
         });
       }
     }

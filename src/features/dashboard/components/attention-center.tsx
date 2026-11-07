@@ -29,6 +29,7 @@ import type {
   RestockLine,
   ExpiryLine,
 } from "../services/attention.service";
+import { writeRestockPrefill } from "@/features/purchases/lib/restock-prefill";
 
 function money(n: number) {
   return n.toLocaleString(undefined, {
@@ -75,14 +76,55 @@ export function AttentionCenter({
       toast.error("Select at least one product to order.");
       return;
     }
+
     const payload = selected.map((l) => ({
       productId: l.productId,
-      quantity: Math.max(1, Number(restockQty[l.productId] || l.suggestedOrderQty)),
+      quantity: Math.max(
+        0.000001,
+        Number(restockQty[l.productId] || l.suggestedOrderQty) || 1,
+      ),
       unitCost: l.costPrice,
       supplierId: l.supplierId,
     }));
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    router.push(`/purchases/orders?prefill=${encoded}&open=1`);
+
+    // Prefer a shared supplier when all selected lines agree
+    const supplierVotes = new Map<string, number>();
+    for (const l of selected) {
+      if (l.supplierId) {
+        supplierVotes.set(
+          l.supplierId,
+          (supplierVotes.get(l.supplierId) ?? 0) + 1,
+        );
+      }
+    }
+    let preferredSupplier: string | null = null;
+    let best = 0;
+    for (const [id, n] of supplierVotes) {
+      if (n > best) {
+        best = n;
+        preferredSupplier = id;
+      }
+    }
+    const mixedSuppliers = supplierVotes.size > 1;
+    if (mixedSuppliers) {
+      toast.message(
+        "Lines use different suppliers — pick the correct one on the PO form.",
+      );
+    }
+
+    // sessionStorage avoids long URL limits with many restock lines
+    writeRestockPrefill({
+      lines: payload,
+      supplierId: preferredSupplier,
+      note: "Auto-filled from dashboard restock attention",
+      createdAt: Date.now(),
+    });
+
+    // Keep a short query fallback for deep links / tests
+    const encoded = encodeURIComponent(JSON.stringify(payload.slice(0, 20)));
+    router.push(
+      `/purchases/orders?open=1&from=restock${payload.length <= 20 ? `&prefill=${encoded}` : ""}`,
+    );
   }
 
   function dispose(line: ExpiryLine) {
@@ -154,25 +196,44 @@ export function AttentionCenter({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
               Adjust quantities, then create a purchase order with these lines
-              prefilled.
+              prefilled — fewer clicks from alert to order.
             </p>
-            <Button
-              disabled={pending || restockSelectedCount === 0}
-              onClick={() => openPrefillPo(bundle.restock)}
-            >
-              <PackagePlus className="mr-2 h-4 w-4" />
-              Create PO ({restockSelectedCount})
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={bundle.restock.length === 0}
+                onClick={() => {
+                  const allOn = restockSelectedCount === bundle.restock.length;
+                  const m: Record<string, boolean> = {};
+                  for (const r of bundle.restock) m[r.productId] = !allOn;
+                  setSelectedRestock(m);
+                }}
+              >
+                {restockSelectedCount === bundle.restock.length
+                  ? "Deselect all"
+                  : "Select all"}
+              </Button>
+              <Button
+                disabled={pending || restockSelectedCount === 0}
+                onClick={() => openPrefillPo(bundle.restock)}
+              >
+                <PackagePlus className="mr-2 h-4 w-4" />
+                Create PO ({restockSelectedCount})
+              </Button>
+            </div>
           </div>
           {bundle.restock.length === 0 ? (
             <Empty text="No products at or below reorder level." />
           ) : (
             <div className="overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="p-3">Order</th>
                     <th className="p-3">Product</th>
+                    <th className="p-3">Supplier</th>
                     <th className="p-3">On hand</th>
                     <th className="p-3">Reorder</th>
                     <th className="p-3">Order qty</th>
@@ -202,18 +263,22 @@ export function AttentionCenter({
                           </div>
                         ) : null}
                       </td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {r.supplierName || "—"}
+                      </td>
                       <td className="p-3 tabular-nums">{r.quantity}</td>
                       <td className="p-3 tabular-nums">{r.reorderLevel}</td>
                       <td className="p-3">
                         <Input
                           type="number"
-                          min={1}
+                          min={0}
+                          step="any"
                           className="h-9 w-24"
                           value={restockQty[r.productId] ?? r.suggestedOrderQty}
                           onChange={(e) =>
                             setRestockQty((q) => ({
                               ...q,
-                              [r.productId]: Number(e.target.value) || 1,
+                              [r.productId]: Number(e.target.value) || 0,
                             }))
                           }
                         />

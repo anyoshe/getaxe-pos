@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -16,6 +16,10 @@ import {
 import { getPurchaseOrderPrintDataAction } from "../../actions/print-documents";
 import { printHtmlDocument } from "@/lib/print-document";
 import { buildPurchaseOrderHtml } from "../../lib/build-print-html";
+import {
+  clearRestockPrefill,
+  readRestockPrefill,
+} from "../../lib/restock-prefill";
 
 export type PoRow = {
   id: string;
@@ -111,6 +115,28 @@ export type PrefillLine = {
   supplierId?: string | null;
 };
 
+function mapPrefillToLines(
+  source: PrefillLine[],
+  products: ProductOpt[],
+): Line[] {
+  return source.map((p) => {
+    const product = products.find((x) => x.id === p.productId);
+    const unit = defaultUnit(product);
+    const factor = unit?.factorToStock ?? 1;
+    const costPerStock =
+      p.unitCost != null && p.unitCost > 0
+        ? p.unitCost
+        : (product?.costPerStockUnit ?? 0);
+    return {
+      key: crypto.randomUUID(),
+      productId: p.productId,
+      unitId: unit?.unitId ?? null,
+      quantity: Math.max(0.000001, Number(p.quantity) || 1),
+      costPerOrderUnit: costPerStock * factor,
+    };
+  });
+}
+
 export function PurchaseOrdersClient({
   orders,
   suppliers,
@@ -126,7 +152,10 @@ export function PurchaseOrdersClient({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [showCreate, setShowCreate] = useState(!!openCreate || (initialPrefill?.length ?? 0) > 0);
+
+  const [showCreate, setShowCreate] = useState(
+    !!openCreate || (initialPrefill?.length ?? 0) > 0,
+  );
   const [supplierId, setSupplierId] = useState(() => {
     const fromPrefill = initialPrefill?.find((p) => p.supplierId)?.supplierId;
     return fromPrefill || suppliers[0]?.id || "";
@@ -143,24 +172,7 @@ export function PurchaseOrdersClient({
 
   const [lines, setLines] = useState<Line[]>(() => {
     if (initialPrefill && initialPrefill.length > 0) {
-      return initialPrefill.map((p) => {
-        const product = products.find((x) => x.id === p.productId);
-        const unit = defaultUnit(product);
-        const factor = unit?.factorToStock ?? 1;
-        const cost =
-          p.unitCost != null && p.unitCost > 0
-            ? p.unitCost * factor
-            : product
-              ? product.costPerStockUnit * factor
-              : 0;
-        return {
-          key: crypto.randomUUID(),
-          productId: p.productId,
-          unitId: unit?.unitId ?? null,
-          quantity: Math.max(1, Number(p.quantity) || 1),
-          costPerOrderUnit: cost,
-        };
-      });
+      return mapPrefillToLines(initialPrefill, products);
     }
     return [
       {
@@ -174,6 +186,24 @@ export function PurchaseOrdersClient({
       },
     ];
   });
+
+  // After mount: prefer sessionStorage (full restock list) over capped URL prefill
+  useEffect(() => {
+    const stored = readRestockPrefill();
+    if (!stored?.lines?.length) return;
+    clearRestockPrefill();
+    setLines(mapPrefillToLines(stored.lines, products));
+    setShowCreate(true);
+    if (stored.supplierId) setSupplierId(stored.supplierId);
+    else {
+      const sid = stored.lines.find((l) => l.supplierId)?.supplierId;
+      if (sid) setSupplierId(sid);
+    }
+    if (stored.note) setNotes(stored.note);
+    toast.success(
+      `Loaded ${stored.lines.length} restock line${stored.lines.length === 1 ? "" : "s"} into the purchase order.`,
+    );
+  }, [products]);
 
   const productById = useMemo(() => {
     const m = new Map<string, ProductOpt>();

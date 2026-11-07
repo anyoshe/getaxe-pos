@@ -22,6 +22,10 @@ export type LowStockRow = {
   currentQuantity: number;
   reorderLevel: number | null;
   minimumStock: number | null;
+  /** Product average / last cost per stock unit */
+  costPrice: number;
+  /** Preferred supplier on the product master (may be null) */
+  supplierId: string | null;
 };
 
 /**
@@ -48,6 +52,8 @@ export async function getLowStockProducts(
         currentQuantity: sql<number>`coalesce(sum(${inventoryBalances.quantity}::numeric), 0)`,
         reorderLevel: products.reorderLevel,
         minimumStock: products.minimumStock,
+        costPrice: products.costPrice,
+        supplierId: products.supplierId,
       })
       .from(products)
       .leftJoin(
@@ -76,6 +82,8 @@ export async function getLowStockProducts(
         products.sku,
         products.reorderLevel,
         products.minimumStock,
+        products.costPrice,
+        products.supplierId,
         warehouses.id,
         warehouses.name,
       )
@@ -92,6 +100,8 @@ export async function getLowStockProducts(
       currentQuantity: Number(r.currentQuantity ?? 0),
       reorderLevel: r.reorderLevel != null ? Number(r.reorderLevel) : null,
       minimumStock: r.minimumStock != null ? Number(r.minimumStock) : null,
+      costPrice: Number(r.costPrice ?? 0),
+      supplierId: r.supplierId ?? null,
     }));
   }
 
@@ -104,6 +114,8 @@ export async function getLowStockProducts(
       currentQuantity: sql<number>`coalesce(sum(${inventoryBalances.quantity}::numeric), 0)`,
       reorderLevel: products.reorderLevel,
       minimumStock: products.minimumStock,
+      costPrice: products.costPrice,
+      supplierId: products.supplierId,
     })
     .from(products)
     .leftJoin(
@@ -127,6 +139,8 @@ export async function getLowStockProducts(
       products.sku,
       products.reorderLevel,
       products.minimumStock,
+      products.costPrice,
+      products.supplierId,
     )
     .having(
       sql`coalesce(sum(${inventoryBalances.quantity}::numeric), 0) <= coalesce(${products.reorderLevel}, 0)`,
@@ -141,6 +155,8 @@ export async function getLowStockProducts(
     currentQuantity: Number(r.currentQuantity ?? 0),
     reorderLevel: r.reorderLevel != null ? Number(r.reorderLevel) : null,
     minimumStock: r.minimumStock != null ? Number(r.minimumStock) : null,
+    costPrice: Number(r.costPrice ?? 0),
+    supplierId: r.supplierId ?? null,
   }));
 }
 
