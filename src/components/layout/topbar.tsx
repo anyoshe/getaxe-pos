@@ -2,7 +2,6 @@
 
 import {
   Bell,
-  Search,
   User,
   Settings,
   LogOut,
@@ -11,13 +10,13 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { InstallAppButton } from "@/components/layout/install-app-button";
 import { ConnectionStatus } from "@/components/layout/connection-status";
 import Image from "next/image";
-import { Input } from "@/components/ui/input";
 import {
   Avatar,
   AvatarFallback,
 } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MobileSidebar } from "./mobile-sidebar";
+import { GlobalSearch } from "./global-search";
 
 import type {
   CurrentUser,
@@ -122,21 +121,9 @@ export function Topbar({ user }: TopbarProps) {
                 </div>
         </div>
 
-        {/* Search */}
-
-        <div className="hidden w-full max-w-md md:block">
-
-          <div className="relative">
-
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-
-            <Input
-              placeholder="Search anything..."
-              className="rounded-xl border-border pl-10"
-            />
-
-          </div>
-
+        {/* Search — global command palette (⌘K) */}
+        <div className="flex min-w-0 flex-1 justify-center px-1 md:max-w-md md:flex-none">
+          <GlobalSearch />
         </div>
 
         {/* Right */}
