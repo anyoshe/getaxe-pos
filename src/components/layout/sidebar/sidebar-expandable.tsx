@@ -90,7 +90,7 @@ export function SidebarExpandable({
           <div className="ml-3 space-y-0.5 border-l border-border py-1 pl-2.5 dark:border-slate-700">
             {item.children?.map((child) => (
               <SidebarItem
-                key={child.href ?? child.label}
+                key={`${child.label}::${child.href ?? ""}`}
                 item={child}
                 pathname={pathname}
                 nested

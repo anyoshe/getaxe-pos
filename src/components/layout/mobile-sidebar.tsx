@@ -33,12 +33,27 @@ const SECTION_BREAKS: Record<string, string> = {
   Settings: "Administration",
 };
 
+function menusOpenForPath(items: NavigationItem[], pathname: string): string[] {
+  const open: string[] = [];
+  for (const item of items) {
+    const match =
+      (item.href &&
+        (pathname === item.href || pathname.startsWith(item.href + "/"))) ||
+      item.children?.some(
+        (c) =>
+          c.href &&
+          (pathname === c.href || pathname.startsWith(c.href + "/")),
+      );
+    if (match) open.push(item.label);
+  }
+  return open;
+}
+
 export function MobileSidebar() {
   const pathname = usePathname();
   const { hasPermission } = usePermission();
   const { hasCapability, hasAnyCapability } = useCapability();
   const [open, setOpen] = useState(false);
-  const [openMenus, setOpenMenus] = useState<string[]>([]);
 
   const filteredNavigation = useMemo(() => {
     function capOk(item: NavigationItem) {
@@ -65,21 +80,15 @@ export function MobileSidebar() {
       .filter((item): item is NavigationItem => item !== null);
   }, [hasPermission, hasCapability, hasAnyCapability]);
 
+  const [openMenus, setOpenMenus] = useState<string[]>(() =>
+    menusOpenForPath(filteredNavigation, pathname),
+  );
+
   useEffect(() => {
     setOpenMenus((prev) => {
+      const fromPath = menusOpenForPath(filteredNavigation, pathname);
       const next = new Set(prev);
-      for (const item of filteredNavigation) {
-        const match =
-          (item.href &&
-            (pathname === item.href ||
-              pathname.startsWith(item.href + "/"))) ||
-          item.children?.some(
-            (c) =>
-              c.href &&
-              (pathname === c.href || pathname.startsWith(c.href + "/")),
-          );
-        if (match) next.add(item.label);
-      }
+      for (const label of fromPath) next.add(label);
       return Array.from(next);
     });
   }, [pathname, filteredNavigation]);

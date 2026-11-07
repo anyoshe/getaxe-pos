@@ -30,11 +30,29 @@ const SECTION_BREAKS: Record<string, string> = {
   Settings: "Administration",
 };
 
+function menusOpenForPath(
+  items: NavigationItem[],
+  pathname: string,
+): string[] {
+  const open: string[] = [];
+  for (const item of items) {
+    const match =
+      (item.href &&
+        (pathname === item.href || pathname.startsWith(item.href + "/"))) ||
+      item.children?.some(
+        (child) =>
+          child.href &&
+          (pathname === child.href || pathname.startsWith(child.href + "/")),
+      );
+    if (match) open.push(item.label);
+  }
+  return open;
+}
+
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const { hasPermission } = usePermission();
   const { hasCapability, hasAnyCapability } = useCapability();
-  const [openMenus, setOpenMenus] = useState<string[]>([]);
 
   function capOk(item: NavigationItem) {
     if (item.capability && !hasCapability(item.capability)) return false;
@@ -65,22 +83,20 @@ export function Sidebar({ user }: SidebarProps) {
       .filter((item): item is NavigationItem => item !== null);
   }, [hasPermission, hasCapability, hasAnyCapability]);
 
+  // Seed open menus from the active path so SSR and the first client paint match
+  // (avoids empty → expanded mismatch after adding Settings children like eTIMS).
+  const [openMenus, setOpenMenus] = useState<string[]>(() =>
+    menusOpenForPath(filteredNavigation, pathname),
+  );
+
   useEffect(() => {
     setOpenMenus((prev) => {
-      const next = new Set(prev);
-      for (const item of filteredNavigation) {
-        const match =
-          (item.href &&
-            (pathname === item.href ||
-              pathname.startsWith(item.href + "/"))) ||
-          item.children?.some(
-            (child) =>
-              child.href &&
-              (pathname === child.href ||
-                pathname.startsWith(child.href + "/")),
-          );
-        if (match) next.add(item.label);
+      const fromPath = menusOpenForPath(filteredNavigation, pathname);
+      if (fromPath.every((l) => prev.includes(l)) && prev.length === fromPath.length) {
+        return prev;
       }
+      const next = new Set(prev);
+      for (const label of fromPath) next.add(label);
       return Array.from(next);
     });
   }, [pathname, filteredNavigation]);
