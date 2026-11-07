@@ -484,7 +484,8 @@ export const navigation: NavigationItem[] = [
         label: "eTIMS",
         href: "/settings/etims",
         icon: FileText,
-        permission: "accounts.view",
+        // Visible with business.view (same as payment methods / profile)
+        permission: "business.view",
       },
       {
         label: "Currencies",

@@ -3,6 +3,7 @@ import {
   Building2,
   ClipboardList,
   CreditCard,
+  FileText,
   GitBranch,
   Hash,
   Ruler,
@@ -35,6 +36,18 @@ const cards = [
     title: "Compliance checks",
     desc: "KRA PIN, till ledgers, controlled meds, eTIMS status",
     icon: ShieldCheck,
+  },
+  {
+    href: "/settings/etims",
+    title: "eTIMS",
+    desc: "On/off tax invoice path — simulation stamps or prepare for KRA",
+    icon: FileText,
+  },
+  {
+    href: "/settings/mpesa",
+    title: "M-Pesa",
+    desc: "STK Push till/paybill — simulation or live Daraja",
+    icon: CreditCard,
   },
   {
     href: "/finance/opening-balances",

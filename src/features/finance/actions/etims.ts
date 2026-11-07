@@ -9,7 +9,7 @@ import { etimsSettings } from "@/db/schema/integrations/etims";
 import { requireAuthorizedUser } from "@/lib/auth/authorize";
 
 export async function getEtimsSettingsAction() {
-  const user = await requireAuthorizedUser("accounts.view");
+  const user = await requireAuthorizedUser("business.view");
   const [row] = await db
     .select()
     .from(etimsSettings)
@@ -58,7 +58,7 @@ const saveSchema = z.object({
 });
 
 export async function saveEtimsSettingsAction(input: unknown) {
-  const user = await requireAuthorizedUser("accounts.update");
+  const user = await requireAuthorizedUser("business.update");
   const parsed = saveSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false as const, message: "Invalid eTIMS settings." };
