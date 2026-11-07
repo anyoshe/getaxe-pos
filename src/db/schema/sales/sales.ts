@@ -91,6 +91,9 @@ export const sales = pgTable(
 
     notes: text("notes"),
 
+    /** Client-generated id for offline outbox / retry idempotency */
+    clientSaleId: text("client_sale_id"),
+
     soldBy: uuid("sold_by")
       .notNull()
       .references(() => users.id),

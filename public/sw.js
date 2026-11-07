@@ -1,6 +1,13 @@
-/* GetAxe POS — minimal offline shell cache */
-const CACHE = "getaxe-shell-v1";
-const SHELL = ["/", "/sales/pos", "/login"];
+/* GetAxe POS — network-first shell; offline fallback for POS */
+const CACHE = "getaxe-shell-v2";
+const SHELL = [
+  "/",
+  "/sales/pos",
+  "/login",
+  "/manifest.webmanifest",
+  "/gat-icon.png",
+  "/favicon-32.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -21,20 +28,52 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
-  // Never cache API/server actions
-  if (req.headers.get("Next-Action") || req.url.includes("/_next/data")) return;
+
+  const url = new URL(req.url);
+  if (
+    req.headers.get("Next-Action") ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname.includes("/_next/data")
+  ) {
+    return;
+  }
+
+  if (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.match(/\.(js|css|woff2?|png|svg|jpg|ico)$/)
+  ) {
+    event.respondWith(
+      caches.match(req).then(
+        (cached) =>
+          cached ||
+          fetch(req).then((res) => {
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+            }
+            return res;
+          }),
+      ),
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(req)
       .then((res) => {
-        const copy = res.clone();
-        if (res.ok && req.url.startsWith(self.location.origin)) {
-          caches.open(CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
+        if (res.ok && req.mode === "navigate") {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
         }
         return res;
       })
       .catch(() =>
-        caches.match(req).then((cached) => cached || caches.match("/sales/pos")),
+        caches
+          .match(req)
+          .then(
+            (cached) =>
+              cached || caches.match("/sales/pos") || caches.match("/"),
+          ),
       ),
   );
 });

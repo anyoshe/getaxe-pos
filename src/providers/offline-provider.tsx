@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 
 import {
+  OUTBOX_MAX_ATTEMPTS,
   outboxList,
   outboxRemove,
   outboxUpdate,
@@ -67,6 +68,9 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
       let fail = 0;
       for (const item of items) {
         if (item.type !== "create_sale") continue;
+        if (item.status === "failed" && item.attempts >= OUTBOX_MAX_ATTEMPTS) {
+          continue;
+        }
         try {
           let customerId = item.payload.customerId;
           if (item.payload.pendingCustomer?.phone) {
@@ -79,6 +83,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
             }
             customerId = ensured.customerId;
           }
+          const clientSaleId = item.payload.clientSaleId || item.id;
           const result = await createSaleAction({
             warehouseId: item.payload.warehouseId,
             branchId: item.payload.branchId,
@@ -89,6 +94,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
             paymentReference: item.payload.paymentReference ?? null,
             paymentDetail: item.payload.paymentDetail ?? null,
             items: item.payload.items,
+            clientSaleId,
           });
           if (!result.success) {
             throw new Error(result.message);
@@ -96,25 +102,26 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
           await outboxRemove(item.id);
           ok += 1;
         } catch (e) {
-          fail += 1;
+          const attempts = (item.attempts ?? 0) + 1;
+          const lastError = e instanceof Error ? e.message : String(e);
           await outboxUpdate({
             ...item,
-            attempts: (item.attempts ?? 0) + 1,
-            lastError: e instanceof Error ? e.message : String(e),
+            attempts,
+            lastError,
+            status: attempts >= OUTBOX_MAX_ATTEMPTS ? "failed" : "pending",
           });
+          fail += 1;
         }
       }
       await refreshOutbox();
       if (ok > 0) {
         toast.success(
-          ok === 1
-            ? "1 offline sale synced"
-            : `${ok} offline sales synced`,
+          ok === 1 ? "1 offline sale synced" : `${ok} offline sales synced`,
         );
       }
       if (fail > 0 && ok === 0) {
         toast.error(
-          `${fail} offline sale(s) could not sync — check stock and try again`,
+          "Could not sync offline sales yet — will retry when the network is stable.",
         );
       }
     } finally {
@@ -123,30 +130,21 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   }, [flushing, refreshOutbox]);
 
   useEffect(() => {
-    setOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
-    void refreshOutbox();
-
     const onOnline = () => {
       setOnline(true);
-      toast.message("Back online — syncing pending sales…");
       void flushOutbox();
     };
-    const onOffline = () => {
-      setOnline(false);
-      toast.message("You are offline — sales will queue and sync later");
-    };
+    const onOffline = () => setOnline(false);
+    setOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
-
-    // Service worker for shell cache (best-effort)
+    void refreshOutbox();
+    const interval = window.setInterval(() => {
+      if (navigator.onLine) void flushOutbox();
+    }, 45_000);
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
-
-    const interval = window.setInterval(() => {
-      if (navigator.onLine) void flushOutbox();
-    }, 30_000);
-
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
@@ -157,7 +155,10 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       online,
-      pendingCount: pending.length,
+      pendingCount: pending.filter(
+        (p) =>
+          p.status !== "failed" || (p.attempts ?? 0) < OUTBOX_MAX_ATTEMPTS,
+      ).length,
       pending,
       refreshOutbox,
       flushOutbox,

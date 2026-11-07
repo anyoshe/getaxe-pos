@@ -40,8 +40,10 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ConnectionStatus } from "@/components/layout/connection-status";
 import { useOffline } from "@/providers/offline-provider";
 import {
-  newOutboxId,
   outboxEnqueue,
+  newOutboxId,
+  offlineInvoiceLabel,
+  savePosCatalog,
   type OutboxSalePayload,
 } from "@/lib/offline/outbox";
 import {
@@ -173,6 +175,19 @@ export function PosClient({
 }: PosClientProps) {
   const router = useRouter();
   const { online, refreshOutbox } = useOffline();
+
+  // Keep a local catalog snapshot so search still works briefly offline
+  useEffect(() => {
+    if (!online) return;
+    void savePosCatalog({
+      savedAt: new Date().toISOString(),
+      products: products as unknown[],
+      stockByProductWarehouse: stockByProductWarehouse as Record<
+        string,
+        Record<string, number>
+      >,
+    });
+  }, [online, products, stockByProductWarehouse]);
   const [pending, startTransition] = useTransition();
   const scanRef = useRef<HTMLInputElement>(null);
 
@@ -966,6 +981,7 @@ export function PosClient({
           preferredBatchIds: l.selectedBatchId ? [l.selectedBatchId] : [],
           unitPrice: l.unitPrice,
           serialNumbers: l.serialized ? l.selectedSerials : [],
+          name: l.name,
         })),
         pendingCustomer:
           !resolvedCustomerId && customerPhone.trim().length >= 7
@@ -975,12 +991,13 @@ export function PosClient({
               }
             : null,
         totalHint: total,
+        clientSaleId: newOutboxId(),
       };
 
       // Offline or network failure → queue, never drop the sale
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         await outboxEnqueue({
-          id: newOutboxId(),
+          id: salePayload.clientSaleId,
           type: "create_sale",
           createdAt: new Date().toISOString(),
           payload: salePayload,
@@ -988,6 +1005,38 @@ export function PosClient({
         });
         await refreshOutbox();
         toast.success("Sale saved offline — will sync when online");
+        setStockMap((prev) => {
+          const next = { ...prev };
+          const wh = warehouseId;
+          for (const l of cart) {
+            const factor = l.factorToStock > 0 ? l.factorToStock : 1;
+            const need = l.quantity * factor;
+            const byWh = { ...(next[l.productId] ?? {}) };
+            const cur = Number(byWh[wh] ?? 0);
+            byWh[wh] = Math.max(0, cur - need);
+            next[l.productId] = byWh;
+          }
+          return next;
+        });
+        setLastReceipt({
+          invoiceNumber: offlineInvoiceLabel(salePayload.clientSaleId),
+          soldAt: new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" }),
+          total: total,
+          subtotal: total,
+          amountPaid: saleMode === "CREDIT" ? 0 : total,
+          balanceDue: saleMode === "CREDIT" ? total : 0,
+          paymentMethod: effectiveMethod,
+          isCredit: saleMode === "CREDIT",
+          notes: salePayload.notes,
+          lines: cart.map((l) => ({
+            name: l.name,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            total: l.quantity * l.unitPrice,
+            serialNumbers: l.serialized ? l.selectedSerials : [],
+          })),
+          offline: true,
+        } as any);
         setCart([]);
         setAmountTendered("");
         setPaymentReference("");
@@ -1008,10 +1057,11 @@ export function PosClient({
           paymentReference: salePayload.paymentReference ?? null,
           paymentDetail: salePayload.paymentDetail ?? null,
           items: salePayload.items,
+          clientSaleId: salePayload.clientSaleId,
         });
       } catch (e) {
         await outboxEnqueue({
-          id: newOutboxId(),
+          id: salePayload.clientSaleId,
           type: "create_sale",
           createdAt: new Date().toISOString(),
           payload: salePayload,

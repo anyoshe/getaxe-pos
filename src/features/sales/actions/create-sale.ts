@@ -57,6 +57,8 @@ const schema = z.object({
   /** Extra tender detail for audit (bank subtype, origin bank, provider) */
   paymentDetail: z.string().max(500).nullable().optional(),
   items: z.array(lineSchema).min(1),
+  /** Offline outbox id — same id retries must not create a second sale */
+  clientSaleId: z.string().min(8).max(80).optional().nullable(),
 });
 
 export async function createSaleAction(input: unknown) {
@@ -72,6 +74,44 @@ export async function createSaleAction(input: unknown) {
   }
 
   const data = parsed.data;
+
+  if (data.clientSaleId) {
+    const [existing] = await db
+      .select()
+      .from(sales)
+      .where(
+        and(
+          eq(sales.businessId, user.businessId),
+          eq(sales.clientSaleId, data.clientSaleId),
+        ),
+      )
+      .limit(1);
+    if (existing) {
+      return {
+        success: true as const,
+        message: `Sale ${existing.invoiceNumber} already recorded (offline sync).`,
+        saleId: existing.id,
+        invoiceNumber: String(existing.invoiceNumber),
+        total: Number(existing.total ?? 0),
+        subtotal: Number(existing.subtotal ?? 0),
+        amountPaid: Number(existing.amountPaid ?? 0),
+        balanceDue: Number(existing.balanceDue ?? 0),
+        paymentMethod: data.paymentMethod,
+        isCredit: data.paymentMethod === "CREDIT",
+        soldAt: existing.soldAt
+          ? formatDateTimeNairobi(existing.soldAt)
+          : formatDateTimeNairobi(nowNairobiWallClock()),
+        customerId: existing.customerId,
+        customerDisplayName: null,
+        customerContactName: null,
+        customerPhone: null,
+        customerIsBusiness: false,
+        notes: existing.notes,
+        lines: [],
+        alreadySynced: true as const,
+      };
+    }
+  }
 
   try {
     const lines = [];
@@ -348,6 +388,7 @@ export async function createSaleAction(input: unknown) {
         notes: saleNotes,
         soldBy: user.id,
         soldAt: nowNairobiWallClock(),
+        clientSaleId: data.clientSaleId ?? null,
       },
       items: lines.map((l) => ({
         businessId: user.businessId,

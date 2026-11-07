@@ -23,14 +23,15 @@ export type OutboxSalePayload = {
     preferredBatchIds: string[];
     unitPrice: number;
     serialNumbers: string[];
+    name?: string;
   }>;
-  /** Resolve customer on sync before posting the sale */
   pendingCustomer?: {
     phone: string;
     firstName: string | null;
   } | null;
-  /** Snapshot for cashier UI while queued */
   totalHint?: number;
+  /** Same id sent to server as clientSaleId — prevents double post on retry */
+  clientSaleId: string;
 };
 
 export type OutboxItem = {
@@ -40,11 +41,15 @@ export type OutboxItem = {
   payload: OutboxSalePayload;
   attempts: number;
   lastError?: string;
+  status?: "pending" | "failed";
 };
 
 const DB_NAME = "getaxe-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = "outbox";
+const CATALOG_STORE = "pos_catalog";
+
+export const OUTBOX_MAX_ATTEMPTS = 8;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -59,6 +64,9 @@ function openDb(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(CATALOG_STORE)) {
+        db.createObjectStore(CATALOG_STORE, { keyPath: "key" });
       }
     };
   });
@@ -75,7 +83,7 @@ function txDone(tx: IDBTransaction): Promise<void> {
 export async function outboxEnqueue(item: OutboxItem): Promise<void> {
   const db = await openDb();
   const tx = db.transaction(STORE, "readwrite");
-  tx.objectStore(STORE).put(item);
+  tx.objectStore(STORE).put({ ...item, status: item.status ?? "pending" });
   await txDone(tx);
   db.close();
 }
@@ -115,4 +123,51 @@ export function newOutboxId(): string {
     return crypto.randomUUID();
   }
   return `ob_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function offlineInvoiceLabel(clientSaleId: string): string {
+  const short = clientSaleId.replace(/-/g, "").slice(0, 8).toUpperCase();
+  return `OFFLINE-${short}`;
+}
+
+export type PosCatalogSnapshot = {
+  key: "pos";
+  savedAt: string;
+  businessId?: string;
+  products: unknown[];
+  stockByProductWarehouse: Record<string, Record<string, number>>;
+};
+
+export async function savePosCatalog(
+  snapshot: Omit<PosCatalogSnapshot, "key">,
+): Promise<void> {
+  try {
+    const db = await openDb();
+    const tx = db.transaction(CATALOG_STORE, "readwrite");
+    tx.objectStore(CATALOG_STORE).put({ key: "pos", ...snapshot });
+    await txDone(tx);
+    db.close();
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function loadPosCatalog(): Promise<PosCatalogSnapshot | null> {
+  try {
+    const db = await openDb();
+    const tx = db.transaction(CATALOG_STORE, "readonly");
+    const row = await new Promise<PosCatalogSnapshot | undefined>(
+      (resolve, reject) => {
+        const req = tx.objectStore(CATALOG_STORE).get("pos");
+        req.onsuccess = () =>
+          resolve(req.result as PosCatalogSnapshot | undefined);
+        req.onerror = () => reject(req.error);
+      },
+    );
+    await txDone(tx);
+    db.close();
+    return row ?? null;
+  } catch {
+    return null;
+  }
 }
