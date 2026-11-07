@@ -5,6 +5,7 @@ import { numberingSequencesService } from "@/features/settings/services/numberin
 import { financeService } from "@/features/finance/services/finance.service";
 import { logActivity } from "@/features/audit/services/activity-log.service";
 import { journalPostingService } from "@/features/finance/services/journal-posting.service";
+import { applyEtimsPhaseAAfterSale } from "@/features/finance/services/etims-phase-a.service";
 import { loyaltyService } from "@/features/sales/services/loyalty.service";
 import { db } from "@/db";
 import { customers } from "@/db/schema/sales/customers";
@@ -505,6 +506,26 @@ export async function createSaleAction(input: unknown) {
     } catch (e) {
       console.error("[create-sale] loyalty", e);
     }
+
+    let etimsStamp: {
+      status: string;
+      cuInvoiceNumber: string | null;
+      qrPayload: string | null;
+      message: string;
+    } | null = null;
+    try {
+      etimsStamp = await applyEtimsPhaseAAfterSale({
+        businessId: user.businessId,
+        saleId: String((result as any).sale.id),
+        invoiceNumber: String((result as any).sale.invoiceNumber),
+      });
+      if (etimsStamp.status === "OFF") {
+        etimsStamp = null;
+      }
+    } catch (e) {
+      console.error("[create-sale] etims phase A", e);
+    }
+
     void logActivity({
       businessId: user.businessId,
       userId: user.id,
@@ -573,6 +594,15 @@ export async function createSaleAction(input: unknown) {
       customerPhone: customerSnap.phone,
       customerIsBusiness: customerSnap.isBusiness,
       notes: data.notes ?? null,
+      etims:
+        etimsStamp && etimsStamp.status !== "OFF"
+          ? {
+              status: etimsStamp.status,
+              cuInvoiceNumber: etimsStamp.cuInvoiceNumber,
+              qrPayload: etimsStamp.qrPayload,
+              message: etimsStamp.message,
+            }
+          : null,
       lines: lines.map((l) => ({
         productId: l.productId,
         quantity: Number(

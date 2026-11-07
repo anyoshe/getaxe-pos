@@ -48,6 +48,12 @@ export type ReceiptData = {
   total: number;
   lines: ReceiptLine[];
   notes?: string | null;
+  /** Phase A eTIMS stamp (simulation or pending live) */
+  etims?: {
+    status: string;
+    cuInvoiceNumber?: string | null;
+    message?: string | null;
+  } | null;
 };
 
 function money(n: number, currency = "KES") {
@@ -297,6 +303,19 @@ function ReceiptBody({
           value={receipt.isCredit ? "CREDIT INVOICE" : "CASH SALE"}
         />
         <Row label="Payment" value={receipt.paymentMethod} />
+        {receipt.etims?.cuInvoiceNumber ? (
+          <Row
+            label="CU Inv (eTIMS)"
+            value={receipt.etims.cuInvoiceNumber}
+            bold
+          />
+        ) : null}
+        {receipt.etims?.status === "SIMULATED" ? (
+          <Row label="eTIMS" value="SIMULATION — not sent to KRA" />
+        ) : null}
+        {receipt.etims?.status === "PENDING_LIVE" ? (
+          <Row label="eTIMS" value="Pending live KRA (Phase B)" />
+        ) : null}
         {receipt.customerName ? (
           <Row label="Customer" value={receipt.customerName} />
         ) : null}

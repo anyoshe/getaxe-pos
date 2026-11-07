@@ -481,6 +481,12 @@ export const navigation: NavigationItem[] = [
         permission: "accounts.view",
       },
       {
+        label: "eTIMS",
+        href: "/settings/etims",
+        icon: FileText,
+        permission: "accounts.view",
+      },
+      {
         label: "Currencies",
         href: "/settings/currencies",
         icon: CircleDollarSign,

@@ -1214,6 +1214,7 @@ export function PosClient({
         subtotal: Number(res.subtotal ?? total),
         total: saleTotal,
         notes: salePayload.notes,
+        etims: (res as { etims?: ReceiptData["etims"] }).etims ?? null,
         lines: cart.map((l) => ({
           name: l.name,
           quantity: l.quantity,

@@ -14,3 +14,4 @@ export * from "./platform";
 export * from "./capabilities";
 export * from "./crm";
 export * from "./integrations/mpesa";
+export * from "./integrations/etims";

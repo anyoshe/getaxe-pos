@@ -94,6 +94,13 @@ export const sales = pgTable(
     /** Client-generated id for offline outbox / retry idempotency */
     clientSaleId: text("client_sale_id"),
 
+    /** eTIMS Phase A — OFF when null; SIMULATED / PENDING_LIVE / FAILED etc. */
+    etimsStatus: text("etims_status"),
+    etimsCuInvoiceNumber: text("etims_cu_invoice_number"),
+    etimsQrPayload: text("etims_qr_payload"),
+    etimsMessage: text("etims_message"),
+    etimsPostedAt: timestamp("etims_posted_at"),
+
     soldBy: uuid("sold_by")
       .notNull()
       .references(() => users.id),
