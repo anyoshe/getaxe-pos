@@ -23,6 +23,17 @@ import {
 } from "@/components/shared";
 
 import { getOwnerDashboardAction } from "@/features/dashboard/actions";
+import { DailyOwnerBriefCard } from "@/features/dashboard/components/daily-owner-brief";
+import {
+  AccountantHomePanel,
+  CashierHomePanel,
+  PharmacistHomePanel,
+  PurchasingHomePanel,
+  StaffHomePanel,
+  StoreHomePanel,
+} from "@/features/dashboard/components/role-home-panels";
+import { resolveRoleHome } from "@/features/dashboard/lib/role-home";
+import { buildDailyOwnerBrief } from "@/features/dashboard/services/owner-brief.service";
 import { getSetupReadiness } from "@/features/settings/services/setup-readiness.service";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import Link from "next/link";
@@ -47,8 +58,10 @@ function attentionStyles(kind: AttentionKind) {
 }
 
 export default async function DashboardPage() {
-  const dashboard = await getOwnerDashboardAction();
   const user = await getCurrentUser();
+  const roleName = user?.role?.name ?? null;
+  const home = resolveRoleHome(roleName);
+  const dashboard = await getOwnerDashboardAction();
   const readiness = user
     ? await getSetupReadiness(user.businessId).catch(() => null)
     : null;
@@ -66,13 +79,90 @@ export default async function DashboardPage() {
   const saleCount = summary.todaySalesCount ?? 0;
   const incomplete =
     readiness?.checks.filter((c) => !c.done && !c.optional) ?? [];
+  const displayName = user?.name?.split(/\s+/)[0] || "there";
+  const businessName =
+    user && "business" in user && user.business && typeof user.business === "object"
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((user.business as any).name as string | undefined)
+      : undefined;
+
+  // Role-specific homes — focused workbenches (not the full owner command centre)
+  if (home.kind === "cashier" || home.kind === "sales") {
+    return (
+      <div className="space-y-8">
+        <CashierHomePanel
+          home={home}
+          dashboard={dashboard}
+          userName={displayName}
+        />
+      </div>
+    );
+  }
+  if (home.kind === "accountant") {
+    return (
+      <div className="space-y-8">
+        <AccountantHomePanel
+          home={home}
+          dashboard={dashboard}
+          userName={displayName}
+        />
+      </div>
+    );
+  }
+  if (home.kind === "store") {
+    return (
+      <div className="space-y-8">
+        <StoreHomePanel
+          home={home}
+          dashboard={dashboard}
+          userName={displayName}
+        />
+      </div>
+    );
+  }
+  if (home.kind === "purchasing") {
+    return (
+      <div className="space-y-8">
+        <PurchasingHomePanel
+          home={home}
+          dashboard={dashboard}
+          userName={displayName}
+        />
+      </div>
+    );
+  }
+  if (home.kind === "pharmacist") {
+    return (
+      <div className="space-y-8">
+        <PharmacistHomePanel
+          home={home}
+          dashboard={dashboard}
+          userName={displayName}
+        />
+      </div>
+    );
+  }
+  if (home.kind === "staff") {
+    return (
+      <div className="space-y-8">
+        <StaffHomePanel home={home} userName={displayName} />
+      </div>
+    );
+  }
+
+  const ownerBrief = buildDailyOwnerBrief(dashboard, {
+    ownerName: user?.name,
+    businessName,
+  });
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Your business today"
-        description="See sales, stock, cash and what needs your attention — so you can decide with facts, even when you are not at the counter."
+        title={home.title}
+        description={home.description}
       />
+
+      <DailyOwnerBriefCard brief={ownerBrief} />
 
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
