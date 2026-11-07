@@ -1,18 +1,20 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
 import {
+  AlertTriangle,
   ArrowRight,
   Banknote,
   ClipboardList,
   FileText,
   Package,
+  PackagePlus,
   Pill,
   ShoppingCart,
   Truck,
   Warehouse,
 } from "lucide-react";
 
-import type { OwnerDashboard } from "../types";
+import type { LowStockItem, OwnerDashboard } from "../types";
 import type { RoleHomeConfig } from "../lib/role-home";
 
 function money(n: number) {
@@ -58,6 +60,118 @@ function QuickLink({
         ) : null}
       </span>
     </Link>
+  );
+}
+
+/**
+ * Always-on reorder alerts for store / purchasing roles —
+ * does not depend on the owner opening the attention centre.
+ */
+function RestockAlertCard({
+  count,
+  items,
+  audience,
+}: {
+  count: number;
+  items: LowStockItem[];
+  audience: "store" | "purchasing";
+}) {
+  const preview = (items ?? []).slice(0, 8);
+  const healthy = count <= 0;
+
+  return (
+    <section
+      className={
+        healthy
+          ? "rounded-2xl border border-border bg-card p-5"
+          : "rounded-2xl border border-rose-500/35 bg-rose-500/5 p-5 shadow-sm"
+      }
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <AlertTriangle
+              className={
+                healthy
+                  ? "h-5 w-5 text-muted-foreground"
+                  : "h-5 w-5 text-rose-600 dark:text-rose-400"
+              }
+            />
+            <h3 className="text-base font-semibold tracking-tight">
+              {healthy ? "Reorder levels healthy" : "Reorder alerts"}
+            </h3>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {healthy
+              ? "No products at or below reorder level right now."
+              : audience === "purchasing"
+                ? `${count} product${count === 1 ? "" : "s"} need ordering. You can raise a PO without waiting for the owner.`
+                : `${count} product${count === 1 ? "" : "s"} at or below reorder. Flag purchasing or open the restock list to order.`}
+          </p>
+        </div>
+        {!healthy ? (
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/dashboard/attention?kind=restock"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm"
+            >
+              <PackagePlus className="h-4 w-4" />
+              {audience === "purchasing"
+                ? "Review & create PO"
+                : "Open restock list"}
+            </Link>
+            {audience === "purchasing" ? (
+              <Link
+                href="/purchases/orders"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-medium"
+              >
+                All POs
+              </Link>
+            ) : (
+              <Link
+                href="/inventory/stock"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-medium"
+              >
+                Stock on hand
+              </Link>
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      {!healthy && preview.length > 0 ? (
+        <ul className="mt-4 divide-y divide-border/80 rounded-xl border border-border/80 bg-background/60">
+          {preview.map((row) => (
+            <li
+              key={row.productId}
+              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-sm"
+            >
+              <span className="min-w-0">
+                <span className="font-medium text-foreground">{row.name}</span>
+                {row.sku ? (
+                  <span className="ml-2 font-mono text-xs text-muted-foreground">
+                    {row.sku}
+                  </span>
+                ) : null}
+              </span>
+              <span className="tabular-nums text-xs text-muted-foreground">
+                On hand{" "}
+                <span className="font-semibold text-rose-700 dark:text-rose-300">
+                  {row.quantity}
+                </span>
+                {" · "}
+                reorder {row.reorderLevel}
+              </span>
+            </li>
+          ))}
+          {count > preview.length ? (
+            <li className="px-3 py-2 text-xs text-muted-foreground">
+              +{count - preview.length} more on the restock list
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+    </section>
   );
 }
 
@@ -176,14 +290,17 @@ export function StoreHomePanel({ home, dashboard, userName }: Props) {
         <p className="text-sm text-muted-foreground">Hello, {userName}</p>
         <h2 className="mt-1 text-xl font-semibold">{home.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{home.description}</p>
-        <p className="mt-3 text-sm">
-          <span className="font-semibold text-rose-600 dark:text-rose-400">
-            {s.lowStock}
-          </span>{" "}
-          product{s.lowStock === 1 ? "" : "s"} at or below reorder · stock at
-          cost {money(s.stockValue)}
+        <p className="mt-3 text-sm text-muted-foreground">
+          Stock at cost {money(s.stockValue)}
         </p>
       </div>
+
+      <RestockAlertCard
+        count={s.lowStock}
+        items={dashboard.lowStockItems ?? []}
+        audience="store"
+      />
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <QuickLink
           href="/inventory/stock"
@@ -206,9 +323,9 @@ export function StoreHomePanel({ home, dashboard, userName }: Props) {
           icon={ClipboardList}
         />
         <QuickLink
-          href="/dashboard/attention?focus=restock"
-          label="Restock list"
-          icon={Package}
+          href="/dashboard/attention?kind=restock"
+          label="Full restock list"
+          icon={PackagePlus}
           hint={`${s.lowStock} need attention`}
         />
         <QuickLink
@@ -229,10 +346,17 @@ export function PurchasingHomePanel({ home, dashboard, userName }: Props) {
         <p className="text-sm text-muted-foreground">Hello, {userName}</p>
         <h2 className="mt-1 text-xl font-semibold">{home.title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{home.description}</p>
-        <p className="mt-3 text-sm">
-          Open payables {money(s.openAp)} · low stock {s.lowStock}
+        <p className="mt-3 text-sm text-muted-foreground">
+          Open payables {money(s.openAp)}
         </p>
       </div>
+
+      <RestockAlertCard
+        count={s.lowStock}
+        items={dashboard.lowStockItems ?? []}
+        audience="purchasing"
+      />
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <QuickLink
           href="/purchases/orders"
@@ -251,9 +375,10 @@ export function PurchasingHomePanel({ home, dashboard, userName }: Props) {
         />
         <QuickLink href="/inventory/suppliers" label="Suppliers" icon={Truck} />
         <QuickLink
-          href="/dashboard/attention?focus=restock"
+          href="/dashboard/attention?kind=restock"
           label="What to reorder"
-          icon={Package}
+          icon={PackagePlus}
+          hint={`${s.lowStock} line(s)`}
         />
       </div>
     </div>

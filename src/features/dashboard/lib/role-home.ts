@@ -45,13 +45,19 @@ const ACCOUNTANT_NAMES = new Set([
 const STORE_NAMES = new Set([
   "STORE_KEEPER",
   "STOREKEEPER",
+  "STOCK_CONTROLLER",
+  "STOCKCONTROLLER",
   "INVENTORY",
+  "INVENTORY_CONTROLLER",
   "WAREHOUSE",
+  "WAREHOUSE_MANAGER",
 ]);
 const PURCHASING_NAMES = new Set([
   "PURCHASING_OFFICER",
   "PURCHASING",
   "BUYER",
+  "PROCUREMENT",
+  "PROCUREMENT_OFFICER",
 ]);
 const PHARMACIST_NAMES = new Set([
   "PHARMACIST",
@@ -115,27 +121,38 @@ export function resolveRoleHome(
     };
   }
 
-  if (STORE_NAMES.has(n)) {
+  if (
+    STORE_NAMES.has(n) ||
+    n.includes("STORE") ||
+    n.includes("STOCK") ||
+    n.includes("WAREHOUSE") ||
+    n.includes("INVENTORY")
+  ) {
     return {
       kind: "store",
       title: "Stock desk",
       description:
-        "Receive, transfer, adjust and watch low stock so the counter never runs dry.",
-      primaryHref: "/inventory/stock",
-      primaryLabel: "Stock on hand",
+        "Receive, transfer, adjust and act on reorder alerts so the counter never runs dry — even if the owner has not flagged them yet.",
+      primaryHref: "/dashboard/attention?kind=restock",
+      primaryLabel: "Reorder alerts",
       loadOwnerDashboard: true,
       showOwnerBrief: false,
     };
   }
 
-  if (PURCHASING_NAMES.has(n)) {
+  if (
+    PURCHASING_NAMES.has(n) ||
+    n.includes("PURCHAS") ||
+    n.includes("PROCURE") ||
+    n.includes("BUYER")
+  ) {
     return {
       kind: "purchasing",
       title: "Purchasing desk",
       description:
-        "Orders, goods receipt and supplier invoices — keep shelves full and AP clear.",
-      primaryHref: "/purchases/orders",
-      primaryLabel: "Purchase orders",
+        "Reorder alerts, purchase orders, goods receipt and supplier invoices — keep shelves full without waiting on the owner.",
+      primaryHref: "/dashboard/attention?kind=restock",
+      primaryLabel: "What to reorder",
       loadOwnerDashboard: true,
       showOwnerBrief: false,
     };
