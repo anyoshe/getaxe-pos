@@ -32,6 +32,11 @@ import { BarcodeScanner } from "@/features/inventory/components/products/entry/b
 
 import { createSaleAction } from "../../actions/create-sale";
 import {
+  getMpesaPosFlagsAction,
+  initiateMpesaStkAction,
+  queryMpesaStkAction,
+} from "@/features/finance/actions/mpesa";
+import {
   SaleReceipt,
   type ReceiptBusiness,
   type ReceiptData,
@@ -339,6 +344,10 @@ export function PosClient({
   const [mobileProvider, setMobileProvider] = useState<"MPESA" | "AIRTEL" | "OTHER">(
     "MPESA",
   );
+  const [mpesaStkEnabled, setMpesaStkEnabled] = useState(false);
+  const [mpesaSim, setMpesaSim] = useState(true);
+  const [stkBusy, setStkBusy] = useState(false);
+  const [stkStatus, setStkStatus] = useState<string | null>(null);
   const [bankChannel, setBankChannel] = useState<
     "TRANSFER" | "DEPOSIT" | "RTGS" | "EFT" | "CHEQUE"
   >("TRANSFER");
@@ -791,6 +800,67 @@ export function PosClient({
   const estimatedEarn =
     customerId && total > 0 ? Math.floor(total / 100) : 0;
 
+
+  async function requestMpesaStk() {
+    const phone =
+      customerPhone.trim() ||
+      (customerLabel && /\d{9,}/.test(customerLabel) ? customerLabel : "");
+    if (!phone) {
+      toast.error("Enter customer phone (07…) to send M-Pesa STK.");
+      return;
+    }
+    if (total <= 0) {
+      toast.error("Cart total must be greater than zero.");
+      return;
+    }
+    setStkBusy(true);
+    setStkStatus("Sending prompt…");
+    try {
+      const start = await initiateMpesaStkAction({
+        phone,
+        amount: total,
+        cashAccountId: selectedCashAccountId || null,
+      });
+      if (!start.success) {
+        toast.error(start.message);
+        setStkStatus(null);
+        return;
+      }
+      toast.message(start.message);
+      setStkStatus(start.simulated ? "Simulation — confirming…" : "Waiting for PIN…");
+      // Poll up to ~90s
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const q = await queryMpesaStkAction({
+          requestId: start.requestId,
+          checkoutRequestId: start.checkoutRequestId,
+        });
+        if (!q.success) continue;
+        if (q.status === "SUCCESS") {
+          const receipt = q.mpesaReceipt || start.checkoutRequestId;
+          setPaymentReference(receipt);
+          setStkStatus(`Paid · ${receipt}`);
+          toast.success(`M-Pesa confirmed: ${receipt}`);
+          setStkBusy(false);
+          return;
+        }
+        if (q.status === "FAILED" || q.status === "CANCELLED") {
+          setStkStatus(q.resultDesc || q.status);
+          toast.error(q.resultDesc || "M-Pesa payment not completed");
+          setStkBusy(false);
+          return;
+        }
+        setStkStatus(`Waiting for PIN… (${i + 1})`);
+      }
+      setStkStatus("Still pending — enter code manually if paid");
+      toast.message("STK still pending. If customer paid, type the M-Pesa code below.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "STK failed");
+      setStkStatus(null);
+    } finally {
+      setStkBusy(false);
+    }
+  }
 
   function checkout() {
     startTransition(async () => {
@@ -2275,6 +2345,31 @@ export function PosClient({
                       onChange={(e) => setPaymentReference(e.target.value)}
                     />
                   </div>
+                  {mpesaStkEnabled && mobileProvider === "MPESA" ? (
+                    <div className="space-y-1.5 rounded-lg border border-primary/20 bg-primary/5 p-2">
+                      <Button
+                        type="button"
+                        className="h-10 w-full rounded-xl font-semibold"
+                        disabled={stkBusy || total <= 0}
+                        onClick={() => void requestMpesaStk()}
+                      >
+                        {stkBusy
+                          ? "Waiting for M-Pesa…"
+                          : mpesaSim
+                            ? "Send M-Pesa prompt (simulation)"
+                            : "Send M-Pesa STK prompt"}
+                      </Button>
+                      {stkStatus ? (
+                        <p className="text-center text-[11px] text-muted-foreground">
+                          {stkStatus}
+                        </p>
+                      ) : (
+                        <p className="text-center text-[10px] text-muted-foreground">
+                          Uses customer phone above. Or type confirmation code manually.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 

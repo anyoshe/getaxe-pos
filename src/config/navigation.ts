@@ -475,6 +475,12 @@ export const navigation: NavigationItem[] = [
         permission: "business.view",
       },
       {
+        label: "M-Pesa",
+        href: "/settings/mpesa",
+        icon: CreditCard,
+        permission: "accounts.view",
+      },
+      {
         label: "Currencies",
         href: "/settings/currencies",
         icon: CircleDollarSign,

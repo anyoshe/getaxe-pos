@@ -13,3 +13,4 @@ export * from "./insurance";
 export * from "./platform";
 export * from "./capabilities";
 export * from "./crm";
+export * from "./integrations/mpesa";
