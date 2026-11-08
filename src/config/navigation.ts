@@ -415,6 +415,12 @@ export const navigation: NavigationItem[] = [
         permission: "business.view",
       },
       {
+        label: "Go live in 1 day",
+        href: "/settings/go-live",
+        icon: ClipboardList,
+        permission: "business.view",
+      },
+      {
         label: "Setup wizard",
         href: "/settings/setup-guide",
         icon: ClipboardList,

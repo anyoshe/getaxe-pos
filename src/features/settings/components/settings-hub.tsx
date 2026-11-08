@@ -14,6 +14,12 @@ import {
 
 const cards = [
   {
+    href: "/settings/go-live",
+    title: "Go live in 1 day",
+    desc: "Pharmacy · hardware · agrovet — one screen to first sale",
+    icon: ClipboardList,
+  },
+  {
     href: "/settings/setup-guide",
     title: "Business setup guide",
     desc: "Step-by-step: where to click until ready to sell",
