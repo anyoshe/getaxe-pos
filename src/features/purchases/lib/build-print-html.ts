@@ -6,6 +6,8 @@ type Biz = {
   email?: string | null;
   address?: string | null;
   logo?: string | null;
+  legalName?: string | null;
+  documentFooter?: string | null;
 };
 
 function header(biz: Biz, title: string, meta: string) {
@@ -16,7 +18,8 @@ function header(biz: Biz, title: string, meta: string) {
   <div class="row">
     <div class="box">
       ${logo}
-      <h1>${escapeHtmlText(biz.name)}</h1>
+      <h1>${escapeHtmlText((biz.legalName && biz.legalName.trim()) || biz.name)}</h1>
+      ${biz.legalName && biz.legalName.trim() && biz.legalName.trim() !== biz.name.trim() ? `<div class="muted">${escapeHtmlText(biz.name)}</div>` : ""}
       <div class="muted">
         ${biz.address ? escapeHtmlText(biz.address) + "<br/>" : ""}
         ${biz.phone ? "Tel: " + escapeHtmlText(biz.phone) + "<br/>" : ""}
@@ -188,7 +191,7 @@ export function buildGoodsReceiptHtml(data: {
       ? `<p><strong>Notes:</strong> ${escapeHtmlText(data.notes)}</p>`
       : ""
   }
-  <div class="footer">Goods received note — GetAxe POS</div>`;
+  <div class="footer">${escapeHtmlText(data.business.documentFooter?.trim() || "Goods received note — GetAxe")}</div>`;
 }
 
 export function buildSupplierInvoiceHtml(data: {
@@ -224,5 +227,5 @@ export function buildSupplierInvoiceHtml(data: {
       ? `<p><strong>Notes:</strong> ${escapeHtmlText(data.notes)}</p>`
       : ""
   }
-  <div class="footer">Accounts payable document — GetAxe POS</div>`;
+  <div class="footer">${escapeHtmlText(data.business.documentFooter?.trim() || "Accounts payable — GetAxe")}</div>`;
 }

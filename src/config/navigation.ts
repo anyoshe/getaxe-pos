@@ -421,6 +421,12 @@ export const navigation: NavigationItem[] = [
         permission: "business.view",
       },
       {
+        label: "Pricing & branding",
+        href: "/settings/pricing-policy",
+        icon: ClipboardList,
+        permission: "business.view",
+      },
+      {
         label: "Setup wizard",
         href: "/settings/setup-guide",
         icon: ClipboardList,

@@ -16,6 +16,8 @@ export type ReceiptBusiness = {
   registrationNumber?: string | null;
   logo?: string | null;
   currency?: string | null;
+  /** Optional pilot / brand footer on printed docs */
+  documentFooter?: string | null;
 };
 
 export type ReceiptLine = {
@@ -456,7 +458,8 @@ function ReceiptBody({
           fontSize: 10,
         }}
       >
-        Thank you for your business
+        {(business.documentFooter && business.documentFooter.trim()) ||
+          "Thank you for your business"}
       </p>
     </div>
   );

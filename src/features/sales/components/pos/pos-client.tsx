@@ -159,6 +159,8 @@ interface PosClientProps {
     branchName?: string | null;
     active?: boolean;
   }>;
+  /** off | warn | block — below book cost on a line */
+  belowCostSalePolicy?: "off" | "warn" | "block";
 }
 
 export function PosClient({
@@ -177,6 +179,7 @@ export function PosClient({
   cashierName,
   recentSales = [],
   cashAccounts = [],
+  belowCostSalePolicy = "block",
 }: PosClientProps) {
   const router = useRouter();
   const { online, refreshOutbox } = useOffline();
@@ -872,26 +875,28 @@ export function PosClient({
         toast.error("Cart is empty.");
         return;
       }
-      for (const line of cart) {
-        const prod = sellable.find((x) => x.id === line.productId);
-        if (!prod || prod.productType === "service") continue;
-        const cost = Number(prod.costPrice ?? 0);
-        // Compare unit sell price to cost per stock unit adjusted by pack factor
-        const factor = line.factorToStock > 0 ? line.factorToStock : 1;
-        const costForLineUnit = cost * factor;
-        if (cost > 0 && line.unitPrice + 1e-9 < costForLineUnit) {
-          toast.error(
-            `${line.name}: selling price (${line.unitPrice.toFixed(2)}) is below cost (${costForLineUnit.toFixed(2)} for this unit). Update Product prices (retail) before completing.`,
-          );
-          setMobileStep("items");
-          return;
-        }
-        if (cost > 0 && Math.abs(line.unitPrice - costForLineUnit) < 0.009) {
-          toast.error(
-            `${line.name}: price equals cost — set a marked-up retail price under Product prices so you do not sell at cost.`,
-          );
-          setMobileStep("items");
-          return;
+      if (belowCostSalePolicy !== "off") {
+        for (const line of cart) {
+          const prod = sellable.find((x) => x.id === line.productId);
+          if (!prod || prod.productType === "service") continue;
+          const cost = Number(prod.costPrice ?? 0);
+          const factor = line.factorToStock > 0 ? line.factorToStock : 1;
+          const costForLineUnit = cost * factor;
+          const atOrBelow =
+            cost > 0 && line.unitPrice + 1e-9 <= costForLineUnit + 0.009;
+          if (!atOrBelow) continue;
+          const msg =
+            Math.abs(line.unitPrice - costForLineUnit) < 0.009
+              ? `${line.name}: price equals cost (${costForLineUnit.toFixed(2)}).`
+              : `${line.name}: selling ${line.unitPrice.toFixed(2)} is below cost ${costForLineUnit.toFixed(2)}.`;
+          if (belowCostSalePolicy === "block") {
+            toast.error(
+              `${msg} Update Product prices or set policy to Warn under Settings → Pricing policy.`,
+            );
+            setMobileStep("items");
+            return;
+          }
+          toast.warning(`${msg} Completing under warn policy.`);
         }
       }
       for (const line of cart) {

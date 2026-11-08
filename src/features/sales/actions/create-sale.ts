@@ -23,6 +23,7 @@ import { resolveToStock } from "@/features/inventory/services/unit-conversion.se
 import { assertQtyForUnit, normalizeStockQty, qtyStr } from "@/lib/quantity";
 import { productAllowsDecimalQty } from "@/features/inventory/services/unit-decimal-policy";
 import { salesService } from "../services";
+import { getBelowCostPolicyForBusiness } from "@/features/settings/actions/pricing-policy";
 
 const lineSchema = z.object({
   productId: z.uuid(),
@@ -284,6 +285,25 @@ export async function createSaleAction(input: unknown) {
         preferredBatchIds: line.preferredBatchIds ?? [],
         costPrice: Number(product.costPrice ?? 0),
       });
+    }
+
+    const belowCostPolicy = await getBelowCostPolicyForBusiness(
+      user.businessId,
+    ).catch(() => "block" as const);
+    if (belowCostPolicy === "block") {
+      for (const l of lines) {
+        if (l.skipStock) continue;
+        const cost = Number(l.costPrice ?? 0);
+        const factor = Number(l.conversionFactor ?? 1) || 1;
+        const costPerSaleUnit = cost * factor;
+        const unitPrice = Number(l.unitPrice);
+        if (cost > 0 && unitPrice + 1e-9 <= costPerSaleUnit + 0.009) {
+          return {
+            success: false as const,
+            message: `Below-cost sale blocked: a line is priced at or under cost (${costPerSaleUnit.toFixed(2)}). Update Product prices or set Settings → Pricing policy to Warn.`,
+          };
+        }
+      }
     }
 
     const subtotal = lines.reduce((s, l) => s + Number(l.total), 0);

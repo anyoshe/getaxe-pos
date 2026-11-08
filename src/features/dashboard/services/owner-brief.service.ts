@@ -69,7 +69,7 @@ export function buildDailyOwnerBrief(
           ?.slice(0, 3)
           .map((p) => p.name)
           .join(", ") || "Open restock list and raise a PO before shelves empty.",
-      href: "/dashboard/attention?focus=restock",
+      href: "/dashboard/attention?kind=restock",
       tone: "critical",
     });
   }
@@ -80,7 +80,7 @@ export function buildDailyOwnerBrief(
       title: `${expiring} batch${expiring === 1 ? "" : "es"} near expiry`,
       detail:
         "Sell FEFO at the counter, promote, or write off — don’t reorder the same lines yet.",
-      href: "/dashboard/attention?focus=expiry",
+      href: "/dashboard/attention?kind=expiry",
       tone: "warning",
     });
   }

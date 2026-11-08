@@ -2,6 +2,7 @@ import {
   pgTable,
   uuid,
   boolean,
+  text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -74,6 +75,14 @@ export const businessSettings = pgTable(
 
     requireSupplierOnPurchase: boolean("require_supplier_on_purchase")
       .default(true)
+      .notNull(),
+
+    /**
+     * POS / sales: when unit sell price is at or below book cost.
+     * off = allow silently · warn = client toast, server allows · block = reject sale
+     */
+    belowCostSalePolicy: text("below_cost_sale_policy")
+      .default("block")
       .notNull(),
 
     createdAt: timestamp("created_at")

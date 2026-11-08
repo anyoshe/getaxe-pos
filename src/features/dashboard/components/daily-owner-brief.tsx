@@ -86,6 +86,14 @@ export function DailyOwnerBriefCard({ brief }: { brief: DailyOwnerBrief }) {
             </li>
           ))}
         </ol>
+        <p className="text-xs">
+          <Link
+            href="/dashboard/weekly-brief"
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Open weekly owner brief →
+          </Link>
+        </p>
       </div>
     </section>
   );

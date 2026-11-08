@@ -20,6 +20,18 @@ const cards = [
     icon: ClipboardList,
   },
   {
+    href: "/settings/pricing-policy",
+    title: "Pricing & branding",
+    desc: "Below-cost sale policy · document footer on receipts/POs",
+    icon: ClipboardList,
+  },
+  {
+    href: "/dashboard/weekly-brief",
+    title: "Weekly owner brief",
+    desc: "Margin, dead stock, loss lines and next actions",
+    icon: ClipboardList,
+  },
+  {
     href: "/settings/setup-guide",
     title: "Business setup guide",
     desc: "Step-by-step: where to click until ready to sell",

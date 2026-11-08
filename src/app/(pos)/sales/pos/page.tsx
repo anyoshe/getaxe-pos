@@ -11,6 +11,7 @@ import { promotionsRepository } from "@/repositories/inventory/promotions.reposi
 import { businesses } from "@/db/schema/core/businesses";
 import { financeService } from "@/features/finance/services/finance.service";
 import { loadPosSupport } from "@/features/sales/actions/search-pos-products";
+import { getBelowCostPolicyForBusiness } from "@/features/settings/actions/pricing-policy";
 
 export default async function FullScreenPosPage() {
   const user = await getCurrentUser();
@@ -28,6 +29,8 @@ export default async function FullScreenPosPage() {
     branchName: (a as { branchName?: string | null }).branchName ?? null,
     active: a.active !== false,
   }));
+
+  const belowCostSalePolicy = await getBelowCostPolicyForBusiness(user.businessId).catch(() => "block" as const);
 
   const businessRow = await db.query.businesses
     .findFirst({ where: eq(businesses.id, user.businessId) })
@@ -154,7 +157,9 @@ export default async function FullScreenPosPage() {
         registrationNumber: businessRow?.registrationNumber ?? null,
         logo: businessRow?.logo ?? null,
         currency: businessRow?.currency ?? "KES",
+        documentFooter: (businessRow as { documentFooter?: string | null } | null)?.documentFooter ?? null,
       }}
+      belowCostSalePolicy={belowCostSalePolicy}
       recentSales={sales.map((s) => ({
         id: s.id,
         invoiceNumber: s.invoiceNumber,

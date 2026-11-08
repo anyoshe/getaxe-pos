@@ -64,6 +64,9 @@ export const businesses = pgTable(
 
     logo: text("logo"),
 
+    /** Printed on receipts / POs */
+    documentFooter: text("document_footer"),
+
     active: boolean("active")
       .default(true)
       .notNull(),
