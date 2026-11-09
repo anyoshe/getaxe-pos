@@ -39,12 +39,6 @@ export const navigation: NavigationItem[] = [
     // No permission needed - always visible
   },
   {
-    label: "Capabilities",
-    href: "/settings/capabilities",
-    icon: Wrench,
-    permission: "business.view",
-  },
-  {
     label: "Sales",
     icon: ShoppingCart,
     module: "sales", // Module name for grouping
@@ -235,7 +229,7 @@ export const navigation: NavigationItem[] = [
         permission: "purchase_orders.view",
       },
       {
-        label: "Goods Received",
+        label: "Receive purchase order",
         href: "/purchases/receiving",
         icon: PackageCheck,
         permission: "goods_receipts.view",
@@ -423,18 +417,6 @@ export const navigation: NavigationItem[] = [
       {
         label: "Pricing & branding",
         href: "/settings/pricing-policy",
-        icon: ClipboardList,
-        permission: "business.view",
-      },
-      {
-        label: "Setup wizard",
-        href: "/settings/setup-guide",
-        icon: ClipboardList,
-        permission: "business.view",
-      },
-      {
-        label: "Go-live readiness",
-        href: "/settings/readiness",
         icon: ClipboardList,
         permission: "business.view",
       },

@@ -20,7 +20,7 @@ export function StockOnHandActions() {
           href="/inventory/stock/receive"
           className={cn(buttonVariants({ variant: "default" }))}
         >
-          Receive stock
+          Opening / stock in
         </Link>
         <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
           Import opening stock

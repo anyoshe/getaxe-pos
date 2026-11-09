@@ -101,16 +101,10 @@ const STATIC_PAGES: Array<{
     keywords: ["mpesa", "stk", "till", "paybill"],
   },
   {
-    title: "Setup guide",
-    subtitle: "Go live step by step",
-    href: "/settings/setup-guide",
-    keywords: ["setup", "go live", "wizard", "onboard"],
-  },
-  {
-    title: "Go-live readiness",
-    subtitle: "Checklist score",
-    href: "/settings/readiness",
-    keywords: ["readiness", "checklist", "go live"],
+    title: "Go live in 1 day",
+    subtitle: "Vertical, catalogue, stock, first sale",
+    href: "/settings/go-live",
+    keywords: ["setup", "go live", "wizard", "onboard", "readiness", "checklist"],
   },
   {
     title: "Reports",

@@ -692,7 +692,7 @@ export function PurchaseOrdersClient({
                         className="inline-flex h-8 items-center rounded-md bg-secondary px-3 text-xs font-medium text-secondary-foreground hover:bg-secondary/80"
                       >
                         {o.status === "APPROVED"
-                          ? "Receive stock →"
+                          ? "Receive PO →"
                           : "Continue receiving →"}
                       </a>
                     )}

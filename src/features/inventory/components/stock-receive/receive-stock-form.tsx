@@ -106,10 +106,11 @@ export function ReceiveStockForm({
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Inventory
           </p>
-          <h1 className="text-xl font-semibold tracking-tight">Receive stock</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Opening / stock in (no PO)</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Put quantity into a warehouse. Batch, expiry, and serials appear only
-            when the product is configured for them.
+            Opening balances or stock without a purchase order. For deliveries
+            against a PO, use Purchasing → Receive purchase order. Batch, expiry,
+            and serials appear only when the product is configured for them.
           </p>
         </div>
       </div>
@@ -341,7 +342,7 @@ export function ReceiveStockForm({
           Cancel
         </Button>
         <Button type="submit" disabled={pending || !productId || !warehouseId}>
-          {pending ? "Receiving…" : "Receive stock"}
+          {pending ? "Posting…" : "Post stock in"}
         </Button>
       </div>
     </form>

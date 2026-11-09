@@ -127,10 +127,10 @@ export function GoLiveDayClient({
             {trackedDone}/{tracked.length || 0} tracked steps done
           </span>
           <Link
-            href="/settings/setup-guide"
+            href="/settings/business"
             className="inline-flex items-center gap-1 rounded-full border border-border bg-background/60 px-2.5 py-1 hover:border-primary/40"
           >
-            Full step-by-step guide
+            Business profile
             <ArrowRight className="h-3 w-3" />
           </Link>
         </div>

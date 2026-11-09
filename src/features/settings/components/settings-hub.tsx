@@ -16,7 +16,7 @@ const cards = [
   {
     href: "/settings/go-live",
     title: "Go live in 1 day",
-    desc: "Pharmacy · hardware · agrovet — one screen to first sale",
+    desc: "Start here: vertical, catalogue, stock, first sale",
     icon: ClipboardList,
   },
   {
@@ -29,18 +29,6 @@ const cards = [
     href: "/dashboard/weekly-brief",
     title: "Weekly owner brief",
     desc: "Margin, dead stock, loss lines and next actions",
-    icon: ClipboardList,
-  },
-  {
-    href: "/settings/setup-guide",
-    title: "Business setup guide",
-    desc: "Step-by-step: where to click until ready to sell",
-    icon: ClipboardList,
-  },
-  {
-    href: "/settings/readiness",
-    title: "Go-live readiness",
-    desc: "Checklist: branch, stock, till, products, POS",
     icon: ClipboardList,
   },
   {

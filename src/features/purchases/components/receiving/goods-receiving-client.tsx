@@ -205,10 +205,10 @@ export function GoodsReceivingClient({
         <strong>Received</strong>. Fully received POs leave this list.
       </div>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Goods received</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Receive purchase order</h1>
         <p className="text-sm text-muted-foreground">
-          Receive in any packaging unit configured on the product (box, strip, piece…).
-          Stock is always stored in the product stock unit.
+          Post a GRN against an approved PO. Use Inventory → Opening / stock in
+          when there is no purchase order. Packaging units convert to the stock unit.
         </p>
       </div>
 

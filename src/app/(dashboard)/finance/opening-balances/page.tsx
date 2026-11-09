@@ -6,10 +6,10 @@ export default function OpeningBalancesPage() {
   return (
     <div className="space-y-4 p-4 sm:p-6">
       <Link
-        href="/settings/readiness"
+        href="/settings/go-live"
         className="text-sm text-primary hover:underline"
       >
-        ← Go-live readiness
+        ← Go live in 1 day
       </Link>
       <OpeningBalancesClient />
     </div>

@@ -436,7 +436,7 @@ export function StaffHomePanel({ home, userName }: { home: RoleHomeConfig; userN
         <QuickLink href="/sales/pos" label="Point of sale" icon={ShoppingCart} />
         <QuickLink href="/inventory/stock" label="Stock" icon={Warehouse} />
         <QuickLink href="/customers" label="Customers" icon={ClipboardList} />
-        <QuickLink href="/settings/setup-guide" label="Setup guide" icon={FileText} />
+        <QuickLink href="/settings/go-live" label="Go live in 1 day" icon={FileText} />
       </div>
     </div>
   );
