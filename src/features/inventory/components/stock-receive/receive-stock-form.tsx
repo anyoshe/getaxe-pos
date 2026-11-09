@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -10,13 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import { receiveStockAction } from "../../actions/receive-stock";
-import type { Product } from "../../types";
+import {
+  ProductSearchSelect,
+} from "../product-search-select";
+import type { InventoryProductHit } from "../../actions/search-inventory-products";
 
 type WarehouseOption = { id: string; name: string; code?: string | null };
 type SupplierOption = { id: string; name: string };
 
 interface ReceiveStockFormProps {
-  products: Product[];
   warehouses: WarehouseOption[];
   suppliers: SupplierOption[];
 }
@@ -29,25 +31,13 @@ function parseSerials(text: string): string[] {
 }
 
 export function ReceiveStockForm({
-  products,
   warehouses,
   suppliers,
 }: ReceiveStockFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  const stockable = useMemo(
-    () =>
-      products.filter(
-        (p) =>
-          p.trackInventory &&
-          p.productType !== "service" &&
-          p.active !== false,
-      ),
-    [products],
-  );
-
-  const [productId, setProductId] = useState("");
+  const [product, setProduct] = useState<InventoryProductHit | null>(null);
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
   const [quantity, setQuantity] = useState("1");
   const [unitCost, setUnitCost] = useState("");
@@ -62,12 +52,16 @@ export function ReceiveStockForm({
   const [notes, setNotes] = useState("");
   const [serialsText, setSerialsText] = useState("");
 
-  const product = stockable.find((p) => p.id === productId);
+  const productId = product?.id ?? "";
   const qty = Number(quantity) || 0;
   const serialCount = parseSerials(serialsText).length;
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!productId) {
+      toast.error("Select a product");
+      return;
+    }
     startTransition(async () => {
       const serialNumbers = product?.serialized
         ? parseSerials(serialsText)
@@ -120,26 +114,20 @@ export function ReceiveStockForm({
           <Label>
             Product <span className="text-destructive">*</span>
           </Label>
-          <select
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            value={productId}
-            onChange={(e) => {
-              setProductId(e.target.value);
-              const p = stockable.find((x) => x.id === e.target.value);
-              if (p?.costPrice != null) setUnitCost(String(p.costPrice));
-              if (p?.supplierId) setSupplierId(p.supplierId);
+          <ProductSearchSelect
+            value={product}
+            stockableOnly
+            onChange={(p) => {
+              setProduct(p);
               setSerialsText("");
+              if (p?.costPrice != null) setUnitCost(String(p.costPrice));
+              else setUnitCost("");
+              if (p?.supplierId) setSupplierId(p.supplierId);
+              else setSupplierId("");
             }}
-            required
-          >
-            <option value="">Select product…</option>
-            {stockable.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-                {p.sku ? ` (${p.sku})` : ""}
-              </option>
-            ))}
-          </select>
+          />
+          {/* required for native form validation without a hidden input in some browsers */}
+          <input type="hidden" name="productId" value={productId} required />
           {product && (
             <p className="text-xs text-muted-foreground">
               Tracking:{" "}

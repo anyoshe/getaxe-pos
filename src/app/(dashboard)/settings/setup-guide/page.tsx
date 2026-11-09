@@ -1,39 +1,10 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
-import { getSetupReadiness } from "@/features/settings/services/setup-readiness.service";
-import { SetupGuideClient } from "@/features/settings/components/setup-guide-client";
-import { businessRepository } from "@/repositories/core/business.repository";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function SetupGuidePage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ mode?: string }> | { mode?: string };
-}) {
-  const user = await getCurrentUser();
-  if (!user) return null;
-
-  const sp = await Promise.resolve(searchParams ?? {});
-  const initialMode = sp.mode === "list" ? "list" : "wizard";
-
-  const [readiness, business] = await Promise.all([
-    getSetupReadiness(user.businessId),
-    businessRepository.findById(user.businessId).catch(() => null),
-  ]);
-
-  return (
-    <div className="p-4 sm:p-6">
-      <SetupGuideClient
-        businessName={business?.name ?? user.business?.name ?? null}
-        businessType={
-          (business as { businessType?: string } | null)?.businessType ?? null
-        }
-        score={readiness.score}
-        checks={readiness.checks}
-        requiredDone={readiness.requiredDone}
-        requiredTotal={readiness.requiredTotal}
-        initialMode={initialMode}
-      />
-    </div>
-  );
+/**
+ * Phase C: long setup wizard archived.
+ * Canonical path is /settings/go-live (vertical pack + import + checklist).
+ * Optional ?docs=1 reserved for a future static guide without competing with go-live.
+ */
+export default function SetupGuideArchivePage() {
+  redirect("/settings/go-live");
 }
