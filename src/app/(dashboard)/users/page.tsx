@@ -1,10 +1,9 @@
-import {
-  UsersClient,
-} from "@/features/users/components";
+import { redirect } from "next/navigation";
 
-
-export default function UsersPage() {
-  return (
-    <UsersClient />
-  );
+/**
+ * Canonical users UI lives under Settings.
+ * Keep this route as a stable redirect for old bookmarks and role-home links.
+ */
+export default function UsersRedirectPage() {
+  redirect("/settings/users");
 }

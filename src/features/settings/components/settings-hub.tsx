@@ -82,14 +82,8 @@ const cards = [
   {
     href: "/settings/users",
     title: "Users & roles",
-    desc: "Staff accounts and access",
+    desc: "Staff accounts, roles and access",
     icon: Users,
-  },
-  {
-    href: "/settings/roles",
-    title: "Roles & permissions",
-    desc: "Permission sets for staff",
-    icon: ShieldCheck,
   },
   {
     href: "/settings/units",

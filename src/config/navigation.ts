@@ -87,38 +87,11 @@ export const navigation: NavigationItem[] = [
   module: "inventory",
   href: "/inventory",
   children: [
-  
     {
       label: "Products",
       href: "/inventory/products",
       icon: Package,
       permission: "products.view",
-    },
-    {
-      label: "Starter kits",
-      href: "/inventory/starter-kits",
-      icon: Package,
-      permission: "products.view",
-    },
-    {
-      label: "Categories",
-      href: "/inventory/categories",
-      icon: FolderTree,
-      permission: "categories.view",
-    },
-    {
-      label: "Manufacturers",
-      href: "/inventory/manufacturers",
-      icon: Building2,
-      permission: "products.view",
-      capability: "inventory.manufacturers",
-    },
-    {
-      label: "Pharmacy catalogues",
-      href: "/inventory/pharmacy-catalogues",
-      icon: ClipboardList,
-      permission: "products.view",
-      anyCapabilities: ["pharmacy.medicine-catalogue", "pharmacy.core"],
     },
     {
       label: "Stock",
@@ -127,10 +100,35 @@ export const navigation: NavigationItem[] = [
       permission: "stock_movements.view",
     },
     {
+      label: "Product Prices",
+      href: "/inventory/product-prices",
+      icon: CircleDollarSign,
+      permission: "product_prices.view",
+    },
+    {
+      label: "Categories",
+      href: "/inventory/categories",
+      icon: FolderTree,
+      permission: "categories.view",
+    },
+    {
+      label: "Starter kits",
+      href: "/inventory/starter-kits",
+      icon: Package,
+      permission: "products.create",
+    },
+    {
       label: "Stock Movements",
       href: "/inventory/stock-movements",
       icon: ArrowRightLeft,
       permission: "stock_movements.view",
+    },
+    {
+      label: "Manufacturers",
+      href: "/inventory/manufacturers",
+      icon: Building2,
+      permission: "products.view",
+      capability: "inventory.manufacturers",
     },
     {
       label: "Adjustments",
@@ -174,12 +172,7 @@ export const navigation: NavigationItem[] = [
       permission: "products.view",
       capability: "inventory.promotional-pricing",
     },
-    {
-      label: "Product Prices",
-      href: "/inventory/product-prices",
-      icon: CircleDollarSign,
-      permission: "product_prices.view",
-    },
+  
   ],
 },
   
@@ -274,6 +267,12 @@ export const navigation: NavigationItem[] = [
     module: "finance",
     children: [
       {
+        label: "Cash & bank",
+        href: "/finance/cash-accounts",
+        icon: Banknote,
+        permission: "accounts.view",
+      },
+      {
         label: "Payments",
         href: "/finance/payments",
         icon: CreditCard,
@@ -282,31 +281,25 @@ export const navigation: NavigationItem[] = [
       {
         label: "Expenses",
         href: "/finance/expenses",
-        icon: Banknote,
+        icon: Wallet,
         permission: "expenses.view",
       },
       {
         label: "Other income",
         href: "/finance/incomes",
-        icon: Banknote,
-        permission: "accounts.view",
+        icon: CircleDollarSign,
+        permission: "income.view",
       },
       {
-        label: "Cash & bank",
-        href: "/finance/cash-accounts",
-        icon: Wallet,
+        label: "Daily reconciliation",
+        href: "/finance/reconciliation",
+        icon: ClipboardList,
         permission: "accounts.view",
       },
       {
         label: "Opening balances",
         href: "/finance/opening-balances",
         icon: CircleDollarSign,
-        permission: "accounts.view",
-      },
-      {
-        label: "Daily reconciliation",
-        href: "/finance/reconciliation",
-        icon: ClipboardList,
         permission: "accounts.view",
       },
       {
@@ -319,20 +312,21 @@ export const navigation: NavigationItem[] = [
         label: "Chart of accounts",
         href: "/finance/accounts",
         icon: CircleDollarSign,
-        permission: "accounts.view",
+        permission: "accounts.update",
       },
       {
         label: "Journals",
         href: "/finance/journals",
         icon: FileText,
-        permission: "accounts.view",
+        permission: "journals.view",
       },
       {
         label: "AP aging",
         href: "/finance/ap-aging",
         icon: ReceiptText,
-        permission: "accounts.view",
+        permission: "accounts.update",
       },
+    
     ],
   },
   {
