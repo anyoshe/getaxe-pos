@@ -152,6 +152,33 @@ export async function login(
 
       });
 
+      // Owners still missing catalogue → land on go-live, not empty dashboard
+      {
+        const roleName = (result.user.role?.name ?? "").toUpperCase();
+        const isOwnerRole =
+          roleName === "ADMINISTRATOR" ||
+          roleName.includes("OWNER") ||
+          roleName.includes("ADMIN");
+
+        if (isOwnerRole) {
+          try {
+            const { getSetupReadiness } = await import(
+              "@/features/settings/services/setup-readiness.service"
+            );
+            const readiness = await getSetupReadiness(result.user.businessId);
+            const productCheck = readiness.checks.find((c) => c.id === "product");
+            const noProducts = productCheck
+              ? !productCheck.done
+              : readiness.score < 40;
+            if (noProducts) {
+              redirect("/settings/go-live");
+            }
+          } catch {
+            // Readiness failure must not block login
+          }
+        }
+      }
+
       redirect("/dashboard");
 
   }

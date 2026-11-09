@@ -214,15 +214,15 @@ export default async function DashboardPage() {
                 Setup readiness · {readiness.score}%
               </h2>
               <p className="text-sm text-muted-foreground">
-                Complete these so POS, stock, and purchasing work smoothly for
-                any business type.
+                Pick your vertical, load products, then open the till — one
+                screen for day one.
               </p>
             </div>
             <Link
-              href="/settings/setup-guide"
-              className="text-sm font-medium text-primary hover:underline"
+              href="/settings/go-live"
+              className="inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-95"
             >
-              Open setup wizard →
+              Go live in 1 day →
             </Link>
           </div>
           <ul className="mt-3 grid gap-1 sm:grid-cols-2">
