@@ -111,7 +111,7 @@ export const PRODUCT_WIZARD_STEPS: ProductWizardStepDefinition[] = [
     {
         id: "finance",
 
-        title: "Pricing & Finance",
+        title: "Pricing",
 
         productTypes: [
             "physical",

@@ -57,10 +57,7 @@ export const PRODUCT_FIELD_DEFINITIONS: ProductFieldDefinition[] = [
   { key: "prescriptionTypeId", label: "Prescription Type", step: "pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue", required: true },
   { key: "manufacturerId", label: "Manufacturer", step: "classification", productTypes: ["medicine", "physical", "raw-material", "finished-product"], capability: "inventory.manufacturers" },
   { key: "supplierId", label: "Supplier", step: "classification", productTypes: [...PRODUCT_TYPES] },
-  { key: "taxRateId", label: "Tax Rate", step: "accounting", productTypes: [...PRODUCT_TYPES], capability: "finance.tax-rates" },
-  { key: "incomeAccountId", label: "Income Account", step: "accounting", productTypes: [...PRODUCT_TYPES] },
-  { key: "expenseAccountId", label: "Expense Account", step: "accounting", productTypes: [...PRODUCT_TYPES] },
-  { key: "inventoryAccountId", label: "Inventory Account", step: "accounting", productTypes: [...PRODUCT_TYPES] },
+  { key: "taxRateId", label: "Tax Rate", step: "pricing", productTypes: [...PRODUCT_TYPES], capability: "finance.tax-rates" },
 ];
 
 export const PRODUCT_STEP_DEFINITIONS: ProductStepDefinition[] = [
@@ -70,7 +67,6 @@ export const PRODUCT_STEP_DEFINITIONS: ProductStepDefinition[] = [
   { id: "pricing", title: "Pricing", productTypes: [...PRODUCT_TYPES] },
   { id: "inventory", title: "Tracking", productTypes: ["physical", "medicine", "raw-material", "finished-product"] },
   { id: "pharmacy", title: "Pharmacy", productTypes: ["medicine"], capability: "pharmacy.medicine-catalogue" },
-  { id: "accounting", title: "Accounts", productTypes: [...PRODUCT_TYPES] },
 ];
 
 export class ProductRuleResolver {
