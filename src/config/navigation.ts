@@ -79,6 +79,13 @@ export const navigation: NavigationItem[] = [
         icon: RotateCcw,
         permission: "sales.void",
       },
+      {
+        label: "Promotions",
+        href: "/inventory/promotions",
+        icon: Receipt,
+        permission: "products.view",
+        capability: "inventory.promotional-pricing",
+      },
     ],
   },
   {
@@ -87,23 +94,12 @@ export const navigation: NavigationItem[] = [
   module: "inventory",
   href: "/inventory",
   children: [
+    // 1) Bootstrap → 2) Catalogue structure → 3) Products & prices → 4) Stock ops → 5) Advanced
     {
-      label: "Products",
-      href: "/inventory/products",
+      label: "Starter kits",
+      href: "/inventory/starter-kits",
       icon: Package,
-      permission: "products.view",
-    },
-    {
-      label: "Stock",
-      href: "/inventory/stock",
-      icon: Boxes,
-      permission: "stock_movements.view",
-    },
-    {
-      label: "Product Prices",
-      href: "/inventory/product-prices",
-      icon: CircleDollarSign,
-      permission: "product_prices.view",
+      permission: "products.create",
     },
     {
       label: "Categories",
@@ -112,23 +108,42 @@ export const navigation: NavigationItem[] = [
       permission: "categories.view",
     },
     {
-      label: "Starter kits",
-      href: "/inventory/starter-kits",
+      label: "Manufacturers",
+      href: "/inventory/manufacturers",
+      icon: Building2,
+      permission: "products.view",
+      capability: "inventory.manufacturers",
+    },
+    {
+      label: "Products",
+      href: "/inventory/products",
       icon: Package,
-      permission: "products.create",
+      permission: "products.view",
+    },
+    {
+      label: "Product Prices",
+      href: "/inventory/product-prices",
+      icon: CircleDollarSign,
+      permission: "product_prices.view",
+    },
+    {
+      label: "Price Lists",
+      href: "/inventory/price-lists",
+      capability: "inventory.multiple-price-lists",
+      icon: FileText,
+      permission: "price_lists.view",
+    },
+    {
+      label: "Stock",
+      href: "/inventory/stock",
+      icon: Boxes,
+      permission: "stock_movements.view",
     },
     {
       label: "Stock Movements",
       href: "/inventory/stock-movements",
       icon: ArrowRightLeft,
       permission: "stock_movements.view",
-    },
-    {
-      label: "Manufacturers",
-      href: "/inventory/manufacturers",
-      icon: Building2,
-      permission: "products.view",
-      capability: "inventory.manufacturers",
     },
     {
       label: "Adjustments",
@@ -158,21 +173,6 @@ export const navigation: NavigationItem[] = [
       icon: ClipboardList,
       permission: "product_batches.view",
     },
-    {
-      label: "Price Lists",
-      href: "/inventory/price-lists",
-      capability: "inventory.multiple-price-lists",
-      icon: FileText,
-      permission: "price_lists.view",
-    },
-    {
-      label: "Promotions",
-      href: "/inventory/promotions",
-      icon: Receipt,
-      permission: "products.view",
-      capability: "inventory.promotional-pricing",
-    },
-  
   ],
 },
   
