@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import { InventoryNextStepCard } from "../inventory-next-step-card";
+import { resolveInventoryGuide } from "../../lib/inventory-next-step";
+
 import { CrudPage, DeleteDialog } from "@/components/crud";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,6 +126,40 @@ export function ProductsClient({
             }}
           />
         </div>
+
+        {total === 0 && !(pagination?.search) ? (
+          <InventoryNextStepCard
+            guide={resolveInventoryGuide({
+              productCount: 0,
+              categoryCount: 0,
+              totalStockQty: 0,
+              completedSaleCount: 0,
+            })}
+            hideWhenReady={false}
+          />
+        ) : null}
+
+        {total === 0 && !(pagination?.search) ? (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+            Tip: if you build your own list, create{" "}
+            <Link href="/inventory/categories" className="font-medium text-indigo-600 hover:underline">
+              categories
+            </Link>{" "}
+            first so markups and reports stay tidy — or skip ahead and{" "}
+            <button
+              type="button"
+              className="font-medium text-indigo-600 hover:underline"
+              onClick={() => {
+                setSelectedProduct(null);
+                setEntryMode("wizard");
+                setOpen(true);
+              }}
+            >
+              add a product
+            </button>
+            .
+          </div>
+        ) : null}
 
         <ProductTable
           data={products}

@@ -20,6 +20,13 @@ import {
   getStockValuation,
   getStockMovements,
 } from "@/features/inventory/queries";
+import { productRepository } from "@/repositories/inventory/products.repository";
+import { categoryRepository } from "@/repositories/inventory/categories.repository";
+import { db } from "@/db";
+import { sales } from "@/db/schema/sales/sales";
+import { and, eq, sql } from "drizzle-orm";
+import { InventoryNextStepCard } from "@/features/inventory/components/inventory-next-step-card";
+import { resolveInventoryGuide } from "@/features/inventory/lib/inventory-next-step";
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-KE", {
@@ -42,7 +49,7 @@ export default async function InventoryPage() {
     return null;
   }
 
-  const [stockOnHand, lowStock, expiringStock, valuation, movements] =
+  const [stockOnHand, lowStock, expiringStock, valuation, movements, productCountAll, categoryRows, saleCountRow] =
     await Promise.all([
       getStockOnHand({
         businessId: user.businessId,
@@ -64,6 +71,19 @@ export default async function InventoryPage() {
       getStockMovements({
         businessId: user.businessId,
       }),
+
+      productRepository.count(user.businessId).catch(() => 0),
+      categoryRepository.findAll(user.businessId).catch(() => []),
+      db
+        .select({ c: sql<number>`count(*)::int` })
+        .from(sales)
+        .where(
+          and(
+            eq(sales.businessId, user.businessId),
+            eq(sales.status, "COMPLETED"),
+          ),
+        )
+        .catch(() => [{ c: 0 }]),
     ]);
 
   const totalQuantity = stockOnHand.reduce(
@@ -80,6 +100,16 @@ export default async function InventoryPage() {
     .size;
 
   const productCount = new Set(stockOnHand.map((item) => item.productId)).size;
+
+  const catalogueProductCount = Number(productCountAll ?? 0);
+  const categoryCount = Array.isArray(categoryRows) ? categoryRows.length : 0;
+  const completedSaleCount = Number(saleCountRow?.[0]?.c ?? 0);
+  const guide = resolveInventoryGuide({
+    productCount: catalogueProductCount,
+    categoryCount,
+    totalStockQty: totalQuantity,
+    completedSaleCount,
+  });
 
   const recentMovements = movements.slice(0, 8);
 
@@ -109,6 +139,8 @@ export default async function InventoryPage() {
           </p>
         </div>
       </section>
+
+      <InventoryNextStepCard guide={guide} />
 
       {/* KPI Cards */}
 
