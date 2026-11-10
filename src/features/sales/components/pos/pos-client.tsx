@@ -2548,12 +2548,8 @@ export function PosClient({
               </div>
             ) : null}
 
-          </div>
             <div
-              className={
-                "space-y-2 rounded-xl border border-border/60 bg-muted/20 p-2.5 " +
-                ""
-              }
+              className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-2.5"
             >
               <button
                 type="button"
@@ -2682,7 +2678,6 @@ export function PosClient({
               )}
             </div>
           </div>
-
 
           {/* Sticky total + wizard / complete — primary action always visible */}
           <div className="shrink-0 space-y-2 border-t-2 border-primary/20 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.12)] sm:p-3">
