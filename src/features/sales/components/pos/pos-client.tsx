@@ -339,7 +339,21 @@ export function PosClient({
     productId: string,
     whId: string = warehouseId,
   ): PosBatchOption[] {
-    return batchesMap[productId]?.[whId] ?? [];
+    const raw = batchesMap[productId]?.[whId] ?? [];
+    // FEFO: earliest expiry first; no-expiry last; prefer qty remaining
+    return [...raw].sort((a, b) => {
+      const ea = a.expiryDate ? Date.parse(a.expiryDate) : Number.POSITIVE_INFINITY;
+      const eb = b.expiryDate ? Date.parse(b.expiryDate) : Number.POSITIVE_INFINITY;
+      if (ea !== eb) return ea - eb;
+      return (b.quantity ?? 0) - (a.quantity ?? 0);
+    });
+  }
+
+  /** Prefer earliest-expiring batch with stock; null if none. */
+  function pickFefoBatchId(productId: string): string | null {
+    const list = batchesFor(productId).filter((b) => (b.quantity ?? 0) > 1e-9);
+    const pool = list.length > 0 ? list : batchesFor(productId);
+    return pool[0]?.batchId ?? null;
   }
   const [paymentMethod, setPaymentMethod] = useState<
     "CASH" | "MPESA" | "CARD" | "BANK_TRANSFER" | "MOBILE_MONEY" | "CREDIT"
@@ -626,9 +640,8 @@ export function PosClient({
             trackExpiry: Boolean(p.trackExpiry),
             selectedSerials: [],
             selectedBatchId:
-              (p.trackBatch || p.trackExpiry) &&
-              batchesFor(p.id)[0]?.batchId
-                ? batchesFor(p.id)[0].batchId
+              (p.trackBatch || p.trackExpiry)
+                ? pickFefoBatchId(p.id)
                 : null,
           },
         ];
@@ -1320,7 +1333,7 @@ export function PosClient({
     },
     {
       id: "MPESA",
-      label: "Mobile money",
+      label: "M-Pesa",
       icon: Smartphone,
       activeClass: "bg-chart-2 text-accent-foreground shadow-md ring-2 ring-chart-2/40",
       idleClass:
@@ -2515,17 +2528,32 @@ export function PosClient({
 
             <div
               className={
-                "space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5 " +
+                "space-y-2 rounded-xl border border-border/60 bg-muted/20 p-2.5 " +
                 (mobileStep === "items" ? "max-lg:hidden" : "")
               }
             >
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+              <button
+                type="button"
+                className="flex w-full items-center gap-1.5 text-left text-xs font-semibold text-muted-foreground hover:text-foreground"
+                onClick={() => setShowCustomer((v) => !v)}
+              >
                 <UserRound className="h-3.5 w-3.5" />
-                Customer
-                <span className="font-normal text-muted-foreground">
-                  · optional
+                <span className="flex-1">
+                  Customer
+                  {customerLabel ? (
+                    <span className="font-normal text-primary"> · {customerLabel}</span>
+                  ) : (
+                    <span className="font-normal">
+                      {saleMode === "CREDIT" ? " · required for credit" : " · optional"}
+                    </span>
+                  )}
                 </span>
-              </div>
+                <span className="text-[10px] uppercase tracking-wide">
+                  {showCustomer || saleMode === "CREDIT" ? "Hide" : "Show"}
+                </span>
+              </button>
+              {(showCustomer || saleMode === "CREDIT") && (
+              <>
               <select
                 className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm text-foreground"
                 value={customerId ?? ""}
@@ -2627,14 +2655,30 @@ export function PosClient({
                   ) : null}
                 </p>
               ) : null}
+              </>
+              )}
             </div>
           </div>
 
-          {/* Sticky total + wizard / complete */}
-          <div className="shrink-0 space-y-2 border-t border-border/60 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] sm:p-3">
-            <div className="flex items-end justify-between">
-              <span className="text-xs text-muted-foreground">Total</span>
-              <span className="text-2xl font-black tabular-nums text-primary">
+          {/* Sticky total + wizard / complete — primary action always visible */}
+          <div className="shrink-0 space-y-2 border-t-2 border-primary/20 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.12)] sm:p-3">
+            <div className="flex items-end justify-between gap-2">
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Total to pay
+                </span>
+                {cart.length > 0 ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    {cart.length} line{cart.length === 1 ? "" : "s"}
+                    {paymentMethod && saleMode === "CASH"
+                      ? ` · ${paymentMethod === "MPESA" ? "M-Pesa" : paymentMethod === "CASH" ? "Cash" : paymentMethod === "CARD" ? "Card" : "Bank"}`
+                      : saleMode === "CREDIT"
+                        ? " · Credit"
+                        : ""}
+                  </p>
+                ) : null}
+              </div>
+              <span className="text-3xl font-black tabular-nums leading-none text-primary">
                 {total.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -2684,6 +2728,7 @@ export function PosClient({
                   onClick={() => {
                     setSaleMode("CREDIT");
                     setPaymentMethod("CREDIT");
+                    setShowCustomer(true);
                   }}
                   className={
                     saleMode === "CREDIT"
