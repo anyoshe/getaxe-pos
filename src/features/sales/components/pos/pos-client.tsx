@@ -23,7 +23,6 @@ import {
   Plus,
   UserRound,
   Building2,
-  CircleAlert,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -66,6 +65,7 @@ import {
   lookupCustomerByPhoneAction,
   previewLoyaltyEarnAction,
 } from "../../actions/pos-customer";
+import { createCustomerAction } from "../../actions/create-customer";
 
 export type PosProduct = {
   id: string;
@@ -382,9 +382,20 @@ export function PosClient({
   const [saleMode, setSaleMode] = useState<"CASH" | "CREDIT">("CASH");
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [amountTendered, setAmountTendered] = useState("");
-  const [showCustomer, setShowCustomer] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [creditCustomerNoticeOpen, setCreditCustomerNoticeOpen] = useState(false);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [customerDialogMode, setCustomerDialogMode] = useState<"select" | "create">("select");
+  const [customerSaving, setCustomerSaving] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    idNumber: "",
+    address: "",
+    emergencyContact: "",
+    emergencyPhone: "",
+    creditLimit: "",
+  });
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -780,6 +791,10 @@ export function PosClient({
         return;
       }
       if (result.found) {
+        if (saleMode === "CREDIT" && !result.customer.allowCredit) {
+          toast.error("This customer is not enabled for credit. Choose an eligible credit customer.");
+          return;
+        }
         setCustomerId(result.customer.id);
         setCustomerLabel(result.customer.displayName);
         setCustomerContactName(
@@ -791,6 +806,24 @@ export function PosClient({
         );
         setCustomerPhone(result.customer.phone ?? customerPhone);
         setCustomerPoints(result.customer.loyaltyPoints ?? 0);
+        setPosCustomers((current) =>
+          current.some((customer) => customer.id === result.customer.id)
+            ? current
+            : [
+                {
+                  id: result.customer.id,
+                  displayName: result.customer.displayName,
+                  contactName:
+                    (result.customer as { contactName?: string | null }).contactName ?? null,
+                  phone: result.customer.phone ?? null,
+                  allowCredit: result.customer.allowCredit,
+                  creditLimit: result.customer.creditLimit,
+                  loyaltyPoints: result.customer.loyaltyPoints ?? 0,
+                  isBusiness: result.customer.customerType === "BUSINESS",
+                },
+                ...current,
+              ],
+        );
         toast.success(
           `Member: ${result.customer.displayName} · ${result.customer.loyaltyPoints ?? 0} pts`,
         );
@@ -812,6 +845,68 @@ export function PosClient({
     setCustomerName("");
     setCustomerPoints(null);
     setEarnPreview(null);
+  }
+
+  function openCustomerDialog(mode: "select" | "create" = "select") {
+    setCustomerDialogMode(mode);
+    if (mode === "create") {
+      setNewCustomer((current) => ({
+        ...current,
+        firstName: current.firstName || customerName,
+        phone: current.phone || customerPhone,
+      }));
+    }
+    setCustomerDialogOpen(true);
+  }
+
+  async function createPosCustomer() {
+    setCustomerSaving(true);
+    try {
+      const allowCredit = saleMode === "CREDIT";
+      const result = await createCustomerAction({
+        customerType: "INDIVIDUAL",
+        firstName: newCustomer.firstName,
+        lastName: newCustomer.lastName,
+        phone: newCustomer.phone,
+        idNumber: newCustomer.idNumber,
+        address: newCustomer.address,
+        emergencyContact: newCustomer.emergencyContact,
+        emergencyPhone: newCustomer.emergencyPhone,
+        allowCredit,
+        creditLimit: allowCredit ? newCustomer.creditLimit : 0,
+      });
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+
+      const [lookup, refreshedCustomers] = await Promise.all([
+        lookupCustomerByPhoneAction(newCustomer.phone),
+        listPosCustomersAction(),
+      ]);
+      if (!lookup.success || !lookup.found) {
+        toast.error("Customer was created, but could not be selected. Find them by phone in the customer picker.");
+        if (refreshedCustomers.success) setPosCustomers(refreshedCustomers.customers as any);
+        return;
+      }
+
+      if (refreshedCustomers.success) {
+        setPosCustomers(refreshedCustomers.customers as any);
+      }
+      setCustomerId(lookup.customer.id);
+      setCustomerLabel(lookup.customer.displayName);
+      setCustomerContactName(lookup.customer.contactName ?? null);
+      setCustomerPhone(lookup.customer.phone ?? newCustomer.phone);
+      setCustomerName(lookup.customer.contactName || lookup.customer.displayName);
+      setCustomerPoints(lookup.customer.loyaltyPoints ?? 0);
+      setCustomerDialogOpen(false);
+      if (saleMode === "CREDIT") setCheckoutOpen(true);
+      toast.success(result.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create customer.");
+    } finally {
+      setCustomerSaving(false);
+    }
   }
 
   const total = cart.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
@@ -896,7 +991,7 @@ export function PosClient({
         const creditCustomer = posCustomers.find((customer) => customer.id === customerId);
         if (!creditCustomer?.allowCredit) {
           setCheckoutOpen(false);
-          setCreditCustomerNoticeOpen(true);
+          openCustomerDialog("select");
           return;
         }
       }
@@ -2032,8 +2127,8 @@ export function PosClient({
             ) : null}
           </div>
 
-          {/* Selected products take four fifths of the panel height. */}
-          <div className="min-h-0 flex-[7] space-y-3 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 pb-4 sm:p-3">
+          {/* Selected products fill the cart panel above its compact customer shortcut. */}
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 pb-4 sm:p-3">
             <div className="space-y-2">
             {posView === "scan" ? (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
@@ -2239,137 +2334,36 @@ export function PosClient({
             </div>
 
           </div>
-            <div
-              className="min-h-0 flex-[3] overflow-y-auto border-t border-border/50 bg-accent/10 p-3"
-            >
-              <div className="space-y-3">
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 text-left text-sm font-semibold text-foreground hover:text-primary"
-                onClick={() => setShowCustomer((v) => !v)}
-              >
-                <UserRound className="h-3.5 w-3.5" />
-                <span className="flex-1">
-                  Customer
-                  {customerLabel ? (
-                    <span className="font-normal text-primary"> · {customerLabel}</span>
-                  ) : (
-                    <span className="font-normal">
-                      {saleMode === "CREDIT" ? " · required for credit" : " · optional"}
-                    </span>
-                  )}
-                </span>
-                <span className="text-[10px] uppercase tracking-wide">
-                  {showCustomer || saleMode === "CREDIT" ? "Hide" : "Show"}
-                </span>
-              </button>
-              {(showCustomer || saleMode === "CREDIT") && (
-              <>
-              <select
-                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-                value={customerId ?? ""}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (!id) {
-                    setCustomerId(null);
-                    setCustomerLabel(null);
-                    setCustomerContactName(null);
-                    setCustomerPoints(null);
-                    return;
-                  }
-                  const c = posCustomers.find((x) => x.id === id);
-                  if (!c) return;
-                  if (saleMode === "CREDIT" && !c.allowCredit) {
-                    toast.error("This customer is not enabled for credit.");
-                    return;
-                  }
-                  setCustomerId(c.id);
-                  setCustomerLabel(c.displayName);
-                  setCustomerContactName(c.contactName);
-                  setCustomerPhone(c.phone ?? "");
-                  setCustomerPoints(c.loyaltyPoints);
-                }}
-              >
-                <option value="">
-                  {saleMode === "CREDIT"
-                    ? "Select credit customer…"
-                    : "Select customer (optional)…"}
-                </option>
-                {(saleMode === "CREDIT"
-                  ? posCustomers.filter((c) => c.allowCredit)
-                  : posCustomers
-                ).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.displayName}
-                    {c.phone ? ` · ${c.phone}` : ""}
-                    {c.allowCredit ? " · credit" : ""}
-                  </option>
-                ))}
-              </select>
-              <div className="grid grid-cols-1 gap-2 2xl:grid-cols-2">
-                <Input
-                  className="h-10 rounded-xl"
-                  inputMode="tel"
-                  placeholder="Phone (loyalty / new customer)"
-                  value={customerPhone}
-                  onChange={(e) => {
-                    setCustomerPhone(e.target.value);
-                    setCustomerId(null);
-                    setCustomerLabel(null);
-                    setCustomerContactName(null);
-                    setCustomerPoints(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void lookupCustomer();
-                    }
-                  }}
-                />
-                <Input
-                  className="h-10 rounded-xl"
-                  placeholder="Name (receipt)"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                />
+          <div className="shrink-0 border-t border-border/50 bg-accent/10 p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                <UserRound className="h-4 w-4" />
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-8 rounded-xl border-primary/30 text-xs"
-                  disabled={lookingUp || !customerPhone.trim()}
-                  onClick={() => void lookupCustomer()}
-                >
-                  {lookingUp ? "…" : "Find member"}
-                </Button>
-                {(customerId || customerPhone || customerName) && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-8 rounded-xl text-xs"
-                    onClick={clearCustomer}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-              {customerId && customerLabel ? (
-                <p className="text-xs">
-                  <span className="font-medium text-primary">{customerLabel}</span>
-                  {customerPoints != null ? (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · {customerPoints} pts
-                      {estimatedEarn > 0 ? ` · +~${estimatedEarn}` : ""}
-                    </span>
-                  ) : null}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{customerLabel || "Customer details"}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {customerLabel
+                    ? `${customerPhone || "Selected customer"}${customerPoints != null ? ` · ${customerPoints} pts` : ""}`
+                    : saleMode === "CREDIT"
+                      ? "Choose an eligible credit customer"
+                      : "Optional for cash sales"}
                 </p>
-              ) : null}
-              </>
-              )}
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0 rounded-xl border-primary/25 text-primary hover:bg-primary/5"
+                onClick={() => openCustomerDialog("select")}
+              >
+                {customerLabel ? "Change" : "Add details"}
+              </Button>
+              {customerId ? (
+                <Button type="button" variant="ghost" className="shrink-0 px-2" onClick={clearCustomer}>
+                  Clear
+                </Button>
+              ) : null}
             </div>
+          </div>
           <div className="shrink-0 border-t border-border/50 p-2 sm:p-3">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Total</span>
@@ -2685,14 +2679,8 @@ export function PosClient({
                   onClick={() => {
                     setSaleMode("CREDIT");
                     setPaymentMethod("CREDIT");
-                    setShowCustomer(true);
-                    const creditCustomer = posCustomers.find(
-                      (customer) => customer.id === customerId,
-                    );
-                    if (!creditCustomer?.allowCredit) {
-                      setCheckoutOpen(false);
-                      setCreditCustomerNoticeOpen(true);
-                    }
+                    setCheckoutOpen(false);
+                    openCustomerDialog("select");
                   }}
                   className={
                     saleMode === "CREDIT"
@@ -2736,50 +2724,197 @@ export function PosClient({
           </DialogContent>
         </Dialog>
 
-        <Dialog
-          open={creditCustomerNoticeOpen}
-          onOpenChange={setCreditCustomerNoticeOpen}
-        >
-          <DialogContent className="max-w-lg overflow-hidden p-0">
-            <div className="brand-stripe h-2 w-full" />
-            <div className="space-y-5 p-6">
-              <DialogHeader className="gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
-                  <CircleAlert className="h-6 w-6" />
+        <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
+          <DialogContent className="flex max-h-[90dvh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+            <div className="brand-stripe h-2 w-full shrink-0" />
+            <DialogHeader className="shrink-0 border-b px-5 py-4">
+              <DialogTitle className="text-xl font-bold text-primary">
+                {customerDialogMode === "select" ? "Customer details" : "Create customer"}
+              </DialogTitle>
+              <DialogDescription className="leading-5">
+                {saleMode === "CREDIT"
+                  ? "Select a customer approved for credit, or create a credit customer account."
+                  : "Select an existing customer or add details for this sale."}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex shrink-0 gap-2 border-b bg-muted/30 px-5 py-3">
+              <Button
+                type="button"
+                variant={customerDialogMode === "select" ? "default" : "outline"}
+                className="rounded-xl"
+                onClick={() => setCustomerDialogMode("select")}
+              >
+                Select customer
+              </Button>
+              <Button
+                type="button"
+                variant={customerDialogMode === "create" ? "default" : "outline"}
+                className="rounded-xl"
+                onClick={() => openCustomerDialog("create")}
+              >
+                Create customer
+              </Button>
+            </div>
+
+            {customerDialogMode === "select" ? (
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+                <div className="space-y-2">
+                  <Label htmlFor="pos-customer-select">
+                    {saleMode === "CREDIT" ? "Credit customer" : "Customer"}
+                  </Label>
+                  <select
+                    id="pos-customer-select"
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                    value={
+                      saleMode === "CREDIT" &&
+                      !posCustomers.find((customer) => customer.id === customerId)?.allowCredit
+                        ? ""
+                        : customerId ?? ""
+                    }
+                    onChange={(event) => {
+                      const selected = posCustomers.find((customer) => customer.id === event.target.value);
+                      if (!selected) {
+                        clearCustomer();
+                        return;
+                      }
+                      setCustomerId(selected.id);
+                      setCustomerLabel(selected.displayName);
+                      setCustomerContactName(selected.contactName);
+                      setCustomerPhone(selected.phone ?? "");
+                      setCustomerName(selected.contactName || selected.displayName);
+                      setCustomerPoints(selected.loyaltyPoints);
+                    }}
+                  >
+                    <option value="">
+                      {saleMode === "CREDIT" ? "Choose an eligible customer…" : "Walk-in / no customer"}
+                    </option>
+                    {(saleMode === "CREDIT" ? posCustomers.filter((customer) => customer.allowCredit) : posCustomers).map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.displayName}{customer.phone ? ` · ${customer.phone}` : ""}{customer.allowCredit ? " · Credit" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {saleMode === "CREDIT" && posCustomers.filter((customer) => customer.allowCredit).length === 0 ? (
+                    <p className="rounded-xl border border-accent/50 bg-accent/20 p-3 text-sm leading-5 text-foreground">
+                      No credit customers are available yet. Create a customer and enable a credit account to continue.
+                    </p>
+                  ) : null}
+                  {saleMode === "CREDIT" &&
+                  posCustomers.some((customer) => customer.allowCredit) &&
+                  customerId &&
+                  !posCustomers.find((customer) => customer.id === customerId)?.allowCredit ? (
+                    <p className="rounded-xl border border-accent/50 bg-accent/20 p-3 text-sm leading-5 text-foreground">
+                      The currently selected customer is not enabled for credit. Choose an eligible account or create a credit customer.
+                    </p>
+                  ) : null}
                 </div>
-                <DialogTitle className="text-xl font-bold text-primary">
-                  Credit customer required
-                </DialogTitle>
-                <DialogDescription className="text-sm leading-6">
-                  Credit invoices can only be posted to customers approved for
-                  credit. Select an eligible customer in the customer panel, or
-                  create or enable a credit customer first.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-sm leading-5 text-foreground">
-                Your cart is saved. After choosing an eligible customer, open
-                checkout again to post the invoice.
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <Input
+                    className="h-10 rounded-xl"
+                    inputMode="tel"
+                    placeholder="Find customer by phone"
+                    value={customerPhone}
+                    onChange={(event) => setCustomerPhone(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void lookupCustomer();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 rounded-xl border-primary/25 text-primary"
+                    disabled={lookingUp || !customerPhone.trim()}
+                    onClick={() => void lookupCustomer()}
+                  >
+                    {lookingUp ? "Searching…" : "Find by phone"}
+                  </Button>
+                </div>
               </div>
-              <DialogFooter className="border-0 bg-transparent p-0">
+            ) : (
+              <form
+                className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void createPosCustomer();
+                }}
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-pos-customer-first">First name *</Label>
+                    <Input id="new-pos-customer-first" className="h-10 rounded-xl" required value={newCustomer.firstName} onChange={(event) => setNewCustomer((current) => ({ ...current, firstName: event.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-pos-customer-last">Last name</Label>
+                    <Input id="new-pos-customer-last" className="h-10 rounded-xl" value={newCustomer.lastName} onChange={(event) => setNewCustomer((current) => ({ ...current, lastName: event.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="new-pos-customer-phone">Phone *</Label>
+                    <Input id="new-pos-customer-phone" className="h-10 rounded-xl" required minLength={7} inputMode="tel" value={newCustomer.phone} onChange={(event) => setNewCustomer((current) => ({ ...current, phone: event.target.value }))} />
+                  </div>
+                  {saleMode === "CREDIT" ? (
+                    <>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label htmlFor="new-pos-customer-id">National ID / passport *</Label>
+                        <Input id="new-pos-customer-id" className="h-10 rounded-xl" required value={newCustomer.idNumber} onChange={(event) => setNewCustomer((current) => ({ ...current, idNumber: event.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label htmlFor="new-pos-customer-address">Physical address *</Label>
+                        <Input id="new-pos-customer-address" className="h-10 rounded-xl" required value={newCustomer.address} onChange={(event) => setNewCustomer((current) => ({ ...current, address: event.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-pos-customer-next-kin">Next of kin *</Label>
+                        <Input id="new-pos-customer-next-kin" className="h-10 rounded-xl" required value={newCustomer.emergencyContact} onChange={(event) => setNewCustomer((current) => ({ ...current, emergencyContact: event.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-pos-customer-next-kin-phone">Next of kin phone *</Label>
+                        <Input id="new-pos-customer-next-kin-phone" className="h-10 rounded-xl" required minLength={7} inputMode="tel" value={newCustomer.emergencyPhone} onChange={(event) => setNewCustomer((current) => ({ ...current, emergencyPhone: event.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-pos-customer-limit">Credit limit (KES) *</Label>
+                        <Input id="new-pos-customer-limit" className="h-10 rounded-xl" required type="number" min="1" step="0.01" value={newCustomer.creditLimit} onChange={(event) => setNewCustomer((current) => ({ ...current, creditLimit: event.target.value }))} />
+                      </div>
+                      <p className="self-end text-xs leading-5 text-muted-foreground">The customer will be enabled for credit using this limit.</p>
+                    </>
+                  ) : null}
+                </div>
+                <DialogFooter className="-mx-5 -mb-5 border-t bg-muted/30 px-5 py-4">
+                  <Button type="button" variant="outline" className="rounded-xl" onClick={() => setCustomerDialogMode("select")}>
+                    Back
+                  </Button>
+                  <Button type="submit" className="rounded-xl" disabled={customerSaving}>
+                    {customerSaving ? "Saving…" : saleMode === "CREDIT" ? "Create credit customer" : "Create customer"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
+
+            {customerDialogMode === "select" ? (
+              <DialogFooter className="shrink-0 border-t bg-muted/30 px-5 py-4">
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-xl border-primary/25 px-4 text-primary hover:bg-primary/5"
+                  className="rounded-xl"
+                  onClick={() => setCustomerDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="rounded-xl"
+                  disabled={saleMode === "CREDIT" && !posCustomers.find((customer) => customer.id === customerId)?.allowCredit}
                   onClick={() => {
-                    setCreditCustomerNoticeOpen(false);
-                    setShowCustomer(true);
+                    setCustomerDialogOpen(false);
+                    if (saleMode === "CREDIT") setCheckoutOpen(true);
                   }}
                 >
-                  Choose customer
+                  {saleMode === "CREDIT" ? "Continue to checkout" : "Use customer"}
                 </Button>
-                <Link
-                  href="/customers"
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-                >
-                  Manage customers
-                </Link>
               </DialogFooter>
-            </div>
+            ) : null}
           </DialogContent>
         </Dialog>
 
