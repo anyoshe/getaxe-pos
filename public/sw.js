@@ -1,5 +1,5 @@
 /* GetAxe POS — network-first shell; offline fallback for POS */
-const CACHE = "getaxe-shell-v2";
+const CACHE = "getaxe-shell-v3";
 const SHELL = [
   "/",
   "/sales/pos",
@@ -43,17 +43,17 @@ self.addEventListener("fetch", (event) => {
     url.pathname.match(/\.(js|css|woff2?|png|svg|jpg|ico)$/)
   ) {
     event.respondWith(
-      caches.match(req).then(
-        (cached) =>
-          cached ||
-          fetch(req).then((res) => {
-            if (res.ok) {
-              const copy = res.clone();
-              caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-            }
-            return res;
-          }),
-      ),
+      fetch(req, { cache: "no-cache" })
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(() =>
+          caches.match(req).then((cached) => cached || Response.error()),
+        ),
     );
     return;
   }
