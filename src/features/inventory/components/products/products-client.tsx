@@ -111,7 +111,7 @@ export function ProductsClient({
             onImport={() => setImportOpen(true)}
             onCreate={() => {
               setSelectedProduct(null);
-              setEntryMode("wizard");
+              setEntryMode("quick");
               setOpen(true);
             }}
             onQuickScan={() => {

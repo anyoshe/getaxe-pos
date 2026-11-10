@@ -6,6 +6,7 @@ import { CrudDialog } from "@/components/crud";
 import { Button } from "@/components/ui/button";
 
 import { ProductForm } from "./product-form";
+import { ProductQuickAdd } from "./product-quick-add";
 import { ProductTypeSelector } from "./wizard/product-type-selector";
 import {
   EntryMethodSelector,
@@ -13,12 +14,17 @@ import {
 } from "./entry/entry-method-selector";
 import { BarcodeScanner } from "./entry/barcode-scanner";
 import { lookupProductCodeAction } from "../../actions";
+import {
+  buildProductCreateDefaults,
+  isQuickAddFriendlyType,
+  readStickyProductPrefs,
+} from "./product-create-defaults";
 
 import type { Product, ProductContext, ProductType } from "../../types";
 import type { ProductFormInput } from "./product-form.types";
 import { toast } from "sonner";
 
-type CreatePhase = "method" | "type" | "form";
+type CreatePhase = "quick" | "method" | "type" | "form";
 
 interface ProductDialogProps {
   open: boolean;
@@ -31,10 +37,10 @@ interface ProductDialogProps {
 }
 
 /**
- * Unified product creation:
- * 1) Entry method (manual | scan)
- * 2) Product type (drives capability-based steps)
- * 3) Form — multi-step for the type; scan can prefill; "Add another" keeps method+type
+ * Product create/edit:
+ * - Default create → one-screen Quick add (same server action)
+ * - Full form / medicine / scan → existing multi-step path
+ * - Sticky category/type/units across "add another"
  */
 export function ProductDialog({
   open,
@@ -46,18 +52,18 @@ export function ProductDialog({
 }: ProductDialogProps) {
   const isEdit = Boolean(product);
 
-  const [phase, setPhase] = useState<CreatePhase>("method");
-  const [method, setMethod] = useState<ProductEntryMethod | null>(null);
+  const [phase, setPhase] = useState<CreatePhase>("quick");
+  const [method, setMethod] = useState<ProductEntryMethod | null>("manual");
   const [productType, setProductType] = useState<ProductType | null>(null);
   const [prefill, setPrefill] = useState<Partial<ProductFormInput> | null>(null);
   const [formKey, setFormKey] = useState(0);
+  const [quickKey, setQuickKey] = useState(0);
   const [showScanner, setShowScanner] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
+    if (!open) return;
+
     if (isEdit) {
       setPhase("form");
       setMethod(null);
@@ -68,41 +74,59 @@ export function ProductDialog({
       return;
     }
 
-    // Toolbar shortcuts map into the unified flow
-    if (initialMode === "quick") {
+    const sticky = readStickyProductPrefs();
+    const defaults = buildProductCreateDefaults(context, { sticky });
+
+    if (initialMode === "batch") {
       setMethod("scan");
+      setProductType(
+        (defaults.productType as ProductType) || sticky.productType || "physical",
+      );
       setPhase("type");
-    } else if (initialMode === "batch") {
-      setMethod("scan");
+      setPrefill(defaults);
+      setShowScanner(true);
+    } else if (initialMode === "wizard") {
+      // Toolbar full wizard
+      setMethod("manual");
       setPhase("type");
+      setProductType(null);
+      setPrefill(null);
+      setShowScanner(false);
     } else {
-      setMethod(null);
-      setPhase("method");
+      // Default + "quick": one-screen quick add
+      setMethod("manual");
+      setPhase("quick");
+      setProductType((defaults.productType as ProductType) || "physical");
+      setPrefill(defaults);
+      setShowScanner(false);
     }
-    setProductType(null);
-    setPrefill(null);
+
     setSavedCount(0);
-    setShowScanner(false);
     setFormKey((k) => k + 1);
-  }, [open, initialMode, isEdit, product]);
+    setQuickKey((k) => k + 1);
+  }, [open, initialMode, isEdit, product, context]);
 
   const title = isEdit
     ? "Edit Product"
-    : phase === "method"
-      ? "Add products"
-      : phase === "type"
-        ? "Product type"
-        : method === "scan"
-          ? `Scan & add (${productType ?? "…"})`
-          : `New ${productType ?? "product"}`;
+    : phase === "quick"
+      ? "Quick add product"
+      : phase === "method"
+        ? "Add products"
+        : phase === "type"
+          ? "Product type"
+          : method === "scan"
+            ? `Scan & add (${productType ?? "…"})`
+            : `New ${productType ?? "product"}`;
 
   const description = isEdit
     ? "Update product information."
-    : phase === "method"
-      ? "Choose how you want to enter products."
-      : phase === "type"
-        ? "Steps and fields depend on this type and your enabled capabilities."
-        : "Complete the steps below. After save you can add another without starting over.";
+    : phase === "quick"
+      ? "Name, category, and price — units and tracking are filled for you. Save keeps category for the next item."
+      : phase === "method"
+        ? "Choose how you want to enter products."
+        : phase === "type"
+          ? "Steps and fields depend on this type and your enabled capabilities."
+          : "Complete the steps below. After save you can add another without starting over.";
 
   function handleSaved() {
     onSuccess();
@@ -110,20 +134,34 @@ export function ProductDialog({
       onOpenChange(false);
       return;
     }
-    // Stay in form phase for multi-add
     setSavedCount((c) => c + 1);
+    const sticky = readStickyProductPrefs();
     setPrefill(
-      productType
-        ? {
-            productType,
-            categoryId: context.categories[0]?.id ?? "",
-            trackInventory: productType !== "service",
-          }
-        : null,
+      buildProductCreateDefaults(context, {
+        sticky,
+        productType: productType ?? sticky.productType ?? "physical",
+        name: "",
+        barcode: null,
+        sku: null,
+        costPrice: null,
+        sellingPrice: null,
+      }),
     );
     setFormKey((k) => k + 1);
     setShowScanner(method === "scan");
     toast.message("Ready for the next product — same type and entry method.");
+  }
+
+  function handleQuickSuccess(saved: {
+    productType: ProductType;
+    categoryId: string;
+    stockUnitId: string | null;
+  }) {
+    onSuccess();
+    setSavedCount((c) => c + 1);
+    setProductType(saved.productType);
+    setQuickKey((k) => k + 1);
+    toast.message("Ready for the next product — category and type kept.");
   }
 
   async function handleScanCode(code: string) {
@@ -132,6 +170,20 @@ export function ProductDialog({
       toast.message(
         `Code already used by “${result.product.name}”. Enter a different code or edit that product.`,
       );
+      return;
+    }
+    if (phase === "quick" || (productType && isQuickAddFriendlyType(productType))) {
+      setPrefill((prev) => ({
+        ...buildProductCreateDefaults(context, {
+          ...(prev ?? {}),
+          barcode: code,
+          productType: productType ?? "physical",
+        }),
+      }));
+      setPhase("quick");
+      setQuickKey((k) => k + 1);
+      setShowScanner(false);
+      toast.success("Code applied — finish name and price.");
       return;
     }
     setPrefill((prev) => ({
@@ -146,6 +198,18 @@ export function ProductDialog({
     toast.success("Code applied — complete the remaining fields.");
   }
 
+  function openFullForm(type: ProductType) {
+    setProductType(type);
+    setMethod("manual");
+    if (!isQuickAddFriendlyType(type)) {
+      setPhase("form");
+      setPrefill(buildProductCreateDefaults(context, { productType: type }));
+      setFormKey((k) => k + 1);
+      return;
+    }
+    setPhase("type");
+  }
+
   return (
     <CrudDialog
       open={open}
@@ -156,9 +220,13 @@ export function ProductDialog({
       {!isEdit && phase !== "method" && (
         <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="rounded-full border px-2 py-0.5">
-            {method === "scan" ? "Scan entry" : "Manual entry"}
+            {phase === "quick"
+              ? "Quick add"
+              : method === "scan"
+                ? "Scan entry"
+                : "Full form"}
           </span>
-          {productType && (
+          {productType && phase !== "quick" && (
             <span className="rounded-full border px-2 py-0.5">{productType}</span>
           )}
           {savedCount > 0 && (
@@ -166,21 +234,108 @@ export function ProductDialog({
               {savedCount} saved this session
             </span>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="ml-auto h-7 text-xs"
-            onClick={() => {
-              setPhase("method");
-              setMethod(null);
-              setProductType(null);
-              setPrefill(null);
-              setSavedCount(0);
+          <div className="ml-auto flex gap-1">
+            {phase === "quick" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setPhase("method");
+                  setMethod(null);
+                }}
+              >
+                Scan / full form
+              </Button>
+            )}
+            {phase !== "quick" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setPhase("quick");
+                  setMethod("manual");
+                  setQuickKey((k) => k + 1);
+                }}
+              >
+                Quick add
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setPhase("quick");
+                setMethod("manual");
+                setProductType(null);
+                setPrefill(null);
+                setSavedCount(0);
+                setQuickKey((k) => k + 1);
+              }}
+            >
+              Start over
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!isEdit && phase === "quick" && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowScanner((v) => !v)}
+            >
+              {showScanner ? "Hide scanner" : "Scan barcode"}
+            </Button>
+          </div>
+          {showScanner && (
+            <BarcodeScanner
+              onScan={(code) => void handleScanCode(code)}
+              onClose={() => setShowScanner(false)}
+            />
+          )}
+          <ProductQuickAdd
+            key={quickKey}
+            context={context}
+            initial={{
+              productType: (prefill?.productType as ProductType) || productType || undefined,
+              barcode: prefill?.barcode ?? undefined,
+              sku: prefill?.sku ?? undefined,
+              name: prefill?.name || undefined,
+              categoryId: prefill?.categoryId || undefined,
+              costPrice: prefill?.costPrice ?? null,
+              sellingPrice: prefill?.sellingPrice ?? null,
             }}
-          >
-            Start over
-          </Button>
+            onSuccess={handleQuickSuccess}
+            onOpenFullForm={(type) => {
+              setProductType(type);
+              setPrefill(
+                buildProductCreateDefaults(context, {
+                  productType: type,
+                  categoryId: prefill?.categoryId,
+                }),
+              );
+              setPhase("form");
+              setFormKey((k) => k + 1);
+            }}
+          />
+          <div className="flex justify-end border-t pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Done
+            </Button>
+          </div>
         </div>
       )}
 
@@ -189,6 +344,11 @@ export function ProductDialog({
           value={method}
           onSelect={(m) => {
             setMethod(m);
+            if (m === "manual") {
+              setPhase("quick");
+              setQuickKey((k) => k + 1);
+              return;
+            }
             setPhase("type");
           }}
         />
@@ -201,25 +361,27 @@ export function ProductDialog({
             businessCapabilities={context.businessCapabilities ?? []}
             onSelect={(type) => {
               setProductType(type);
-              setPrefill({
+              const next = buildProductCreateDefaults(context, {
                 productType: type,
-                categoryId: context.categories[0]?.id ?? "",
-                trackInventory: type !== "service",
-                sellingPrice: null,
-                costPrice: null,
               });
-              setPhase("form");
-              setFormKey((k) => k + 1);
-              setShowScanner(method === "scan");
+              setPrefill(next);
+              if (isQuickAddFriendlyType(type) && method !== "scan") {
+                setPhase("quick");
+                setQuickKey((k) => k + 1);
+              } else {
+                setPhase("form");
+                setFormKey((k) => k + 1);
+                setShowScanner(method === "scan");
+              }
             }}
           />
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setPhase("method")}
+            onClick={() => setPhase("quick")}
           >
-            Back
+            Back to quick add
           </Button>
         </div>
       )}
