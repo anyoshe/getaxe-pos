@@ -910,6 +910,17 @@ export function PosClient({
   }
 
   const total = cart.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
+  const missingSerialLines = cart.filter((line) => {
+    if (!line.serialized) return false;
+    const factor = line.factorToStock > 0 ? line.factorToStock : 1;
+    const stockQuantity = line.quantity * factor;
+    return (
+      factor !== 1 ||
+      !Number.isInteger(stockQuantity) ||
+      line.selectedSerials.length !== Math.round(stockQuantity) ||
+      new Set(line.selectedSerials).size !== line.selectedSerials.length
+    );
+  });
 
   // Client-side estimate: 1 pt per 100 (server program may differ; refreshed on lookup)
   const estimatedEarn =
@@ -987,6 +998,12 @@ export function PosClient({
         toast.error("Cart is empty.");
         return;
       }
+      if (missingSerialLines.length > 0) {
+        toast.error(
+          `Select one serial / chassis number for each unit of: ${missingSerialLines.map((line) => line.name).join(", ")}.`,
+        );
+        return;
+      }
       if (saleMode === "CREDIT") {
         const creditCustomer = posCustomers.find((customer) => customer.id === customerId);
         if (!creditCustomer?.allowCredit) {
@@ -1055,20 +1072,6 @@ export function PosClient({
           return;
         }
       }
-      for (const line of cart) {
-        if (line.serialized) {
-          const needSerials = Math.round(
-            line.quantity * (line.factorToStock > 0 ? line.factorToStock : 1),
-          );
-          if (line.selectedSerials.length !== needSerials) {
-            toast.error(
-              `${line.name}: select ${needSerials} serial number(s) (stock units).`,
-            );
-            return;
-          }
-        }
-      }
-
       // Credit invoice must be on a registered customer account (AR)
       if (saleMode === "CREDIT") {
         if (!customerId) {
@@ -2061,14 +2064,14 @@ export function PosClient({
                             {line.serialized ? (
                               <div className="mt-2 max-h-24 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
                                 <p className="text-[10px] font-semibold text-chart-5">
-                                  Serials {line.selectedSerials.length}/
+                                  Serial / chassis numbers {line.selectedSerials.length}/
                                   {Math.round(
                                     line.quantity * (line.factorToStock || 1),
                                   )}
                                 </p>
                                 {options.length === 0 ? (
                                   <p className="text-[10px] text-muted-foreground">
-                                    No free serials in this warehouse
+                                    No free serial / chassis numbers in this warehouse
                                   </p>
                                 ) : (
                                   options.map((serial) => (
@@ -2305,7 +2308,7 @@ export function PosClient({
                     {line.serialized && (
                       <div className="mt-2 max-h-16 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
                         <p className="text-[10px] font-semibold text-chart-5">
-                          Serials {line.selectedSerials.length}/
+                          Serial / chassis numbers {line.selectedSerials.length}/
                           {Math.round(
                             line.quantity * (line.factorToStock || 1),
                           )}
@@ -2369,7 +2372,12 @@ export function PosClient({
               <span className="text-muted-foreground">Total</span>
               <span className="font-bold tabular-nums">{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <Button type="button" className="h-11 w-full rounded-xl font-bold" disabled={cart.length === 0} onClick={() => setCheckoutOpen(true)}>Checkout</Button>
+            {missingSerialLines.length > 0 ? (
+              <p className="mb-2 rounded-lg border border-accent/60 bg-accent/25 px-3 py-2 text-xs font-medium leading-5 text-accent-foreground">
+                Select the required serial / chassis numbers before checkout.
+              </p>
+            ) : null}
+            <Button type="button" className="h-11 w-full rounded-xl font-bold" disabled={cart.length === 0 || missingSerialLines.length > 0} onClick={() => setCheckoutOpen(true)}>Checkout</Button>
           </div>
         </section>
 
@@ -2707,7 +2715,8 @@ export function PosClient({
                   size="lg"
                   disabled={
                     pending ||
-                    cart.length === 0
+                    cart.length === 0 ||
+                    missingSerialLines.length > 0
                   }
                   onClick={checkout}
                 >

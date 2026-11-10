@@ -253,7 +253,13 @@ export async function createSaleAction(input: unknown) {
         if (serials.length !== quantityStock) {
           return {
             success: false as const,
-            message: `${product.name} is serialized — enter ${quantityStock} serial number(s) (stock units).`,
+            message: `${product.name} requires ${quantityStock} serial / chassis number(s) (stock units).`,
+          };
+        }
+        if (new Set(serials).size !== serials.length) {
+          return {
+            success: false as const,
+            message: `${product.name} has a duplicate serial / chassis number. Select a different number for each unit.`,
           };
         }
         if (conversionFactor !== 1) {
