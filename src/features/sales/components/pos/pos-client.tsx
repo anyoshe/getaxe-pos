@@ -23,11 +23,20 @@ import {
   Plus,
   UserRound,
   Building2,
+  CircleAlert,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
 
 import { createSaleAction } from "../../actions/create-sale";
@@ -322,8 +331,6 @@ export function PosClient({
   );
   /** browse = product catalogue; scan = search/scan + cart table (no product grid) */
   const [posView, setPosView] = useState<"browse" | "scan">("browse");
-  /** Mobile checkout wizard: items → pay (desktop shows both) */
-  const [mobileStep, setMobileStep] = useState<"items" | "pay">("items");
   const [visibleCount, setVisibleCount] = useState(48);
   const [priceMode, setPriceMode] = useState<PriceMode>("retail");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
@@ -376,6 +383,8 @@ export function PosClient({
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [amountTendered, setAmountTendered] = useState("");
   const [showCustomer, setShowCustomer] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [creditCustomerNoticeOpen, setCreditCustomerNoticeOpen] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -410,11 +419,6 @@ export function PosClient({
       scanRef.current?.focus();
     }
   }, [posView]);
-
-  useEffect(() => {
-    if (cart.length === 0) setMobileStep("items");
-  }, [cart.length]);
-
 
   useEffect(() => {
     void listPosCustomersAction().then((r) => {
@@ -888,6 +892,14 @@ export function PosClient({
         toast.error("Cart is empty.");
         return;
       }
+      if (saleMode === "CREDIT") {
+        const creditCustomer = posCustomers.find((customer) => customer.id === customerId);
+        if (!creditCustomer?.allowCredit) {
+          setCheckoutOpen(false);
+          setCreditCustomerNoticeOpen(true);
+          return;
+        }
+      }
       if (belowCostSalePolicy !== "off") {
         for (const line of cart) {
           const prod = sellable.find((x) => x.id === line.productId);
@@ -906,7 +918,6 @@ export function PosClient({
             toast.error(
               `${msg} Update Product prices or set policy to Warn under Settings → Pricing policy.`,
             );
-            setMobileStep("items");
             return;
           }
           toast.warning(`${msg} Completing under warn policy.`);
@@ -935,7 +946,6 @@ export function PosClient({
           toast.error(
             `${line.name}: select a batch / expiry date before completing the sale.`,
           );
-          setMobileStep("items");
           return;
         }
       }
@@ -947,7 +957,6 @@ export function PosClient({
           toast.error(
             `${line.name} is controlled — record customer name/phone or select a customer for the register.`,
           );
-          setMobileStep("items");
           return;
         }
       }
@@ -1195,6 +1204,7 @@ export function PosClient({
         tenderedNum > 0
           ? Math.max(0, tenderedNum - saleTotal)
           : 0;
+      setCheckoutOpen(false);
       setLastReceipt({
         invoiceNumber: res.invoiceNumber ?? "—",
         soldAt: res.soldAt ?? new Date().toLocaleString("en-KE", {
@@ -1327,17 +1337,17 @@ export function PosClient({
       id: "CASH",
       label: "Cash",
       icon: Banknote,
-      activeClass: "bg-chart-4 text-white shadow-md ring-2 ring-chart-4/40",
+      activeClass: "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30",
       idleClass:
-        "border border-chart-4/30 bg-chart-4/10 text-chart-4 hover:bg-chart-4/20",
+        "border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10",
     },
     {
       id: "MPESA",
       label: "M-Pesa",
       icon: Smartphone,
-      activeClass: "bg-chart-2 text-accent-foreground shadow-md ring-2 ring-chart-2/40",
+      activeClass: "bg-accent text-accent-foreground shadow-md ring-2 ring-accent/50",
       idleClass:
-        "border border-chart-2/40 bg-chart-2/15 text-accent-foreground hover:bg-chart-2/25",
+        "border border-accent/70 bg-accent/30 text-accent-foreground hover:bg-accent/50",
     },
     {
       id: "CARD",
@@ -1351,9 +1361,9 @@ export function PosClient({
       id: "BANK_TRANSFER",
       label: "Bank",
       icon: Building2,
-      activeClass: "bg-chart-3 text-white shadow-md ring-2 ring-chart-3/40",
+      activeClass: "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30",
       idleClass:
-        "border border-chart-3/30 bg-chart-3/10 text-chart-3 hover:bg-chart-3/20",
+        "border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10",
     },
   ];
 
@@ -1450,15 +1460,10 @@ export function PosClient({
         </div>
       </header>
 
-      {/* Body: on mobile products scroll; cart is a bottom sheet that also scrolls */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(17rem,20rem)_minmax(18rem,22rem)] xl:grid-rows-1">
+      {/* POS workspace: catalogue and selected products share the desktop width equally. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden xl:grid xl:grid-cols-[60%_40%] xl:grid-rows-1">
         {/* CATALOGUE — col 1 */}
-        <section
-          className={
-            "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-secondary/70 to-background xl:h-full xl:min-h-0 " +
-            (mobileStep === "pay" ? "max-xl:hidden" : "")
-          }
-        >
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-background xl:h-full xl:min-h-0">
           <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3">
             <div className="relative">
               <div className="flex gap-2">
@@ -2002,26 +2007,17 @@ export function PosClient({
         </section>
 
 
-        {/* CART — col 2 (lines + customer). Pay is col 3 on xl. */}
-        <section className={
-          "flex min-h-0 w-full flex-col overflow-hidden border-t border-border/60 bg-card xl:h-full xl:border-t-0 xl:border-l xl:border-border/60 " +
-          (cart.length === 0
-            ? "max-h-[7.5rem] shrink-0 xl:max-h-none"
-            : mobileStep === "pay"
-              ? "max-xl:hidden xl:flex xl:max-h-none"
-              : posView === "scan"
-                ? "max-h-[48dvh] shrink-0 xl:max-h-none"
-                : "max-h-[45dvh] shrink-0 xl:max-h-none")
-        }>
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
+        {/* Selected products and customer details */}
+        <section className="flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-border/60 bg-gradient-to-b from-accent/20 via-accent/10 to-background xl:h-full xl:border-t-0 xl:border-l xl:border-border/60">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-sm font-semibold">Cart</div>
-                <div className="text-[11px] text-muted-foreground">
-                  {cart.length} item{cart.length === 1 ? "" : "s"} · select products
+                <div className="text-base font-semibold">Selected products</div>
+                <div className="text-xs text-muted-foreground">
+                  {cart.length} item{cart.length === 1 ? "" : "s"}
                 </div>
               </div>
             </div>
@@ -2036,41 +2032,9 @@ export function PosClient({
             ) : null}
           </div>
 
-          {/* Scrollable: cart lines + customer */}
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 pb-4 sm:p-3">
-            {/* Mobile wizard step indicator */}
-            {cart.length > 0 ? (
-              <div className="flex gap-2 xl:hidden">
-                <button
-                  type="button"
-                  onClick={() => setMobileStep("items")}
-                  className={
-                    "flex-1 rounded-xl px-2 py-2 text-xs font-bold " +
-                    (mobileStep === "items"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground")
-                  }
-                >
-                  1 · Items
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMobileStep("pay")}
-                  className={
-                    "flex-1 rounded-xl px-2 py-2 text-xs font-bold " +
-                    (mobileStep === "pay"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground")
-                  }
-                >
-                  2 · Pay
-                </button>
-              </div>
-            ) : null}
-
-            <div
-              className={mobileStep === "pay" ? "max-xl:hidden space-y-2" : "space-y-2"}
-            >
+          {/* Selected products take four fifths of the panel height. */}
+          <div className="min-h-0 flex-[7] space-y-3 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 pb-4 sm:p-3">
+            <div className="space-y-2">
             {posView === "scan" ? (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">
@@ -2092,14 +2056,14 @@ export function PosClient({
                 return (
                   <div
                     key={line.productId}
-                    className="rounded-xl border border-border/70 bg-background p-2.5 shadow-sm"
+                    className="rounded-xl border border-border/60 bg-background p-3"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold">
+                        <div className="truncate text-base font-semibold leading-snug">
                           {line.name}
                         </div>
-                        <div className="text-[11px] text-muted-foreground">
+                        <div className="mt-0.5 text-xs text-muted-foreground">
                           {line.unitPrice.toLocaleString()} / {line.unitLabel}
                         </div>
                       </div>
@@ -2275,35 +2239,159 @@ export function PosClient({
             </div>
 
           </div>
+            <div
+              className="min-h-0 flex-[3] overflow-y-auto border-t border-border/50 bg-accent/10 p-3"
+            >
+              <div className="space-y-3">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 text-left text-sm font-semibold text-foreground hover:text-primary"
+                onClick={() => setShowCustomer((v) => !v)}
+              >
+                <UserRound className="h-3.5 w-3.5" />
+                <span className="flex-1">
+                  Customer
+                  {customerLabel ? (
+                    <span className="font-normal text-primary"> · {customerLabel}</span>
+                  ) : (
+                    <span className="font-normal">
+                      {saleMode === "CREDIT" ? " · required for credit" : " · optional"}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[10px] uppercase tracking-wide">
+                  {showCustomer || saleMode === "CREDIT" ? "Hide" : "Show"}
+                </span>
+              </button>
+              {(showCustomer || saleMode === "CREDIT") && (
+              <>
+              <select
+                className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+                value={customerId ?? ""}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (!id) {
+                    setCustomerId(null);
+                    setCustomerLabel(null);
+                    setCustomerContactName(null);
+                    setCustomerPoints(null);
+                    return;
+                  }
+                  const c = posCustomers.find((x) => x.id === id);
+                  if (!c) return;
+                  if (saleMode === "CREDIT" && !c.allowCredit) {
+                    toast.error("This customer is not enabled for credit.");
+                    return;
+                  }
+                  setCustomerId(c.id);
+                  setCustomerLabel(c.displayName);
+                  setCustomerContactName(c.contactName);
+                  setCustomerPhone(c.phone ?? "");
+                  setCustomerPoints(c.loyaltyPoints);
+                }}
+              >
+                <option value="">
+                  {saleMode === "CREDIT"
+                    ? "Select credit customer…"
+                    : "Select customer (optional)…"}
+                </option>
+                {(saleMode === "CREDIT"
+                  ? posCustomers.filter((c) => c.allowCredit)
+                  : posCustomers
+                ).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.displayName}
+                    {c.phone ? ` · ${c.phone}` : ""}
+                    {c.allowCredit ? " · credit" : ""}
+                  </option>
+                ))}
+              </select>
+              <div className="grid grid-cols-1 gap-2 2xl:grid-cols-2">
+                <Input
+                  className="h-10 rounded-xl"
+                  inputMode="tel"
+                  placeholder="Phone (loyalty / new customer)"
+                  value={customerPhone}
+                  onChange={(e) => {
+                    setCustomerPhone(e.target.value);
+                    setCustomerId(null);
+                    setCustomerLabel(null);
+                    setCustomerContactName(null);
+                    setCustomerPoints(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void lookupCustomer();
+                    }
+                  }}
+                />
+                <Input
+                  className="h-10 rounded-xl"
+                  placeholder="Name (receipt)"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 rounded-xl border-primary/30 text-xs"
+                  disabled={lookingUp || !customerPhone.trim()}
+                  onClick={() => void lookupCustomer()}
+                >
+                  {lookingUp ? "…" : "Find member"}
+                </Button>
+                {(customerId || customerPhone || customerName) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-8 rounded-xl text-xs"
+                    onClick={clearCustomer}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              {customerId && customerLabel ? (
+                <p className="text-xs">
+                  <span className="font-medium text-primary">{customerLabel}</span>
+                  {customerPoints != null ? (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {customerPoints} pts
+                      {estimatedEarn > 0 ? ` · +~${estimatedEarn}` : ""}
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
+              </>
+              )}
+              </div>
+            </div>
+          <div className="shrink-0 border-t border-border/50 p-2 sm:p-3">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Total</span>
+              <span className="font-bold tabular-nums">{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <Button type="button" className="h-11 w-full rounded-xl font-bold" disabled={cart.length === 0} onClick={() => setCheckoutOpen(true)}>Checkout</Button>
+          </div>
         </section>
 
-        {/* CHECKOUT — col 3 */}
-        <section
-          className={
-            "flex min-h-0 w-full flex-col overflow-hidden border-t border-border/60 bg-card xl:h-full xl:border-t-0 xl:border-l xl:border-border/60 " +
-            (mobileStep === "items"
-              ? "max-xl:hidden xl:flex"
-              : "min-h-0 flex-1 xl:max-h-none")
-          }
-        >
-          <div className="flex shrink-0 items-center gap-2 border-b border-border/50 bg-primary/5 px-3 py-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <CreditCard className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold">Checkout</div>
-              <div className="text-[11px] text-muted-foreground">Pay · balance · complete</div>
-            </div>
-          </div>
+        {/* CHECKOUT — modal */}
+        <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+          <DialogContent className="flex max-h-[90dvh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+            <DialogHeader className="shrink-0 border-b px-4 py-3">
+              <DialogTitle>Checkout</DialogTitle>
+            </DialogHeader>
+            <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain p-2 pb-4 sm:p-3">
             <div
-              className={
-                "space-y-2 " +
-                (mobileStep === "items" ? "max-xl:hidden" : "")
-              }
+              className="space-y-2"
             >
-              <p className="text-xs font-semibold text-muted-foreground max-xl:block xl:hidden">
-                Step 2 · How is the customer paying?
+              <p className="text-xs font-semibold text-muted-foreground">
+                How is the customer paying?
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
                 {payMethods.map((m) => {
@@ -2512,12 +2600,7 @@ export function PosClient({
             </div>
 
             {saleMode === "CASH" && paymentMethod === "CASH" ? (
-              <div
-                className={
-                  "grid grid-cols-2 gap-2 " +
-                  (mobileStep === "items" ? "max-xl:hidden" : "")
-                }
-              >
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">
                     Tendered
@@ -2548,135 +2631,7 @@ export function PosClient({
               </div>
             ) : null}
 
-            <div
-              className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-2.5"
-            >
-              <button
-                type="button"
-                className="flex w-full items-center gap-1.5 text-left text-xs font-semibold text-muted-foreground hover:text-foreground"
-                onClick={() => setShowCustomer((v) => !v)}
-              >
-                <UserRound className="h-3.5 w-3.5" />
-                <span className="flex-1">
-                  Customer
-                  {customerLabel ? (
-                    <span className="font-normal text-primary"> · {customerLabel}</span>
-                  ) : (
-                    <span className="font-normal">
-                      {saleMode === "CREDIT" ? " · required for credit" : " · optional"}
-                    </span>
-                  )}
-                </span>
-                <span className="text-[10px] uppercase tracking-wide">
-                  {showCustomer || saleMode === "CREDIT" ? "Hide" : "Show"}
-                </span>
-              </button>
-              {(showCustomer || saleMode === "CREDIT") && (
-              <>
-              <select
-                className="h-9 w-full rounded-xl border border-input bg-background px-2 text-sm text-foreground"
-                value={customerId ?? ""}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (!id) {
-                    setCustomerId(null);
-                    setCustomerLabel(null);
-                    setCustomerContactName(null);
-                    setCustomerPoints(null);
-                    return;
-                  }
-                  const c = posCustomers.find((x) => x.id === id);
-                  if (!c) return;
-                  if (saleMode === "CREDIT" && !c.allowCredit) {
-                    toast.error("This customer is not enabled for credit.");
-                    return;
-                  }
-                  setCustomerId(c.id);
-                  setCustomerLabel(c.displayName);
-                  setCustomerContactName(c.contactName);
-                  setCustomerPhone(c.phone ?? "");
-                  setCustomerPoints(c.loyaltyPoints);
-                }}
-              >
-                <option value="">
-                  {saleMode === "CREDIT"
-                    ? "Select credit customer…"
-                    : "Select customer (optional)…"}
-                </option>
-                {(saleMode === "CREDIT"
-                  ? posCustomers.filter((c) => c.allowCredit)
-                  : posCustomers
-                ).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.displayName}
-                    {c.phone ? ` · ${c.phone}` : ""}
-                    {c.allowCredit ? " · credit" : ""}
-                  </option>
-                ))}
-              </select>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Input
-                  className="h-9 rounded-xl"
-                  inputMode="tel"
-                  placeholder="Phone (loyalty / new customer)"
-                  value={customerPhone}
-                  onChange={(e) => {
-                    setCustomerPhone(e.target.value);
-                    setCustomerId(null);
-                    setCustomerLabel(null);
-                    setCustomerContactName(null);
-                    setCustomerPoints(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void lookupCustomer();
-                    }
-                  }}
-                />
-                <Input
-                  className="h-9 rounded-xl"
-                  placeholder="Name (receipt)"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-8 rounded-xl border-primary/30 text-xs"
-                  disabled={lookingUp || !customerPhone.trim()}
-                  onClick={() => void lookupCustomer()}
-                >
-                  {lookingUp ? "…" : "Find member"}
-                </Button>
-                {(customerId || customerPhone || customerName) && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-8 rounded-xl text-xs"
-                    onClick={clearCustomer}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-              {customerId && customerLabel ? (
-                <p className="text-xs">
-                  <span className="font-medium text-primary">{customerLabel}</span>
-                  {customerPoints != null ? (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · {customerPoints} pts
-                      {estimatedEarn > 0 ? ` · +~${estimatedEarn}` : ""}
-                    </span>
-                  ) : null}
-                </p>
-              ) : null}
-              </>
-              )}
-            </div>
+
           </div>
 
           {/* Sticky total + wizard / complete — primary action always visible */}
@@ -2706,26 +2661,9 @@ export function PosClient({
             </div>
 
             {/* Mobile: step 1 → continue to pay */}
-            {mobileStep === "items" ? (
-              <div className="space-y-2 xl:hidden">
-                <Button
-                  type="button"
-                  className="h-12 w-full rounded-xl text-base font-bold shadow-md"
-                  size="lg"
-                  disabled={cart.length === 0}
-                  onClick={() => setMobileStep("pay")}
-                >
-                  Continue to payment
-                </Button>
-              </div>
-            ) : null}
-
             {/* Mobile step 2 + always on desktop: sale type + complete */}
             <div
-              className={
-                "space-y-2 " +
-                (mobileStep === "items" ? "max-xl:hidden" : "")
-              }
+              className="space-y-2"
             >
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -2748,6 +2686,13 @@ export function PosClient({
                     setSaleMode("CREDIT");
                     setPaymentMethod("CREDIT");
                     setShowCustomer(true);
+                    const creditCustomer = posCustomers.find(
+                      (customer) => customer.id === customerId,
+                    );
+                    if (!creditCustomer?.allowCredit) {
+                      setCheckoutOpen(false);
+                      setCreditCustomerNoticeOpen(true);
+                    }
                   }}
                   className={
                     saleMode === "CREDIT"
@@ -2770,20 +2715,11 @@ export function PosClient({
               )}
               <div className="flex gap-2">
                 <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12 shrink-0 rounded-xl px-3 xl:hidden"
-                  onClick={() => setMobileStep("items")}
-                >
-                  Back
-                </Button>
-                <Button
                   className="h-12 w-full rounded-xl text-base font-bold shadow-md"
                   size="lg"
                   disabled={
                     pending ||
-                    cart.length === 0 ||
-                    (saleMode === "CREDIT" && !customerId)
+                    cart.length === 0
                   }
                   onClick={checkout}
                 >
@@ -2796,8 +2732,56 @@ export function PosClient({
               </div>
             </div>
           </div>
-        </section>
+            </section>
+          </DialogContent>
+        </Dialog>
 
+        <Dialog
+          open={creditCustomerNoticeOpen}
+          onOpenChange={setCreditCustomerNoticeOpen}
+        >
+          <DialogContent className="max-w-lg overflow-hidden p-0">
+            <div className="brand-stripe h-2 w-full" />
+            <div className="space-y-5 p-6">
+              <DialogHeader className="gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+                  <CircleAlert className="h-6 w-6" />
+                </div>
+                <DialogTitle className="text-xl font-bold text-primary">
+                  Credit customer required
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-6">
+                  Credit invoices can only be posted to customers approved for
+                  credit. Select an eligible customer in the customer panel, or
+                  create or enable a credit customer first.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-sm leading-5 text-foreground">
+                Your cart is saved. After choosing an eligible customer, open
+                checkout again to post the invoice.
+              </div>
+              <DialogFooter className="border-0 bg-transparent p-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-xl border-primary/25 px-4 text-primary hover:bg-primary/5"
+                  onClick={() => {
+                    setCreditCustomerNoticeOpen(false);
+                    setShowCustomer(true);
+                  }}
+                >
+                  Choose customer
+                </Button>
+                <Link
+                  href="/customers"
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                >
+                  Manage customers
+                </Link>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </div>
 
