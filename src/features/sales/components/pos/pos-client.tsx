@@ -1451,12 +1451,12 @@ export function PosClient({
       </header>
 
       {/* Body: on mobile products scroll; cart is a bottom sheet that also scrolls */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
-        {/* CATALOGUE */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(17rem,20rem)_minmax(18rem,22rem)] xl:grid-rows-1">
+        {/* CATALOGUE — col 1 */}
         <section
           className={
-            "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-secondary/70 to-background " +
-            (mobileStep === "pay" ? "max-lg:hidden" : "")
+            "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-secondary/70 to-background xl:h-full xl:min-h-0 " +
+            (mobileStep === "pay" ? "max-xl:hidden" : "")
           }
         >
           <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3">
@@ -2002,16 +2002,16 @@ export function PosClient({
         </section>
 
 
-        {/* CART + PAY — sticky Complete sale always visible on mobile */}
+        {/* CART — col 2 (lines + customer). Pay is col 3 on xl. */}
         <section className={
-          "flex min-h-0 w-full flex-col overflow-hidden border-t border-border/60 bg-card lg:max-h-none lg:h-full lg:w-[min(100%,24rem)] lg:shrink-0 lg:border-t-0 xl:w-[26rem] " +
+          "flex min-h-0 w-full flex-col overflow-hidden border-t border-border/60 bg-card xl:h-full xl:border-t-0 xl:border-l xl:border-border/60 " +
           (cart.length === 0
-            ? "max-h-[7.5rem] shrink-0 lg:max-h-none"
+            ? "max-h-[7.5rem] shrink-0 xl:max-h-none"
             : mobileStep === "pay"
-              ? "min-h-0 flex-1 shrink-0 max-lg:max-h-none lg:max-h-none"
+              ? "max-xl:hidden xl:flex xl:max-h-none"
               : posView === "scan"
-                ? "max-h-[48dvh] shrink-0 lg:max-h-none"
-                : "max-h-[45dvh] shrink-0 lg:max-h-none")
+                ? "max-h-[48dvh] shrink-0 xl:max-h-none"
+                : "max-h-[45dvh] shrink-0 xl:max-h-none")
         }>
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-secondary/60 px-3 py-2">
             <div className="flex items-center gap-2">
@@ -2019,9 +2019,9 @@ export function PosClient({
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-sm font-semibold">Sale</div>
+                <div className="text-sm font-semibold">Cart</div>
                 <div className="text-[11px] text-muted-foreground">
-                  {cart.length} item{cart.length === 1 ? "" : "s"}
+                  {cart.length} item{cart.length === 1 ? "" : "s"} · select products
                 </div>
               </div>
             </div>
@@ -2036,11 +2036,11 @@ export function PosClient({
             ) : null}
           </div>
 
-          {/* Scrollable: lines (browse) + payment options + customer */}
+          {/* Scrollable: cart lines + customer */}
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 pb-4 sm:p-3">
             {/* Mobile wizard step indicator */}
             {cart.length > 0 ? (
-              <div className="flex gap-2 lg:hidden">
+              <div className="flex gap-2 xl:hidden">
                 <button
                   type="button"
                   onClick={() => setMobileStep("items")}
@@ -2069,7 +2069,7 @@ export function PosClient({
             ) : null}
 
             <div
-              className={mobileStep === "pay" ? "max-lg:hidden space-y-2" : "space-y-2"}
+              className={mobileStep === "pay" ? "max-xl:hidden space-y-2" : "space-y-2"}
             >
             {posView === "scan" ? (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
@@ -2274,13 +2274,35 @@ export function PosClient({
             )}
             </div>
 
+          </div>
+        </section>
+
+        {/* CHECKOUT — col 3 */}
+        <section
+          className={
+            "flex min-h-0 w-full flex-col overflow-hidden border-t border-border/60 bg-card xl:h-full xl:border-t-0 xl:border-l xl:border-border/60 " +
+            (mobileStep === "items"
+              ? "max-xl:hidden xl:flex"
+              : "min-h-0 flex-1 xl:max-h-none")
+          }
+        >
+          <div className="flex shrink-0 items-center gap-2 border-b border-border/50 bg-primary/5 px-3 py-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <CreditCard className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold">Checkout</div>
+              <div className="text-[11px] text-muted-foreground">Pay · balance · complete</div>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain p-2 pb-4 sm:p-3">
             <div
               className={
                 "space-y-2 " +
-                (mobileStep === "items" ? "max-lg:hidden" : "")
+                (mobileStep === "items" ? "max-xl:hidden" : "")
               }
             >
-              <p className="text-xs font-semibold text-muted-foreground max-lg:block lg:hidden">
+              <p className="text-xs font-semibold text-muted-foreground max-xl:block xl:hidden">
                 Step 2 · How is the customer paying?
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
@@ -2493,7 +2515,7 @@ export function PosClient({
               <div
                 className={
                   "grid grid-cols-2 gap-2 " +
-                  (mobileStep === "items" ? "max-lg:hidden" : "")
+                  (mobileStep === "items" ? "max-xl:hidden" : "")
                 }
               >
                 <div className="space-y-1">
@@ -2526,10 +2548,11 @@ export function PosClient({
               </div>
             ) : null}
 
+          </div>
             <div
               className={
                 "space-y-2 rounded-xl border border-border/60 bg-muted/20 p-2.5 " +
-                (mobileStep === "items" ? "max-lg:hidden" : "")
+                ""
               }
             >
               <button
@@ -2660,6 +2683,7 @@ export function PosClient({
             </div>
           </div>
 
+
           {/* Sticky total + wizard / complete — primary action always visible */}
           <div className="shrink-0 space-y-2 border-t-2 border-primary/20 bg-card p-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.12)] sm:p-3">
             <div className="flex items-end justify-between gap-2">
@@ -2688,7 +2712,7 @@ export function PosClient({
 
             {/* Mobile: step 1 → continue to pay */}
             {mobileStep === "items" ? (
-              <div className="space-y-2 lg:hidden">
+              <div className="space-y-2 xl:hidden">
                 <Button
                   type="button"
                   className="h-12 w-full rounded-xl text-base font-bold shadow-md"
@@ -2705,7 +2729,7 @@ export function PosClient({
             <div
               className={
                 "space-y-2 " +
-                (mobileStep === "items" ? "max-lg:hidden" : "")
+                (mobileStep === "items" ? "max-xl:hidden" : "")
               }
             >
               <div className="grid grid-cols-2 gap-2">
@@ -2753,7 +2777,7 @@ export function PosClient({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-12 shrink-0 rounded-xl px-3 lg:hidden"
+                  className="h-12 shrink-0 rounded-xl px-3 xl:hidden"
                   onClick={() => setMobileStep("items")}
                 >
                   Back
@@ -2778,6 +2802,7 @@ export function PosClient({
             </div>
           </div>
         </section>
+
 
       </div>
 
