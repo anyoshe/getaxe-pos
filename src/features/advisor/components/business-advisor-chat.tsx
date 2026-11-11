@@ -9,7 +9,10 @@ import { cn } from "@/lib/utils";
 import {
   askAdvisorAction,
   getAdvisorQuotaAction,
+  getAdvisorSetupWelcomeAction,
+  applyAdvisorVerticalPackAction,
 } from "../actions/ask-advisor";
+import type { GoLiveVertical } from "@/features/settings/lib/go-live-day";
 
 type Msg = {
   role: "user" | "assistant";
@@ -164,18 +167,34 @@ export function BusinessAdvisorChat() {
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
-      text: "I’m your **GetAxe business advisor**. Ask about sales, stock, profit, cash, or what to do next — I’ll use your **live numbers** and suggest clear next steps.",
+      text: "I’m your **GetAxe business advisor**. Opening setup status…",
     },
   ]);
+  const [welcomeLoaded, setWelcomeLoaded] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [pending, start] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
     getAdvisorQuotaAction()
       .then((r) => setRemaining(r.remainingToday))
       .catch(() => {});
-  }, [open]);
+    if (welcomeLoaded) return;
+    void getAdvisorSetupWelcomeAction().then((res) => {
+      if (!res.success) return;
+      setWelcomeLoaded(true);
+      setRemaining(res.data.remainingToday);
+      setMessages([
+        {
+          role: "assistant",
+          text: res.data.answer,
+          actions: res.data.actions,
+          provider: "heuristic",
+        },
+      ]);
+    });
+  }, [open, welcomeLoaded]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -275,18 +294,69 @@ export function BusinessAdvisorChat() {
                           : msg.provider}
                   </p>
                 ) : null}
-                {msg.actions && msg.actions.length > 0 ? (
+                                {msg.actions && msg.actions.length > 0 ? (
                   <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-border/60 pt-2">
-                    {msg.actions.map((a) => (
-                      <Link
-                        key={a.href + a.label}
-                        href={a.href}
-                        className="rounded-full bg-gradient-to-r from-indigo-600/10 to-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-500/25 hover:from-indigo-600/20 hover:to-cyan-500/20 dark:text-cyan-300"
-                        onClick={() => setOpen(false)}
-                      >
-                        {a.label} →
-                      </Link>
-                    ))}
+                    {msg.actions.map((a) =>
+                      a.applyVertical ? (
+                        <button
+                          key={"apply-" + a.applyVertical + a.label}
+                          type="button"
+                          disabled={pending}
+                          className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-60"
+                          onClick={() => {
+                            const vertical = a.applyVertical as GoLiveVertical;
+                            start(async () => {
+                              const res = await applyAdvisorVerticalPackAction(
+                                vertical,
+                                true,
+                              );
+                              if (!res.success) {
+                                setMessages((m) => [
+                                  ...m,
+                                  {
+                                    role: "assistant",
+                                    text:
+                                      res.message ||
+                                      "Could not apply vertical pack.",
+                                  },
+                                ]);
+                                return;
+                              }
+                              setMessages((m) => [
+                                ...m,
+                                {
+                                  role: "user",
+                                  text: `Apply ${vertical} defaults`,
+                                },
+                                {
+                                  role: "assistant",
+                                  text:
+                                    (res.message
+                                      ? `**Done.** ${res.message}
+
+`
+                                      : "**Done.** ") +
+                                    (res.nextAnswer || ""),
+                                  actions: res.actions,
+                                  provider: "heuristic",
+                                },
+                              ]);
+                            });
+                          }}
+                        >
+                          {a.label}
+                        </button>
+                      ) : a.href ? (
+                        <Link
+                          key={a.href + a.label}
+                          href={a.href}
+                          className="rounded-full bg-gradient-to-r from-indigo-600/10 to-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-500/25 hover:from-indigo-600/20 hover:to-cyan-500/20 dark:text-cyan-300"
+                          onClick={() => setOpen(false)}
+                        >
+                          {a.label}
+                        </Link>
+                      ) : null,
+                    )}
                   </div>
                 ) : null}
               </div>

@@ -3,6 +3,12 @@ import {
   formatContextForPrompt,
   type BusinessAdvisorContext,
 } from "./business-context.service";
+import {
+  parseApplyVerticalIntent,
+  setupAwareSystemAddendum,
+  setupWelcomeActions,
+  setupWelcomeMessage,
+} from "./setup-coach";
 
 export type AdvisorReply = {
   answer: string;
@@ -381,7 +387,11 @@ The JSON business facts are LIVE figures from this business's GetAxe database. T
 Write like a sharp business coach, not a report dump: short paragraphs, clear priorities, exact KES figures from the JSON only.
 Never invent amounts. End with 2-4 concrete actions inside GetAxe.
 If the owner asks how to improve or grow, rank the biggest risks (stock-outs, losses, expiry, slow stock, debts) using the data and tell them what to do first.
-Tone: Know, Control, Decide, Grow.`;
+Tone: Know, Control, Decide, Grow.
+
+When business facts include setup.isSetupComplete=false, prioritise finishing setup: state the next incomplete check, link to /settings/go-live, and only then operational KPIs.
+Vertical packs (pharmacy/hardware/agrovet/spares/general) are applied by the product after the owner confirms — explain what a pack does; do not claim you already changed data unless the user message says the pack was applied.
+`;
 
 type LlmResult = { text: string; provider: "xai" | "groq" };
 
@@ -400,7 +410,9 @@ async function openaiCompatibleChat(opts: {
     temperature: 0.4,
     max_tokens: 900,
     messages: [
-      { role: "system", content: ADVISOR_SYSTEM },
+      { role: "system", content: ADVISOR_SYSTEM + "
+
+" + setupAwareSystemAddendum(opts.ctx.setup) },
       {
         role: "user",
         content: `Business facts (JSON):\n${formatContextForPrompt(opts.ctx)}\n\nOwner question:\n${opts.question}`,
@@ -529,31 +541,76 @@ export async function askBusinessAdvisor(
   }
 
   const q = question.trim().slice(0, 800);
+  const ctx = await buildBusinessAdvisorContext(businessId);
+
   if (!q) {
     return {
-      answer:
-        "Ask anything about sales, stock, profit, cash, or how to grow — I’ll answer from your live GetAxe numbers.",
+      answer: setupWelcomeMessage(ctx.setup),
       provider: "heuristic",
-      actions: [{ label: "Dashboard", href: "/dashboard" }],
+      actions: defaultActions(ctx),
       remainingToday: remaining,
     };
   }
 
-  const ctx = await buildBusinessAdvisorContext(businessId);
-  const left = consumeUsage(businessId);
-
-  const llm = await callLlm(q, ctx);
-  if (llm.text) {
+  // Setup intents: tell user to confirm via button (client applies pack) or acknowledge
+  const verticalIntent = parseApplyVerticalIntent(q);
+  if (verticalIntent) {
+    const left = consumeUsage(businessId);
     return {
-      answer: llm.text,
+      answer:
+        `To apply **${verticalIntent}** defaults (business type, capabilities, starter catalogue path), ` +
+        `tap the matching **Apply … defaults** button below, or open Go live and use the vertical pack there. ` +
+        `I won’t change settings until you confirm.`,
+      provider: "heuristic",
+      actions: [
+        { label: `Confirm apply ${verticalIntent}`, href: `/settings/go-live?vertical=${verticalIntent}` },
+        { label: "Go live in 1 day", href: "/settings/go-live" },
+        ...defaultActions(ctx).filter((a) => !a.href.includes("go-live")),
+      ].slice(0, 6),
+      remainingToday: left,
+    };
+  }
+
+  if (
+    /set\s*up|setup|go\s*live|getting\s*started|onboard|readiness|next\s*step/.test(
+      q.toLowerCase(),
+    )
+  ) {
+    const left = consumeUsage(businessId);
+    return {
+      answer: setupWelcomeMessage(ctx.setup),
+      provider: "heuristic",
+      actions: defaultActions(ctx),
+      remainingToday: left,
+    };
+  }
+
+  const left = consumeUsage(businessId);
+  const llm = await callLlm(q, ctx);
+
+  let answer: string;
+  if (llm.text) {
+    answer = llm.text;
+    if (!ctx.setup.isSetupComplete && ctx.setup.next) {
+      answer += `\n\n—\n**Setup:** next up is **${ctx.setup.next.label}** ([open](${ctx.setup.next.href})). Full path: Go live in 1 day.`;
+    }
+    return {
+      answer,
       provider: llm.provider,
       actions: defaultActions(ctx),
       remainingToday: left,
     };
   }
 
-  let answer = heuristicAnswer(q, ctx);
-  if ("hadKey" in llm && llm.hadKey) {
+  answer = heuristicAnswer(q, ctx);
+  if (!ctx.setup.isSetupComplete && ctx.setup.next) {
+    answer =
+      setupWelcomeMessage(ctx.setup) +
+      "\n\n---\n" +
+      answer;
+  }
+
+  if ("error" in llm && llm.error && "hadKey" in llm && llm.hadKey) {
     answer +=
       "\n\n---\nNote: An AI API key is configured, but the model call failed (" +
       (("error" in llm && llm.error) || "unknown") +
@@ -567,3 +624,4 @@ export async function askBusinessAdvisor(
     remainingToday: left,
   };
 }
+
