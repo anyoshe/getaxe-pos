@@ -14,11 +14,24 @@ import {
   ownerBriefActions,
   parseOwnerBriefIntent,
 } from "./owner-brief";
+import {
+  buildRestockPoDraft,
+  formatRestockPoDraftMessage,
+  parseRestockPoIntent,
+  restockPoDraftActions,
+} from "./restock-po-draft";
+
+export type AdvisorReplyAction = {
+  label: string;
+  href?: string;
+  applyVertical?: string;
+  createRestockPo?: boolean;
+};
 
 export type AdvisorReply = {
   answer: string;
   provider: "xai" | "groq" | "heuristic" | "none";
-  actions: { label: string; href: string }[];
+  actions: AdvisorReplyAction[];
   remainingToday: number;
 };
 
@@ -378,6 +391,9 @@ function defaultActions(ctx: BusinessAdvisorContext) {
     add("Go live in 1 day", "/settings/go-live");
     if (ctx.setup.next) add(ctx.setup.next.label, ctx.setup.next.href);
   }
+  if (ctx.lowStockCount > 0) {
+    add("Restock list", "/dashboard/attention?kind=restock");
+  }
 
   for (const iss of issues.slice(0, 4)) {
     if (iss.id === "restock") add("Restock / PO", "/dashboard/attention?kind=restock");
@@ -600,6 +616,21 @@ export async function askBusinessAdvisor(
       answer: buildOwnerBrief(ctx, briefPeriod),
       provider: "heuristic",
       actions: ownerBriefActions(ctx),
+      remainingToday: left,
+    };
+  }
+
+  if (parseRestockPoIntent(q)) {
+    const left = consumeUsage(businessId);
+    const draft = await buildRestockPoDraft(businessId);
+    return {
+      answer: formatRestockPoDraftMessage(draft),
+      provider: "heuristic",
+      actions: restockPoDraftActions(draft).map((a) => ({
+        label: a.label,
+        href: a.href,
+        createRestockPo: a.createRestockPo,
+      })),
       remainingToday: left,
     };
   }

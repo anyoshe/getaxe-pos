@@ -126,3 +126,36 @@ export async function getAdvisorOwnerBriefAction(
     };
   }
 }
+
+/** Phase C: confirm → create DRAFT PO(s) from current restock list. */
+export async function createAdvisorRestockPoAction() {
+  const user = await requireCurrentUser();
+  if (!user.businessId) {
+    return { success: false as const, message: "Business not provisioned." };
+  }
+  try {
+    const { createRestockDraftPurchaseOrders } = await import(
+      "../services/restock-po-draft"
+    );
+    const result = await createRestockDraftPurchaseOrders(user.businessId);
+    if (!result.success) {
+      return { success: false as const, message: result.message };
+    }
+    return {
+      success: true as const,
+      message: result.message,
+      orderNumbers: result.orderNumbers,
+      orderIds: result.orderIds,
+      actions: [
+        { label: "Purchase orders", href: "/purchases/orders" },
+        { label: "Restock list", href: "/dashboard/attention?kind=restock" },
+        { label: "Receiving", href: "/purchases/receiving" },
+      ],
+    };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Could not create PO",
+    };
+  }
+}

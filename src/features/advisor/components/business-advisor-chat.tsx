@@ -11,6 +11,7 @@ import {
   getAdvisorQuotaAction,
   getAdvisorSetupWelcomeAction,
   applyAdvisorVerticalPackAction,
+  createAdvisorRestockPoAction,
 } from "../actions/ask-advisor";
 import type { GoLiveVertical } from "@/features/settings/lib/go-live-day";
 
@@ -297,7 +298,46 @@ export function BusinessAdvisorChat() {
                                 {msg.actions && msg.actions.length > 0 ? (
                   <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-border/60 pt-2">
                     {msg.actions.map((a) =>
-                      a.applyVertical ? (
+                      a.createRestockPo ? (
+                        <button
+                          key={"restock-po-" + a.label}
+                          type="button"
+                          disabled={pending}
+                          className="rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-60"
+                          onClick={() => {
+                            start(async () => {
+                              const res = await createAdvisorRestockPoAction();
+                              if (!res.success) {
+                                setMessages((m) => [
+                                  ...m,
+                                  {
+                                    role: "assistant",
+                                    text:
+                                      res.message ||
+                                      "Could not create purchase order(s).",
+                                  },
+                                ]);
+                                return;
+                              }
+                              setMessages((m) => [
+                                ...m,
+                                {
+                                  role: "user",
+                                  text: "Create draft PO(s) from restock",
+                                },
+                                {
+                                  role: "assistant",
+                                  text: res.message,
+                                  actions: res.actions,
+                                  provider: "heuristic",
+                                },
+                              ]);
+                            });
+                          }}
+                        >
+                          {a.label}
+                        </button>
+                      ) : a.applyVertical ? (
                         <button
                           key={"apply-" + a.applyVertical + a.label}
                           type="button"
