@@ -30,6 +30,7 @@ import {
   type ProductPasteDraftLine,
 } from "./product-paste-draft";
 import { categoryRepository } from "@/repositories/inventory/categories.repository";
+import type { GoLiveVertical } from "@/features/settings/lib/go-live-day";
 import {
   formatHelpAnswer,
   helpActions,
@@ -45,7 +46,7 @@ import {
 export type AdvisorReplyAction = {
   label: string;
   href?: string;
-  applyVertical?: string;
+  applyVertical?: GoLiveVertical;
   createRestockPo?: boolean;
   createProductsFromPaste?: boolean;
   copyWhatsApp?: boolean;
