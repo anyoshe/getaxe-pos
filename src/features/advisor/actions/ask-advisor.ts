@@ -199,12 +199,17 @@ export async function createAdvisorProductsFromPasteAction(input: {
       input.categoryId,
     );
     const result = await createProductsBatchAction(items);
+    const baseMsg = result.message || "";
+    const nudge =
+      result.success
+        ? "\n\n**Next:** post **opening stock** so POS can sell these items (products start at zero quantity)."
+        : "";
     return {
       success: result.success,
-      message: result.message,
+      message: baseMsg + nudge,
       actions: [
+        { label: "Post opening stock", href: "/inventory/stock/receive" },
         { label: "Products", href: "/inventory/products" },
-        { label: "Opening stock", href: "/inventory/stock/receive" },
         { label: "Starter kits", href: "/inventory/starter-kits" },
       ],
     };

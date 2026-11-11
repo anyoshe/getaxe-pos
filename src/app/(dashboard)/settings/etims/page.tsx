@@ -15,6 +15,19 @@ export default async function EtimsSettingsPage() {
           need normal POS receipts. Enable per business when you are ready to
           train (simulation) or prepare for live integration.
         </p>
+        <div className="mt-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm">
+          <span className="font-medium">Current status: </span>
+          {!res.success || !res.settings?.enabled
+            ? "Off — normal POS receipts only"
+            : res.settings.environment === "simulation"
+              ? "On · Simulation (demo CU numbers, not sent to KRA)"
+              : res.settings.environment === "sandbox"
+                ? "On · Sandbox (live KRA test path when Phase B is connected)"
+                : "On · Production (live KRA when Phase B is connected)"}
+          <span className="mt-1 block text-xs text-muted-foreground">
+            POS status strip and sale receipts show the same mode so cashiers and owners stay aligned.
+          </span>
+        </div>
       </div>
       <EtimsSettingsClient
         initial={

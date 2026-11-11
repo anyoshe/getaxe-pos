@@ -222,7 +222,7 @@ export function formatProductPasteDraftMessage(draft: ProductPasteDraft): string
       "Surgical spirit 100ml, 120, 180\n" +
       "```\n\n" +
       "Or: `Name` only · `Name, sell` · `SKU, Name, cost, sell`.\n" +
-      `Default category: **${draft.categoryName ?? "first category"}**. ` +
+      `Default category: **${draft.categoryName ?? "first category"}**. Change categories under Inventory if needed before bulk-create. ` +
       "OCR from photos can come later — text paste works now."
     );
   }

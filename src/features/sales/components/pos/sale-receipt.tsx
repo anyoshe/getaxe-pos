@@ -318,6 +318,11 @@ function ReceiptBody({
         {receipt.etims?.status === "PENDING_LIVE" ? (
           <Row label="eTIMS" value="Pending live KRA (Phase B)" />
         ) : null}
+        {receipt.etims?.message &&
+        receipt.etims.status !== "SIMULATED" &&
+        receipt.etims.status !== "PENDING_LIVE" ? (
+          <Row label="eTIMS" value={String(receipt.etims.message).slice(0, 80)} />
+        ) : null}
         {receipt.customerName ? (
           <Row label="Customer" value={receipt.customerName} />
         ) : null}

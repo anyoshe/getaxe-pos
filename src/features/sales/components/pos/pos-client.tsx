@@ -48,7 +48,8 @@ import {
   SaleReceipt,
   type ReceiptBusiness,
   type ReceiptData,
-} from "./sale-receipt";
+} from "./sale-receipt"
+import { PosStatusStrip } from "./pos-status-strip";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ConnectionStatus } from "@/components/layout/connection-status";
 import { useOffline } from "@/providers/offline-provider";
@@ -170,6 +171,8 @@ interface PosClientProps {
   }>;
   /** off | warn | block — below book cost on a line */
   belowCostSalePolicy?: "off" | "warn" | "block";
+  /** Phase A eTIMS mode label for status strip */
+  etimsStatusLabel?: string | null;
 }
 
 export function PosClient({
@@ -188,10 +191,11 @@ export function PosClient({
   cashierName,
   recentSales = [],
   cashAccounts = [],
+  etimsStatusLabel = null,
   belowCostSalePolicy = "block",
 }: PosClientProps) {
   const router = useRouter();
-  const { online, refreshOutbox } = useOffline();
+  const { online, pendingCount, refreshOutbox, flushOutbox } = useOffline();
 
   // Keep a local catalog snapshot so search still works briefly offline
   useEffect(() => {
@@ -1468,6 +1472,36 @@ export function PosClient({
   return (
     <div className={shell}>
       <div className="brand-stripe h-1.5 w-full shrink-0" />
+
+      <PosStatusStrip
+        online={online}
+        pendingCount={pendingCount}
+        onFlushOutbox={() => {
+          void flushOutbox();
+        }}
+        mpesaLabel={
+          stkBusy
+            ? "Sending STK…"
+            : stkStatus
+              ? stkStatus.slice(0, 48)
+              : paymentMethod === "MPESA" ||
+                  (paymentMethod === "MOBILE_MONEY" && mobileProvider === "MPESA")
+                ? mpesaStkEnabled
+                  ? "Ready"
+                  : "Manual / code"
+                : null
+        }
+        mpesaTone={
+          stkBusy
+            ? "busy"
+            : stkStatus && /fail|error|cancel/i.test(stkStatus)
+              ? "error"
+              : stkStatus && /success|paid|complete/i.test(stkStatus)
+                ? "ok"
+                : "idle"
+        }
+        etimsLabel={etimsStatusLabel}
+      />
 
       <header className="brand-gradient relative z-10 shrink-0 text-primary-foreground shadow-md">
         <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">

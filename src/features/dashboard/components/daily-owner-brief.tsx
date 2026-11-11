@@ -38,7 +38,7 @@ export function DailyOwnerBriefCard({ brief }: { brief: DailyOwnerBrief }) {
               {brief.headline}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Live from your GetAxe books · not a formal audit
+              Live from your GetAxe books · use advisor for WhatsApp brief copy
             </p>
           </div>
         </div>

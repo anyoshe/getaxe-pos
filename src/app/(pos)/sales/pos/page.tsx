@@ -12,6 +12,7 @@ import { businesses } from "@/db/schema/core/businesses";
 import { financeService } from "@/features/finance/services/finance.service";
 import { loadPosSupport } from "@/features/sales/actions/search-pos-products";
 import { getBelowCostPolicyForBusiness } from "@/features/settings/actions/pricing-policy";
+import { getEtimsSettingsRow } from "@/features/finance/services/etims-phase-a.service";
 
 export default async function FullScreenPosPage() {
   const user = await getCurrentUser();
@@ -31,6 +32,14 @@ export default async function FullScreenPosPage() {
   }));
 
   const belowCostSalePolicy = await getBelowCostPolicyForBusiness(user.businessId).catch(() => "block" as const);
+  const etimsRow = await getEtimsSettingsRow(user.businessId).catch(() => null);
+  const etimsStatusLabel = !etimsRow?.enabled
+    ? "off"
+    : etimsRow.environment === "simulation"
+      ? "simulation"
+      : etimsRow.environment === "sandbox"
+        ? "sandbox"
+        : "production";
 
   const businessRow = await db.query.businesses
     .findFirst({ where: eq(businesses.id, user.businessId) })
@@ -160,6 +169,7 @@ export default async function FullScreenPosPage() {
         documentFooter: (businessRow as { documentFooter?: string | null } | null)?.documentFooter ?? null,
       }}
       belowCostSalePolicy={belowCostSalePolicy}
+      etimsStatusLabel={etimsStatusLabel}
       recentSales={sales.map((s) => ({
         id: s.id,
         invoiceNumber: s.invoiceNumber,
