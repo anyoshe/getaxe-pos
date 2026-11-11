@@ -229,8 +229,8 @@ export function BusinessAdvisorChat() {
       {open ? (
         <div
           className={cn(
-            "fixed bottom-24 right-3 z-50 flex w-[min(100vw-1.5rem,26rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl",
-            "border-indigo-500/20 bg-card sm:right-5 max-h-[min(72dvh,34rem)]",
+            "fixed bottom-24 right-3 z-50 flex h-[min(85dvh,42rem)] w-[min(100vw-1.5rem,36rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl",
+            "border-indigo-500/20 bg-card sm:right-5 sm:w-[min(100vw-2.5rem,40rem)]",
           )}
         >
           <div className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 px-4 py-3 text-white">
