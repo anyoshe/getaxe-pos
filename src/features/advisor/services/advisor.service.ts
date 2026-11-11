@@ -28,6 +28,12 @@ import {
   type ProductPasteDraftLine,
 } from "./product-paste-draft";
 import { categoryRepository } from "@/repositories/inventory/categories.repository";
+import {
+  formatHelpAnswer,
+  helpActions,
+  matchHelpTopic,
+  parseHelpIntent,
+} from "./help-map";
 
 export type AdvisorReplyAction = {
   label: string;
@@ -424,6 +430,7 @@ const ADVISOR_SYSTEM = `You are GetAxe Business Advisor for an SME owner in Keny
 The JSON business facts are LIVE figures from this business's GetAxe database. Treat them as accurate operational numbers.
 Write like a sharp business coach, not a report dump: short paragraphs, clear priorities, exact KES figures from the JSON only.
 Never invent amounts. End with 2-4 concrete actions inside GetAxe.
+For how-to questions, only recommend real GetAxe routes. Never invent menu names.
 If the owner asks how to improve or grow, rank the biggest risks (stock-outs, losses, expiry, slow stock, debts) using the data and tell them what to do first.
 Tone: Know, Control, Decide, Grow.
 When asked for a daily/weekly/owner brief, summarise live sales, profit, cash, stock risk, AR/AP and one clear next action using only JSON figures.
@@ -677,6 +684,39 @@ export async function askBusinessAdvisor(
         productDraftCategoryId: categoryId ?? undefined,
       };
     }
+  }
+
+  // Phase E — how-do-I / help (real routes only)
+  if (parseHelpIntent(q)) {
+    const left = consumeUsage(businessId);
+    const topic = matchHelpTopic(q);
+    if (
+      topic?.id === "go-live" ||
+      (!topic &&
+        /set\s*up|setup|go\s*live|getting\s*started|onboard|readiness|next\s*step/.test(
+          q.toLowerCase(),
+        ))
+    ) {
+      return {
+        answer:
+          setupWelcomeMessage(ctx.setup) +
+          (topic ? "\n\n---\n" + formatHelpAnswer(topic, q) : ""),
+        provider: "heuristic",
+        actions: [
+          ...defaultActions(ctx),
+          ...helpActions(topic).filter(
+            (a) => !defaultActions(ctx).some((d) => d.href === a.href),
+          ),
+        ].slice(0, 6),
+        remainingToday: left,
+      };
+    }
+    return {
+      answer: formatHelpAnswer(topic, q),
+      provider: "heuristic",
+      actions: helpActions(topic),
+      remainingToday: left,
+    };
   }
 
   if (

@@ -44,8 +44,8 @@ const SUGGESTIONS = [
   "Daily brief",
   "Draft PO from restock",
   "Paste products",
-  "Help me finish setup",
-  "What should I restock?",
+  "How do I add a product?",
+  "How do I make a sale?",
   "What needs my attention?",
 ];
 
