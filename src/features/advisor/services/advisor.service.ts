@@ -34,6 +34,11 @@ import {
   matchHelpTopic,
   parseHelpIntent,
 } from "./help-map";
+import {
+  buildPriceMarginExplanation,
+  parsePriceMarginIntent,
+  priceMarginActions,
+} from "./price-margin-explain";
 
 export type AdvisorReplyAction = {
   label: string;
@@ -686,7 +691,20 @@ export async function askBusinessAdvisor(
     }
   }
 
+  // Phase F — price & margin explanations
+  if (parsePriceMarginIntent(q)) {
+    const left = consumeUsage(businessId);
+    const answer = await buildPriceMarginExplanation(businessId, q, ctx);
+    return {
+      answer,
+      provider: "heuristic",
+      actions: priceMarginActions(ctx),
+      remainingToday: left,
+    };
+  }
+
   // Phase E — how-do-I / help (real routes only)
+
   if (parseHelpIntent(q)) {
     const left = consumeUsage(businessId);
     const topic = matchHelpTopic(q);

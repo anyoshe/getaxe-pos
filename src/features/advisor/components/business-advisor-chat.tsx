@@ -42,11 +42,11 @@ type Msg = {
 
 const SUGGESTIONS = [
   "Daily brief",
-  "Draft PO from restock",
-  "Paste products",
+  "Explain my margins",
+  "What is making profit?",
+  "Any products at a loss?",
   "How do I add a product?",
-  "How do I make a sale?",
-  "What needs my attention?",
+  "Draft PO from restock",
 ];
 
 /** Inline **bold** and plain text */
