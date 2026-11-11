@@ -11,8 +11,10 @@ import {
 } from "./setup-coach";
 import {
   buildOwnerBrief,
+  buildOwnerBriefWhatsApp,
   ownerBriefActions,
   parseOwnerBriefIntent,
+  parseWhatsAppBriefIntent,
 } from "./owner-brief";
 import {
   buildRestockPoDraft,
@@ -46,6 +48,7 @@ export type AdvisorReplyAction = {
   applyVertical?: string;
   createRestockPo?: boolean;
   createProductsFromPaste?: boolean;
+  copyWhatsApp?: boolean;
 };
 
 export type AdvisorReply = {
@@ -56,6 +59,8 @@ export type AdvisorReply = {
   /** Phase D: draft lines for client confirm → bulk create */
   productDraft?: ProductPasteDraftLine[];
   productDraftCategoryId?: string;
+  /** Phase G: plain text for WhatsApp share */
+  whatsappText?: string;
 };
 
 /** Soft free tier: later raise or bill when clients buy more messages. */
@@ -604,6 +609,7 @@ export async function askBusinessAdvisor(
         provider: "heuristic",
         actions: ownerBriefActions(ctx),
         remainingToday: remaining,
+        whatsappText: buildOwnerBriefWhatsApp(ctx, "daily"),
       };
     }
     return {
@@ -633,6 +639,21 @@ export async function askBusinessAdvisor(
     };
   }
 
+  const waBriefPeriod = parseWhatsAppBriefIntent(q);
+  if (waBriefPeriod) {
+    const left = consumeUsage(businessId);
+    const wa = buildOwnerBriefWhatsApp(ctx, waBriefPeriod);
+    return {
+      answer:
+        "**WhatsApp-ready brief** — tap **Copy for WhatsApp**, then paste into any chat.\n\n" +
+        buildOwnerBrief(ctx, waBriefPeriod),
+      provider: "heuristic",
+      actions: ownerBriefActions(ctx),
+      remainingToday: left,
+      whatsappText: wa,
+    };
+  }
+
   const briefPeriod = parseOwnerBriefIntent(q);
   if (briefPeriod) {
     const left = consumeUsage(businessId);
@@ -641,6 +662,7 @@ export async function askBusinessAdvisor(
       provider: "heuristic",
       actions: ownerBriefActions(ctx),
       remainingToday: left,
+      whatsappText: buildOwnerBriefWhatsApp(ctx, briefPeriod),
     };
   }
 

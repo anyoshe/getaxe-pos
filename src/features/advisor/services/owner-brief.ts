@@ -168,21 +168,26 @@ export function buildOwnerBrief(
   lines.push("- Open POS if you still need today’s first (or next) sale");
 
   lines.push("");
-  lines.push(
-    "_WhatsApp delivery of this brief can be added later — same text, different channel._",
-  );
+  lines.push("_Tip: ask for “WhatsApp brief” or use **Copy for WhatsApp** to share._");
 
   return lines.join("\n");
 }
 
 export function ownerBriefActions(ctx: BusinessAdvisorContext): {
   label: string;
-  href: string;
+  href?: string;
+  copyWhatsApp?: boolean;
 }[] {
-  const actions: { label: string; href: string }[] = [];
+  const actions: {
+    label: string;
+    href?: string;
+    copyWhatsApp?: boolean;
+  }[] = [];
   const add = (label: string, href: string) => {
     if (!actions.some((a) => a.href === href)) actions.push({ label, href });
   };
+
+  actions.push({ label: "Copy for WhatsApp", copyWhatsApp: true });
 
   if (!ctx.setup.isSetupComplete) {
     add("Go live in 1 day", "/settings/go-live");
@@ -197,5 +202,47 @@ export function ownerBriefActions(ctx: BusinessAdvisorContext): {
   }
   add("Dashboard", "/dashboard");
   add("Open POS", "/sales/pos");
-  return actions.slice(0, 6);
+  return actions.slice(0, 7);
+}
+
+/** Phase G — plain text suitable for WhatsApp (no markdown). */
+export function toWhatsAppPlainText(markdownish: string): string {
+  return markdownish
+    .replace(/\*\*([^*]+)\*\*/g, "*$1*") // WhatsApp bold uses single *
+    .replace(/^_+/gm, "")
+    .replace(/_+$/gm, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export function buildOwnerBriefWhatsApp(
+  ctx: BusinessAdvisorContext,
+  period: OwnerBriefPeriod,
+): string {
+  const body = buildOwnerBrief(ctx, period)
+    // drop the "WhatsApp later" footer from Phase B
+    .replace(/\n*_?WhatsApp delivery[\s\S]*$/i, "")
+    .trim();
+  const header =
+    period === "weekly"
+      ? "GetAxe weekly brief"
+      : "GetAxe daily brief";
+  return toWhatsAppPlainText(`${header}\n\n${body}\n\n— via GetAxe`);
+}
+
+export function parseWhatsAppBriefIntent(
+  question: string,
+): OwnerBriefPeriod | null {
+  const q = question.toLowerCase().trim();
+  if (
+    !/whats?app|share\s+brief|copy\s+brief|send\s+(me\s+)?(the\s+)?brief|brief\s+for\s+(wa|whats?app)/.test(
+      q,
+    )
+  ) {
+    return null;
+  }
+  if (/week/.test(q)) return "weekly";
+  return "daily";
 }

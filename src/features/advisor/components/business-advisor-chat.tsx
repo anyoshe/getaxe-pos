@@ -22,6 +22,7 @@ type MsgAction = {
   applyVertical?: GoLiveVertical;
   createRestockPo?: boolean;
   createProductsFromPaste?: boolean;
+  copyWhatsApp?: boolean;
 };
 
 type ProductDraftLine = {
@@ -42,11 +43,11 @@ type Msg = {
 
 const SUGGESTIONS = [
   "Daily brief",
+  "WhatsApp brief",
   "Explain my margins",
-  "What is making profit?",
-  "Any products at a loss?",
-  "How do I add a product?",
   "Draft PO from restock",
+  "How do I add a product?",
+  "Paste products",
 ];
 
 /** Inline **bold** and plain text */
@@ -194,6 +195,8 @@ export function BusinessAdvisorChat() {
     categoryId: string;
     lines: ProductDraftLine[];
   } | null>(null);
+  const [lastWhatsAppText, setLastWhatsAppText] = useState<string | null>(null);
+  const [copyDone, setCopyDone] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [pending, start] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -241,6 +244,10 @@ export function BusinessAdvisorChat() {
         return;
       }
       setRemaining(res.data.remainingToday);
+      if (res.data.whatsappText) {
+        setLastWhatsAppText(res.data.whatsappText);
+        setCopyDone(false);
+      }
       if (
         res.data.productDraft?.length &&
         res.data.productDraftCategoryId
@@ -329,7 +336,44 @@ export function BusinessAdvisorChat() {
                                 {msg.actions && msg.actions.length > 0 ? (
                   <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-border/60 pt-2">
                     {msg.actions.map((a) =>
-                      a.createProductsFromPaste ? (
+                      a.copyWhatsApp ? (
+                        <button
+                          key={"wa-copy-" + a.label}
+                          type="button"
+                          disabled={!lastWhatsAppText}
+                          className="rounded-full bg-gradient-to-r from-green-600 to-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-60"
+                          onClick={() => {
+                            const text = lastWhatsAppText;
+                            if (!text) return;
+                            void navigator.clipboard.writeText(text).then(
+                              () => {
+                                setCopyDone(true);
+                                setMessages((m) => [
+                                  ...m,
+                                  {
+                                    role: "assistant",
+                                    text: "WhatsApp brief **copied**. Open WhatsApp and paste to your owner group or yourself.",
+                                    provider: "heuristic",
+                                  },
+                                ]);
+                              },
+                              () => {
+                                setMessages((m) => [
+                                  ...m,
+                                  {
+                                    role: "assistant",
+                                    text:
+                                      "Could not copy automatically. Select and copy this text:\n\n" +
+                                      text,
+                                  },
+                                ]);
+                              },
+                            );
+                          }}
+                        >
+                          {copyDone ? "Copied ✓" : a.label}
+                        </button>
+                      ) : a.createProductsFromPaste ? (
                         <button
                           key={"paste-products-" + a.label}
                           type="button"
