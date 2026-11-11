@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { MessageCircle, X, Send, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Sparkles, ImagePlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import {
   applyAdvisorVerticalPackAction,
   createAdvisorRestockPoAction,
   createAdvisorProductsFromPasteAction,
+  extractAdvisorProductsFromImageAction,
 } from "../actions/ask-advisor";
 import type { GoLiveVertical } from "@/features/settings/lib/go-live-day";
 
@@ -200,6 +201,7 @@ export function BusinessAdvisorChat() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [pending, start] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -226,7 +228,80 @@ export function BusinessAdvisorChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
+  function handleProductImage(file: File | null) {
+    if (!file || pending) return;
+    if (!file.type.startsWith("image/")) {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: "Please choose an image (photo of a list, invoice, or labels).",
+        },
+      ]);
+      return;
+    }
+    if (file.size > 4_000_000) {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: "Image is larger than 4MB. Take a closer crop or compress and try again.",
+        },
+      ]);
+      return;
+    }
+    setMessages((m) => [
+      ...m,
+      {
+        role: "user",
+        text: `📷 Product list photo (${file.name || "image"})`,
+      },
+    ]);
+    start(async () => {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Could not read image"));
+        reader.readAsDataURL(file);
+      }).catch(() => "");
+      if (!dataUrl) {
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", text: "Could not read that image file." },
+        ]);
+        return;
+      }
+      const res = await extractAdvisorProductsFromImageAction({ dataUrl });
+      if (!res.success) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            text: res.message || "Could not extract products from the photo.",
+          },
+        ]);
+        return;
+      }
+      if (res.productDraft?.length && res.productDraftCategoryId) {
+        setPendingProductDraft({
+          categoryId: res.productDraftCategoryId,
+          lines: res.productDraft,
+        });
+      }
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: res.message,
+          actions: res.actions,
+          provider: "heuristic",
+        },
+      ]);
+    });
+  }
+
   function send(q: string) {
+
     const question = q.trim();
     if (!question || pending) return;
     setInput("");
@@ -551,21 +626,37 @@ export function BusinessAdvisorChat() {
               }}
             >
               <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  e.target.value = "";
+                  handleProductImage(f);
+                }}
+              />
+              <button
+                type="button"
+                disabled={pending}
+                title="Photo of product list"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-500/25 text-indigo-600 hover:bg-indigo-500/10 disabled:opacity-50"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImagePlus className="h-4 w-4" />
+              </button>
+              <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask your advisor…"
+                placeholder="Ask… or attach a product list photo"
                 className="min-w-0 flex-1 rounded-xl border border-indigo-500/20 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30"
-                disabled={pending}
               />
-              <Button
-                type="submit"
-                size="icon"
-                className="shrink-0 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white hover:opacity-95"
-                disabled={pending || !input.trim()}
-              >
+              <Button type="submit" size="icon" disabled={pending || !input.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
             </form>
+
           </div>
         </div>
       ) : null}

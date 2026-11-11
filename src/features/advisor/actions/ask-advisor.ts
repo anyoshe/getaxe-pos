@@ -215,3 +215,47 @@ export async function createAdvisorProductsFromPasteAction(input: {
     };
   }
 }
+
+/** Phase H: photo → OCR → product draft (same create path as paste). */
+export async function extractAdvisorProductsFromImageAction(input: {
+  dataUrl: string;
+}) {
+  const user = await requireCurrentUser();
+  if (!user.businessId) {
+    return { success: false as const, message: "Business not provisioned." };
+  }
+  if (!input?.dataUrl || input.dataUrl.length < 32) {
+    return { success: false as const, message: "No image received." };
+  }
+  try {
+    const { extractProductDraftFromImage } = await import(
+      "../services/product-ocr"
+    );
+    const result = await extractProductDraftFromImage({
+      businessId: user.businessId,
+      dataUrl: input.dataUrl,
+    });
+    if (!result.success || !result.draft) {
+      return {
+        success: false as const,
+        message: result.message,
+        rawText: result.rawText,
+      };
+    }
+    return {
+      success: true as const,
+      message: result.message,
+      productDraft: result.draft.lines,
+      productDraftCategoryId: result.draft.categoryId ?? undefined,
+      actions: (
+        await import("../services/product-ocr")
+      ).productOcrActions(result.draft),
+      rawText: result.rawText,
+    };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "OCR failed",
+    };
+  }
+}
