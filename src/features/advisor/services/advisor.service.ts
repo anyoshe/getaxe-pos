@@ -20,12 +20,21 @@ import {
   parseRestockPoIntent,
   restockPoDraftActions,
 } from "./restock-po-draft";
+import {
+  formatProductPasteDraftMessage,
+  parseProductPasteIntent,
+  parseProductPasteText,
+  productPasteDraftActions,
+  type ProductPasteDraftLine,
+} from "./product-paste-draft";
+import { categoryRepository } from "@/repositories/inventory/categories.repository";
 
 export type AdvisorReplyAction = {
   label: string;
   href?: string;
   applyVertical?: string;
   createRestockPo?: boolean;
+  createProductsFromPaste?: boolean;
 };
 
 export type AdvisorReply = {
@@ -33,6 +42,9 @@ export type AdvisorReply = {
   provider: "xai" | "groq" | "heuristic" | "none";
   actions: AdvisorReplyAction[];
   remainingToday: number;
+  /** Phase D: draft lines for client confirm → bulk create */
+  productDraft?: ProductPasteDraftLine[];
+  productDraftCategoryId?: string;
 };
 
 /** Soft free tier: later raise or bill when clients buy more messages. */
@@ -633,6 +645,38 @@ export async function askBusinessAdvisor(
       })),
       remainingToday: left,
     };
+  }
+
+  {
+    const pasteBody = parseProductPasteIntent(q);
+    if (pasteBody !== null) {
+      const left = consumeUsage(businessId);
+      const cats = await categoryRepository.findAll(businessId).catch(() => []);
+      const categoryId = cats[0]?.id ?? null;
+      const categoryName = cats[0]?.name ?? null;
+      const parsed =
+        pasteBody.trim().length > 0
+          ? parseProductPasteText(pasteBody)
+          : { lines: [] as ProductPasteDraftLine[], skipped: [] as string[] };
+      const draft = {
+        lines: parsed.lines,
+        skipped: parsed.skipped,
+        categoryId,
+        categoryName,
+      };
+      return {
+        answer: formatProductPasteDraftMessage(draft),
+        provider: "heuristic",
+        actions: productPasteDraftActions(draft).map((a) => ({
+          label: a.label,
+          href: a.href,
+          createProductsFromPaste: a.createProductsFromPaste,
+        })),
+        remainingToday: left,
+        productDraft: draft.lines.length ? draft.lines : undefined,
+        productDraftCategoryId: categoryId ?? undefined,
+      };
+    }
   }
 
   if (

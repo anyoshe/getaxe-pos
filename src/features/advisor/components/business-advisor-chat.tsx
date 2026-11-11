@@ -12,22 +12,40 @@ import {
   getAdvisorSetupWelcomeAction,
   applyAdvisorVerticalPackAction,
   createAdvisorRestockPoAction,
+  createAdvisorProductsFromPasteAction,
 } from "../actions/ask-advisor";
 import type { GoLiveVertical } from "@/features/settings/lib/go-live-day";
+
+type MsgAction = {
+  label: string;
+  href?: string;
+  applyVertical?: GoLiveVertical;
+  createRestockPo?: boolean;
+  createProductsFromPaste?: boolean;
+};
+
+type ProductDraftLine = {
+  name: string;
+  sku?: string | null;
+  barcode?: string | null;
+  costPrice?: number | null;
+  sellingPrice?: number | null;
+  productType?: string;
+};
 
 type Msg = {
   role: "user" | "assistant";
   text: string;
-  actions?: { label: string; href: string }[];
+  actions?: MsgAction[];
   provider?: string;
 };
 
 const SUGGESTIONS = [
   "Daily brief",
+  "Draft PO from restock",
+  "Paste products",
+  "Help me finish setup",
   "What should I restock?",
-  "What is making profit?",
-  "Weekly brief",
-  "Where is my money tied up?",
   "What needs my attention?",
 ];
 
@@ -172,6 +190,10 @@ export function BusinessAdvisorChat() {
     },
   ]);
   const [welcomeLoaded, setWelcomeLoaded] = useState(false);
+  const [pendingProductDraft, setPendingProductDraft] = useState<{
+    categoryId: string;
+    lines: ProductDraftLine[];
+  } | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [pending, start] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -219,6 +241,15 @@ export function BusinessAdvisorChat() {
         return;
       }
       setRemaining(res.data.remainingToday);
+      if (
+        res.data.productDraft?.length &&
+        res.data.productDraftCategoryId
+      ) {
+        setPendingProductDraft({
+          categoryId: res.data.productDraftCategoryId,
+          lines: res.data.productDraft,
+        });
+      }
       setMessages((m) => [
         ...m,
         {
@@ -298,7 +329,52 @@ export function BusinessAdvisorChat() {
                                 {msg.actions && msg.actions.length > 0 ? (
                   <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-border/60 pt-2">
                     {msg.actions.map((a) =>
-                      a.createRestockPo ? (
+                      a.createProductsFromPaste ? (
+                        <button
+                          key={"paste-products-" + a.label}
+                          type="button"
+                          disabled={pending || !pendingProductDraft?.lines?.length}
+                          className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-60"
+                          onClick={() => {
+                            const draft = pendingProductDraft;
+                            if (!draft?.lines?.length) return;
+                            start(async () => {
+                              const res = await createAdvisorProductsFromPasteAction({
+                                categoryId: draft.categoryId,
+                                lines: draft.lines,
+                              });
+                              if (!res.success) {
+                                setMessages((m) => [
+                                  ...m,
+                                  {
+                                    role: "assistant",
+                                    text:
+                                      res.message ||
+                                      "Could not create products.",
+                                  },
+                                ]);
+                                return;
+                              }
+                              setPendingProductDraft(null);
+                              setMessages((m) => [
+                                ...m,
+                                {
+                                  role: "user",
+                                  text: "Create these products",
+                                },
+                                {
+                                  role: "assistant",
+                                  text: res.message,
+                                  actions: res.actions,
+                                  provider: "heuristic",
+                                },
+                              ]);
+                            });
+                          }}
+                        >
+                          {a.label}
+                        </button>
+                      ) : a.createRestockPo ? (
                         <button
                           key={"restock-po-" + a.label}
                           type="button"

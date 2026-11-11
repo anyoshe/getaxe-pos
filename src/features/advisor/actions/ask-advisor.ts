@@ -159,3 +159,59 @@ export async function createAdvisorRestockPoAction() {
     };
   }
 }
+
+/** Phase D: confirm paste draft → bulk product create. */
+export async function createAdvisorProductsFromPasteAction(input: {
+  categoryId: string;
+  lines: Array<{
+    name: string;
+    sku?: string | null;
+    barcode?: string | null;
+    costPrice?: number | null;
+    sellingPrice?: number | null;
+    productType?: string;
+  }>;
+}) {
+  const user = await requireCurrentUser();
+  if (!user.businessId) {
+    return { success: false as const, message: "Business not provisioned." };
+  }
+  if (!input?.categoryId || !Array.isArray(input.lines) || input.lines.length === 0) {
+    return {
+      success: false as const,
+      message: "Nothing to create — paste a product list first.",
+    };
+  }
+  try {
+    const { toBatchCreateItems } = await import("../services/product-paste-draft");
+    const { createProductsBatchAction } = await import(
+      "@/features/inventory/actions/create-products-batch"
+    );
+    const items = toBatchCreateItems(
+      input.lines.map((l) => ({
+        name: l.name,
+        sku: l.sku ?? null,
+        barcode: l.barcode ?? null,
+        costPrice: l.costPrice ?? null,
+        sellingPrice: l.sellingPrice ?? null,
+        productType: (l.productType as "physical") || "physical",
+      })),
+      input.categoryId,
+    );
+    const result = await createProductsBatchAction(items);
+    return {
+      success: result.success,
+      message: result.message,
+      actions: [
+        { label: "Products", href: "/inventory/products" },
+        { label: "Opening stock", href: "/inventory/stock/receive" },
+        { label: "Starter kits", href: "/inventory/starter-kits" },
+      ],
+    };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Could not create products",
+    };
+  }
+}
