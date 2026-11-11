@@ -104,3 +104,25 @@ export async function applyAdvisorVerticalPackAction(
       : [{ label: "Go live in 1 day", href: "/settings/go-live" }],
   };
 }
+
+/** Phase B: daily or weekly owner brief (consumes one advisor message). */
+export async function getAdvisorOwnerBriefAction(
+  period: "daily" | "weekly" = "daily",
+) {
+  const user = await requireCurrentUser();
+  if (!user.businessId) {
+    return { success: false as const, message: "Business not provisioned." };
+  }
+  try {
+    const reply = await askBusinessAdvisor(
+      user.businessId,
+      period === "weekly" ? "weekly brief" : "daily brief",
+    );
+    return { success: true as const, data: reply };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Brief failed",
+    };
+  }
+}

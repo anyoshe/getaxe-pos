@@ -59,8 +59,8 @@ export function setupWelcomeMessage(s: SetupCoachSnapshot): string {
   if (s.isSetupComplete) {
     return (
       `**${name}** looks set up for day-to-day use ` +
-      `(readiness ~${s.score}%). Ask about sales, stock, cash, or margins — ` +
-      `or say **go live** anytime to review the checklist.`
+      `(readiness ~${s.score}%). Ask for a **daily brief** or **weekly brief**, ` +
+      `or about sales, stock, cash, and margins. Say **go live** anytime to review the checklist.`
     );
   }
 
@@ -129,6 +129,7 @@ export function setupWelcomeActions(s: SetupCoachSnapshot): {
   } else {
     actions.push({ label: "Dashboard", href: "/dashboard" });
     actions.push({ label: "Open POS", href: "/sales/pos" });
+    // Phase B: briefs are requested via chat text ("Daily brief") — keep links operational
   }
 
   return actions;

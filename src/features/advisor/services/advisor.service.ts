@@ -9,6 +9,11 @@ import {
   setupWelcomeActions,
   setupWelcomeMessage,
 } from "./setup-coach";
+import {
+  buildOwnerBrief,
+  ownerBriefActions,
+  parseOwnerBriefIntent,
+} from "./owner-brief";
 
 export type AdvisorReply = {
   answer: string;
@@ -369,6 +374,11 @@ function defaultActions(ctx: BusinessAdvisorContext) {
     if (!actions.some((a) => a.href === href)) actions.push({ label, href });
   };
 
+  if (!ctx.setup.isSetupComplete) {
+    add("Go live in 1 day", "/settings/go-live");
+    if (ctx.setup.next) add(ctx.setup.next.label, ctx.setup.next.href);
+  }
+
   for (const iss of issues.slice(0, 4)) {
     if (iss.id === "restock") add("Restock / PO", "/dashboard/attention?kind=restock");
     if (iss.id === "loss") add("Loss products", "/dashboard/profit?view=loss");
@@ -388,6 +398,7 @@ Write like a sharp business coach, not a report dump: short paragraphs, clear pr
 Never invent amounts. End with 2-4 concrete actions inside GetAxe.
 If the owner asks how to improve or grow, rank the biggest risks (stock-outs, losses, expiry, slow stock, debts) using the data and tell them what to do first.
 Tone: Know, Control, Decide, Grow.
+When asked for a daily/weekly/owner brief, summarise live sales, profit, cash, stock risk, AR/AP and one clear next action using only JSON figures.
 
 When business facts include setup.isSetupComplete=false, prioritise finishing setup: state the next incomplete check, link to /settings/go-live, and only then operational KPIs.
 Vertical packs (pharmacy/hardware/agrovet/spares/general) are applied by the product after the owner confirms — explain what a pack does; do not claim you already changed data unless the user message says the pack was applied.
@@ -547,6 +558,14 @@ export async function askBusinessAdvisor(
   const ctx = await buildBusinessAdvisorContext(businessId);
 
   if (!q) {
+    if (ctx.setup.isSetupComplete) {
+      return {
+        answer: buildOwnerBrief(ctx, "daily"),
+        provider: "heuristic",
+        actions: ownerBriefActions(ctx),
+        remainingToday: remaining,
+      };
+    }
     return {
       answer: setupWelcomeMessage(ctx.setup),
       provider: "heuristic",
@@ -570,6 +589,17 @@ export async function askBusinessAdvisor(
         { label: "Go live in 1 day", href: "/settings/go-live" },
         ...defaultActions(ctx).filter((a) => !a.href.includes("go-live")),
       ].slice(0, 6),
+      remainingToday: left,
+    };
+  }
+
+  const briefPeriod = parseOwnerBriefIntent(q);
+  if (briefPeriod) {
+    const left = consumeUsage(businessId);
+    return {
+      answer: buildOwnerBrief(ctx, briefPeriod),
+      provider: "heuristic",
+      actions: ownerBriefActions(ctx),
       remainingToday: left,
     };
   }

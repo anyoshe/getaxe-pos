@@ -22,10 +22,10 @@ type Msg = {
 };
 
 const SUGGESTIONS = [
-  "How is my business doing?",
+  "Daily brief",
   "What should I restock?",
   "What is making profit?",
-  "Any products at a loss?",
+  "Weekly brief",
   "Where is my money tied up?",
   "What needs my attention?",
 ];
