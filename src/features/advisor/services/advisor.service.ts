@@ -410,9 +410,12 @@ async function openaiCompatibleChat(opts: {
     temperature: 0.4,
     max_tokens: 900,
     messages: [
-      { role: "system", content: ADVISOR_SYSTEM + "
+      {
+        role: "system",
+        content: `${ADVISOR_SYSTEM}
 
-" + setupAwareSystemAddendum(opts.ctx.setup) },
+${setupAwareSystemAddendum(opts.ctx.setup)}`,
+      },
       {
         role: "user",
         content: `Business facts (JSON):\n${formatContextForPrompt(opts.ctx)}\n\nOwner question:\n${opts.question}`,
