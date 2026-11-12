@@ -20,9 +20,23 @@ import { assertValidFactor } from "@/features/inventory/services/unit-conversion
 import { seedPharmacyCataloguesForBusiness } from "./seed-pharmacy-catalogues.service";
 import {
   DEFAULT_PHARMACY_STARTER_PRODUCTS,
-  getPharmacyStarterByCodes,
   type PharmacyStarterProduct,
 } from "../constants/default-starter-products";
+import {
+  PROGRAMME_TB_HIV_STARTERS,
+  getProgrammeTbHivByCodes,
+} from "../constants/pharmacy-programme-tb-hiv";
+
+const ALL_STARTER_LOOKUP: PharmacyStarterProduct[] = [
+  ...DEFAULT_PHARMACY_STARTER_PRODUCTS,
+  ...PROGRAMME_TB_HIV_STARTERS,
+];
+
+function resolveStarterTemplates(codes: string[]): PharmacyStarterProduct[] {
+  if (!codes.length) return [];
+  const set = new Set(codes.map((c) => c.trim().toUpperCase()));
+  return ALL_STARTER_LOOKUP.filter((p) => set.has(p.code.toUpperCase()));
+}
 
 function strengthCode(label: string): string {
   return label.replace(/\s+/g, "").toUpperCase();
@@ -200,7 +214,7 @@ export async function addPharmacyStarterProductsForBusiness(
   const selected =
     codes.length === 0
       ? DEFAULT_PHARMACY_STARTER_PRODUCTS
-      : getPharmacyStarterByCodes(codes);
+      : resolveStarterTemplates(codes);
 
   const defaultList = await priceListRepository.findDefault(businessId);
   const results: Array<{
@@ -319,6 +333,8 @@ export async function addPharmacyStarterProductsForBusiness(
         trackBatch: !consumable,
         trackExpiry: !consumable,
         serialized: false,
+        isControlled: Boolean(tpl.isControlled),
+        supplyChannel: tpl.supplyChannel ?? "private",
         allowNegativeStock: false,
         minimumStock: tpl.minimumStock ?? 0,
         reorderLevel: tpl.reorderLevel ?? 0,
@@ -415,4 +431,23 @@ export async function addPharmacyStarterProductsForBusiness(
   }
 
   return { created, skipped, failed, results };
+}
+
+/** Opt-in TB/HIV programme templates (not in default retail starters). */
+export function listProgrammeTbHivTemplates(): PharmacyStarterProduct[] {
+  return PROGRAMME_TB_HIV_STARTERS;
+}
+
+export async function addProgrammeTbHivProductsForBusiness(
+  businessId: string,
+  codes: string[],
+) {
+  const selected =
+    codes.length > 0
+      ? getProgrammeTbHivByCodes(codes)
+      : PROGRAMME_TB_HIV_STARTERS;
+  return addPharmacyStarterProductsForBusiness(
+    businessId,
+    selected.map((p) => p.code),
+  );
 }

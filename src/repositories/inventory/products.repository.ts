@@ -89,6 +89,8 @@ export class ProductRepository extends BaseRepository {
     const conditions = [
       eq(products.businessId, businessId),
       eq(products.active, true),
+      // Programme-only stock must not appear on open POS retail search
+      sql`coalesce(${products.supplyChannel}, 'private') <> 'programme'`,
     ];
     if (search) {
       const pattern = `%${search.replace(/[%_]/g, "")}%`;
@@ -118,6 +120,7 @@ export class ProductRepository extends BaseRepository {
         trackExpiry: true,
         serialized: true,
         isControlled: true,
+        supplyChannel: true,
         salesUnitId: true,
         stockUnitId: true,
         purchaseUnitId: true,

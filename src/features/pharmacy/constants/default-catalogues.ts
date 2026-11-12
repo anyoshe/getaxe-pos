@@ -40,6 +40,8 @@ export const DEFAULT_DRUG_CATEGORIES: { code: string; name: string }[] = [
   { code: "ANTIBIOTIC", name: "Antibiotic" },
   { code: "ANTIFUNGAL", name: "Antifungal" },
   { code: "ANTIVIRAL", name: "Antiviral" },
+  { code: "ANTITUBERCULAR", name: "Antitubercular (TB)" },
+  { code: "ANTIRETROVIRAL", name: "Antiretroviral (HIV)" },
   { code: "ANTIMALARIAL", name: "Antimalarial" },
   { code: "ANTIPARASITIC", name: "Antiparasitic" },
   { code: "ANTHELMINTIC", name: "Anthelmintic / Dewormer" },

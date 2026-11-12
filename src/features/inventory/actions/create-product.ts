@@ -167,6 +167,9 @@ export async function createProductAction(
       isControlled:
         formData.get("isControlled") === "true",
 
+      supplyChannel:
+        (formData.get("supplyChannel") as string) || "private",
+
       allowNegativeStock:
         formData.get("allowNegativeStock") === "true",
 

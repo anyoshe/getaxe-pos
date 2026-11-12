@@ -60,6 +60,11 @@ export const createProductSchema = z.object({
   trackBatch: z.boolean(),
   trackExpiry: z.boolean(),
   serialized: z.boolean(),
+  isControlled: z.boolean().optional().default(false),
+  supplyChannel: z
+    .enum(["private", "programme", "both"])
+    .optional()
+    .default("private"),
   allowNegativeStock: z.boolean(),
 
   minimumStock: z.coerce.number().int().default(0),

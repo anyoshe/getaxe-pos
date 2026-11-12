@@ -79,6 +79,7 @@ export type PosProduct = {
   trackInventory: boolean;
   serialized: boolean;
   isControlled?: boolean;
+  supplyChannel?: string;
   trackBatch?: boolean;
   trackExpiry?: boolean;
   unitPrice: number;
@@ -266,6 +267,7 @@ export function PosClient({
               trackExpiry: raw.trackExpiry,
               serialized: raw.serialized,
               isControlled: raw.isControlled,
+              supplyChannel: (raw as { supplyChannel?: string }).supplyChannel ?? "private",
               costPrice: raw.costPrice,
               retailPrice: Number(raw.retailPrice ?? 0),
               wholesalePrice: Number(raw.wholesalePrice ?? 0),
@@ -1067,8 +1069,14 @@ export function PosClient({
       }
       for (const line of cart) {
         const prod = sellable.find((x) => x.id === line.productId) as
-          | { isControlled?: boolean }
+          | { isControlled?: boolean; supplyChannel?: string }
           | undefined;
+        if (prod?.supplyChannel === "programme") {
+          toast.error(
+            `${line.name} is programme stock (TB/HIV) — not sold on open POS. Use pharmacy dispensation.`,
+          );
+          return;
+        }
         if (prod?.isControlled && !customerId && !customerPhone.trim()) {
           toast.error(
             `${line.name} is controlled — record customer name/phone or select a customer for the register.`,

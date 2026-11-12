@@ -150,6 +150,15 @@ export const products = pgTable(
       .default(false)
       .notNull(),
 
+    /**
+     * private = normal retail/POS
+     * programme = TB/HIV (etc.) programme stock — not for open POS sale
+     * both = may appear on POS but still programme-audited
+     */
+    supplyChannel: text("supply_channel")
+      .default("private")
+      .notNull(),
+
     allowNegativeStock: boolean("allow_negative_stock")
       .default(false)
       .notNull(),

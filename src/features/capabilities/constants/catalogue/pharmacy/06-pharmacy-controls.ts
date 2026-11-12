@@ -176,4 +176,48 @@ export const PHARMACY_CONTROL_CAPABILITIES: CapabilityDefinition[] = [
       "pharmacy.reports",
     ],
   },
+
+  {
+    id: "pharmacy.programme-medicines",
+    code: "PROGRAMME_MEDICINES",
+    name: "TB / HIV Programme Medicines",
+    description:
+      "Opt-in formulary and stock handling for TB/HIV programme lines. Programme-only products are excluded from open POS retail sale.",
+    module: "PHARMACY",
+    group: "PHARMACY",
+    category: "PHARMACY",
+    status: "ACTIVE",
+    industries: [
+      "PHARMACY",
+      "CHEMIST",
+      "HOSPITAL",
+      "CLINIC",
+    ],
+    defaultEnabled: false,
+    dependencies: [
+      "pharmacy.medicine-catalogue",
+    ],
+    conflicts: [],
+    schema: [
+      "products",
+    ],
+    services: [
+      "pharmacy",
+    ],
+    ui: [
+      "pharmacy-programme",
+    ],
+    workflows: [
+      "programme.seed",
+      "programme.dispense",
+    ],
+    validators: [],
+    permissions: [
+      "products.create",
+      "products.view",
+    ],
+    featureFlags: [
+      "pharmacy.programme-medicines",
+    ],
+  },
 ];

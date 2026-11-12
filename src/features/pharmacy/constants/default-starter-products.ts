@@ -33,6 +33,9 @@ export type PharmacyStarterProduct = {
   reorderLevel?: number;
   suggestedCost?: number | null;
   suggestedSell?: number | null;
+  /** private | programme | both — programme excluded from open POS */
+  supplyChannel?: "private" | "programme" | "both";
+  isControlled?: boolean;
 };
 
 const BASE_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [

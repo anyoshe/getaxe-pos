@@ -26,6 +26,7 @@ type PosProductDto = {
   trackExpiry: boolean;
   serialized: boolean;
   isControlled: boolean;
+  supplyChannel: string;
   salesUnitId: string | null;
   stockUnitId: string | null;
   costPrice: number;
@@ -50,6 +51,7 @@ function mapPosProduct(p: Record<string, unknown>): PosProductDto {
     trackExpiry: Boolean(p.trackExpiry),
     serialized: Boolean(p.serialized),
     isControlled: Boolean(p.isControlled),
+    supplyChannel: String(p.supplyChannel ?? "private"),
     salesUnitId: (p.salesUnitId as string | null) ?? null,
     stockUnitId: (p.stockUnitId as string | null) ?? null,
     costPrice: p.costPrice != null ? Number(p.costPrice) : 0,

@@ -93,6 +93,7 @@ export async function updateProductAction(id: string, formData: FormData) {
 
     serialized: formData.get("serialized") === "true",
       isControlled: formData.get("isControlled") === "true",
+      supplyChannel: (formData.get("supplyChannel") as string) || "private",
 
     allowNegativeStock: formData.get("allowNegativeStock") === "true",
 
