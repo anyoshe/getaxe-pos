@@ -130,7 +130,6 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "5%",
   "10%",
   "20%",
-,
   "120 mg/5 mL",
   "75 mg/3 mL",
   "875/125 mg",
@@ -143,8 +142,7 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "0.005%",
   "21 days",
   "12s",
-  "50s"
-,
+  "50s",
   "125/31.25 mg/5 mL",
   "250/62.5 mg/5 mL",
   "400/57 mg/5 mL",
@@ -162,8 +160,7 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "30 mg/5 mL",
   "15 mg/5 mL",
   "100000 IU/mL",
-  "4.1 g"
-,
+  "4.1 g",
   "0.3%",
   "0.1%",
   "0.05%",
@@ -180,15 +177,13 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "0.25 mg",
   "0.5 mg",
   "combo",
-  "100000 IU/g"
-,
+  "100000 IU/g",
   "1.5 g",
   "1.2 g",
   "80 mg/2 mL",
   "500 mg/100 mL",
   "200 mg/100 mL",
   "400 mg/200 mL",
-  "500 mg/100 mL",
   "300 mg/2 mL",
   "600 mg/4 mL",
   "50 mg/2 mL",
@@ -211,7 +206,6 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "1 g/10 mL",
   "5000 IU/mL",
   "60 mg",
-  "60 mg",
   "120 mg",
   "600 mg/2 mL",
   "0.9% 100 mL",
@@ -231,7 +225,7 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "5 mg XR",
   "500 mg XR",
   "1000 mg XR",
-  "3 mg"
+  "3 mg",
 ];
 
 /**
