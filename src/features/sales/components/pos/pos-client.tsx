@@ -936,6 +936,14 @@ export function PosClient({
     );
   });
 
+  function notifyMissingSerials() {
+    if (missingSerialLines.length === 0) return false;
+    toast.error(
+      `Select one serial / chassis number for each unit of: ${missingSerialLines.map((line) => line.name).join(", ")}.`,
+    );
+    return true;
+  }
+
   // Client-side estimate: 1 pt per 100 (server program may differ; refreshed on lookup)
   const estimatedEarn =
     customerId && total > 0 ? Math.floor(total / 100) : 0;
@@ -1012,12 +1020,7 @@ export function PosClient({
         toast.error("Cart is empty.");
         return;
       }
-      if (missingSerialLines.length > 0) {
-        toast.error(
-          `Select one serial / chassis number for each unit of: ${missingSerialLines.map((line) => line.name).join(", ")}.`,
-        );
-        return;
-      }
+      if (notifyMissingSerials()) return;
       if (saleMode === "CREDIT") {
         const creditCustomer = posCustomers.find((customer) => customer.id === customerId);
         if (!creditCustomer?.allowCredit) {
@@ -2429,7 +2432,16 @@ export function PosClient({
                 Select the required serial / chassis numbers before checkout.
               </p>
             ) : null}
-            <Button type="button" className="h-11 w-full rounded-xl font-bold" disabled={cart.length === 0 || missingSerialLines.length > 0} onClick={() => setCheckoutOpen(true)}>Checkout</Button>
+            <Button
+              type="button"
+              className="h-11 w-full rounded-xl font-bold"
+              disabled={cart.length === 0}
+              onClick={() => {
+                if (!notifyMissingSerials()) setCheckoutOpen(true);
+              }}
+            >
+              Checkout
+            </Button>
           </div>
         </section>
 
@@ -2447,7 +2459,7 @@ export function PosClient({
               <p className="text-xs font-semibold text-muted-foreground">
                 How is the customer paying?
               </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 {payMethods.map((m) => {
                   const Icon = m.icon;
                   const active = paymentMethod === m.id;
@@ -2457,14 +2469,14 @@ export function PosClient({
                       type="button"
                       onClick={() => setPaymentMethod(m.id)}
                       className={
-                        "flex min-h-[3.75rem] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-3 text-center transition-all " +
+                        "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center transition-all " +
                         (active
-                          ? m.activeClass + " ring-2 ring-primary/40 shadow-sm"
+                          ? m.activeClass + " ring-1 ring-primary/30 shadow-sm"
                           : m.idleClass)
                       }
                     >
-                      <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
-                      <span className="text-xs font-bold sm:text-sm">
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="text-xs font-semibold">
                         {m.label}
                       </span>
                     </button>
@@ -3044,7 +3056,9 @@ export function PosClient({
                 No products yet. Close and scan or tap items.
               </div>
             ) : (
-              cart.map((line) => (
+              cart.map((line) => {
+                const options = freeSerials(line.productId);
+                return (
                 <div
                   key={line.productId}
                   className="rounded-xl border border-border/70 bg-card p-3 shadow-sm"
@@ -3127,8 +3141,38 @@ export function PosClient({
                       })}
                     </div>
                   </div>
+                  {line.serialized ? (
+                    <div className="mt-2 max-h-32 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
+                      <p className="text-[10px] font-semibold text-chart-5">
+                        Serial / chassis numbers {line.selectedSerials.length}/
+                        {Math.round(line.quantity * (line.factorToStock || 1))}
+                      </p>
+                      {options.length === 0 ? (
+                        <p className="text-[10px] text-muted-foreground">
+                          No free serial / chassis numbers in this warehouse
+                        </p>
+                      ) : (
+                        options.map((serial) => (
+                          <label
+                            key={serial}
+                            className="flex min-h-8 cursor-pointer items-center gap-2 text-xs"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={line.selectedSerials.includes(serial)}
+                              onChange={() =>
+                                toggleSerial(line.productId, serial)
+                              }
+                            />
+                            <span className="font-mono">{serial}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  ) : null}
                 </div>
-              ))
+                );
+              })
             )}
 
             <div className="rounded-xl border bg-muted/30 p-3">
@@ -3178,6 +3222,7 @@ export function PosClient({
                 className="h-12 rounded-xl font-bold"
                 disabled={cart.length === 0 || total <= 0}
                 onClick={() => {
+                  if (notifyMissingSerials()) return;
                   setMobileCartOpen(false);
                   setCheckoutOpen(true);
                 }}
