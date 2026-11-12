@@ -253,6 +253,8 @@ export async function addIndustryStarterProductsForBusiness(
         trackBatch: Boolean(tpl.trackBatch),
         trackExpiry: Boolean(tpl.trackExpiry),
         serialized: Boolean(tpl.serialized),
+        isControlled: false,
+        supplyChannel: "private",
         allowNegativeStock: false,
         minimumStock: tpl.minimumStock ?? 0,
         reorderLevel: tpl.reorderLevel ?? 0,

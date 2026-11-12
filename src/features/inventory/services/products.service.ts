@@ -60,7 +60,11 @@ export class ProductService {
       }
     }
 
-    const product = await productRepository.create(data);
+    const product = await productRepository.create({
+      ...data,
+      isControlled: data.isControlled ?? false,
+      supplyChannel: data.supplyChannel ?? "private",
+    });
 
     // Seed product_units from product unit FKs (factor 1 each).
     const byUnit = new Map<
