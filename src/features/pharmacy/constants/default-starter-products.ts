@@ -1,5 +1,5 @@
 /**
- * Template pharmacy product masters (retail formulary + paediatric liquids + eye/ear/nasal/derm/inhalers).
+ * Template pharmacy product masters (retail + paediatric + topical/sensory + injectables/IV + chronic ladders).
  * Not stock / not shared serials — each business gets its own product rows.
  * Owner receives opening stock or GRN only for lines they hold.
  */
@@ -7,6 +7,7 @@
 import { EXTENDED_PHARMACY_STARTER_PRODUCTS } from "./pharmacy-starter-products-extended";
 import { PEDIATRIC_SUSPENSION_STARTERS } from "./pharmacy-pediatric-suspensions";
 import { TOPICAL_SENSORY_RESP_STARTERS } from "./pharmacy-topical-sensory-resp";
+import { INJECTABLE_FLUID_CHRONIC_STARTERS } from "./pharmacy-injectable-fluid-chronic";
 
 export type PharmacyStarterProduct = {
   code: string;
@@ -5630,6 +5631,7 @@ export const DEFAULT_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [
   ...EXTENDED_PHARMACY_STARTER_PRODUCTS,
   ...PEDIATRIC_SUSPENSION_STARTERS,
   ...TOPICAL_SENSORY_RESP_STARTERS,
+  ...INJECTABLE_FLUID_CHRONIC_STARTERS,
 ];
 
 export function getPharmacyStarterByCodes(codes: string[]): PharmacyStarterProduct[] {
