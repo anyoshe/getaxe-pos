@@ -36,6 +36,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
 
 import { createSaleAction } from "../../actions/create-sale";
@@ -389,6 +396,7 @@ export function PosClient({
   const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
   const [amountTendered, setAmountTendered] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [customerDialogMode, setCustomerDialogMode] = useState<"select" | "create">("select");
   const [customerSaving, setCustomerSaving] = useState(false);
@@ -1014,6 +1022,7 @@ export function PosClient({
         const creditCustomer = posCustomers.find((customer) => customer.id === customerId);
         if (!creditCustomer?.allowCredit) {
           setCheckoutOpen(false);
+      setMobileCartOpen(false);
           openCustomerDialog("select");
           return;
         }
@@ -1315,6 +1324,7 @@ export function PosClient({
           ? Math.max(0, tenderedNum - saleTotal)
           : 0;
       setCheckoutOpen(false);
+      setMobileCartOpen(false);
       setLastReceipt({
         invoiceNumber: res.invoiceNumber ?? "—",
         soldAt: res.soldAt ?? new Date().toLocaleString("en-KE", {
@@ -1603,7 +1613,7 @@ export function PosClient({
       {/* POS workspace: catalogue and selected products share the desktop width equally. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden xl:grid xl:grid-cols-[60%_40%] xl:grid-rows-1">
         {/* CATALOGUE — col 1 */}
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-background xl:h-full xl:min-h-0">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-background pb-20 xl:h-full xl:min-h-0 xl:pb-0">
           <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3">
             <div className="relative">
               <div className="flex gap-2">
@@ -2148,7 +2158,7 @@ export function PosClient({
 
 
         {/* Selected products and customer details */}
-        <section className="flex min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-border/60 bg-gradient-to-b from-accent/20 via-accent/10 to-background xl:h-full xl:border-t-0 xl:border-l xl:border-border/60">
+        <section className="hidden min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-border/60 bg-gradient-to-b from-accent/20 via-accent/10 to-background xl:flex xl:h-full xl:border-t-0 xl:border-l xl:border-border/60">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -2730,6 +2740,7 @@ export function PosClient({
                     setSaleMode("CREDIT");
                     setPaymentMethod("CREDIT");
                     setCheckoutOpen(false);
+      setMobileCartOpen(false);
                     openCustomerDialog("select");
                   }}
                   className={
@@ -2970,6 +2981,214 @@ export function PosClient({
         </Dialog>
 
       </div>
+
+
+      {/* Mobile: catalog-only + bottom bar + cart sheet → checkout dialog */}
+      <div className="xl:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-card/95 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md">
+        <div className="mx-auto flex max-w-lg items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileCartOpen(true)}
+            className="flex min-h-12 flex-1 items-center justify-between gap-2 rounded-2xl border border-primary/25 bg-primary/10 px-3 py-2 text-left"
+          >
+            <span className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <ShoppingCart className="h-4 w-4" />
+              </span>
+              <span>
+                <span className="block text-xs font-semibold text-foreground">
+                  {cart.length === 0 ? "Cart empty" : `${cart.length} item${cart.length === 1 ? "" : "s"}`}
+                </span>
+                <span className="block text-[10px] text-muted-foreground">
+                  Tap to review · adjust · checkout
+                </span>
+              </span>
+            </span>
+            <span className="text-lg font-black tabular-nums text-primary">
+              {total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </span>
+          </button>
+          <Button
+            type="button"
+            className="h-12 shrink-0 rounded-2xl px-4 font-bold"
+            disabled={cart.length === 0}
+            onClick={() => {
+              setMobileCartOpen(true);
+            }}
+          >
+            Cart
+          </Button>
+        </div>
+      </div>
+
+      <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+        <SheetContent
+          side="bottom"
+          className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-t-2xl p-0"
+        >
+          <SheetHeader className="shrink-0 border-b px-4 py-3 text-left">
+            <SheetTitle className="flex items-center justify-between gap-2">
+              <span>Sale · {cart.length} item{cart.length === 1 ? "" : "s"}</span>
+              <span className="text-base font-black tabular-nums text-primary">
+                {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </SheetTitle>
+            <p className="text-xs text-muted-foreground">
+              Step 1 of 2 — review quantities, then continue to payment or credit.
+            </p>
+          </SheetHeader>
+
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-3">
+            {cart.length === 0 ? (
+              <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+                No products yet. Close and scan or tap items.
+              </div>
+            ) : (
+              cart.map((line) => (
+                <div
+                  key={line.productId}
+                  className="rounded-xl border border-border/70 bg-card p-3 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{line.name}</div>
+                      <div className="text-[11px] text-muted-foreground tabular-nums">
+                        @ {line.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-destructive"
+                      onClick={() =>
+                        setCart((c) => c.filter((x) => x.productId !== line.productId))
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-0.5">
+                      <button
+                        type="button"
+                        className="flex h-9 w-9 items-center justify-center rounded-md text-lg font-bold"
+                        onClick={() =>
+                          setCart((c) =>
+                            c
+                              .map((x) =>
+                                x.productId === line.productId
+                                  ? { ...x, quantity: Math.max(0, Number(x.quantity) - 1) }
+                                  : x,
+                              )
+                              .filter((x) => x.quantity > 0),
+                          )
+                        }
+                      >
+                        −
+                      </button>
+                      <input
+                        className="h-9 w-12 border-0 bg-transparent text-center text-sm font-semibold tabular-nums outline-none"
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={line.quantity}
+                        onChange={(e) => {
+                          const q = Number(e.target.value);
+                          setCart((c) =>
+                            c
+                              .map((x) =>
+                                x.productId === line.productId
+                                  ? { ...x, quantity: q }
+                                  : x,
+                              )
+                              .filter((x) => x.quantity > 0),
+                          );
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="flex h-9 w-9 items-center justify-center rounded-md text-lg font-bold"
+                        onClick={() =>
+                          setCart((c) =>
+                            c.map((x) =>
+                              x.productId === line.productId
+                                ? { ...x, quantity: Number(x.quantity) + 1 }
+                                : x,
+                            ),
+                          )
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="text-sm font-bold tabular-nums">
+                      {(line.unitPrice * line.quantity).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+
+            <div className="rounded-xl border bg-muted/30 p-3">
+              <div className="text-xs font-medium text-muted-foreground">Customer</div>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <div className="min-w-0 text-sm font-medium">
+                  {customerId
+                    ? posCustomers.find((c) => c.id === customerId)?.name || "Selected"
+                    : customerPhone.trim()
+                      ? customerPhone
+                      : "Walk-in (optional)"}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => openCustomerDialog("select")}
+                >
+                  {customerId || customerPhone ? "Change" : "Add"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <SheetFooter className="shrink-0 gap-2 border-t bg-card px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-col">
+            <div className="flex w-full items-center justify-between text-sm">
+              <span className="text-muted-foreground">Total</span>
+              <span className="text-xl font-black tabular-nums text-primary">
+                {total.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+            <div className="grid w-full grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 rounded-xl"
+                onClick={() => setMobileCartOpen(false)}
+              >
+                Add more
+              </Button>
+              <Button
+                type="button"
+                className="h-12 rounded-xl font-bold"
+                disabled={cart.length === 0 || total <= 0}
+                onClick={() => {
+                  setMobileCartOpen(false);
+                  setCheckoutOpen(true);
+                }}
+              >
+                Pay / Credit
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
 
       {lastReceipt ? (
         <SaleReceipt
