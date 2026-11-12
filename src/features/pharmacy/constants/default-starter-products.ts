@@ -1,8 +1,10 @@
 /**
- * Template pharmacy product masters (starter list ≥200).
+ * Template pharmacy product masters (starter list 400+ common retail formulary lines).
  * Not stock / not shared serials — each business gets its own product rows.
  * Owner receives opening stock or GRN only for lines they hold.
  */
+
+import { EXTENDED_PHARMACY_STARTER_PRODUCTS } from "./pharmacy-starter-products-extended";
 
 export type PharmacyStarterProduct = {
   code: string;
@@ -29,7 +31,7 @@ export type PharmacyStarterProduct = {
   suggestedSell?: number | null;
 };
 
-export const DEFAULT_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [
+const BASE_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [
   {
     code: "PARA-500-TAB",
     name: "Paracetamol 500 mg Tablets",
@@ -5618,6 +5620,12 @@ export const DEFAULT_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [
     suggestedCost: 400,
     suggestedSell: 700,
   },
+];
+
+/** Base + extended formulary (idempotent seed by product code / SKU). */
+export const DEFAULT_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [
+  ...BASE_PHARMACY_STARTER_PRODUCTS,
+  ...EXTENDED_PHARMACY_STARTER_PRODUCTS,
 ];
 
 export function getPharmacyStarterByCodes(codes: string[]): PharmacyStarterProduct[] {

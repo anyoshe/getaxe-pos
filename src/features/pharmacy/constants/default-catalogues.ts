@@ -31,6 +31,8 @@ export const DEFAULT_DOSAGE_FORMS: { code: string; name: string }[] = [
   { code: "POW", name: "Powder" },
   { code: "GRN", name: "Granules" },
   { code: "PATCH", name: "Transdermal Patch" },
+  { code: "PCS", name: "Piece / Device" },
+  { code: "BOT", name: "Bottle" },
 ];
 
 export const DEFAULT_DRUG_CATEGORIES: { code: string; name: string }[] = [
@@ -126,6 +128,20 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "5%",
   "10%",
   "20%",
+,
+  "120 mg/5 mL",
+  "75 mg/3 mL",
+  "875/125 mg",
+  "60/360 mg",
+  "40/320 mg",
+  "0.125 mg",
+  "1.5 mg",
+  "500 mg/200 IU",
+  "60/400",
+  "0.005%",
+  "21 days",
+  "12s",
+  "50s"
 ];
 
 /**
