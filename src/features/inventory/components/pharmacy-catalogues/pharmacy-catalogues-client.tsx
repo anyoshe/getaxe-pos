@@ -17,7 +17,10 @@ import {
 } from "@/features/pharmacy/actions/reference-data";
 import { seedDefaultPharmacyCataloguesAction } from "@/features/pharmacy/actions/seed-default-catalogues";
 import { ensurePharmacyCapabilitiesAction } from "@/features/capabilities/actions/ensure-pharmacy-capabilities";
-import { addPharmacyStarterProductsAction } from "@/features/pharmacy/actions/pharmacy-starter-products";
+import {
+  addPharmacyStarterProductsAction,
+  addProgrammeTbHivProductsAction,
+} from "@/features/pharmacy/actions/pharmacy-starter-products";
 
 type Row = { id: string; name: string; code?: string };
 
@@ -43,12 +46,14 @@ export function PharmacyCataloguesClient({
   drugStrengths,
   prescriptionTypes,
   starterProducts = [],
+  programmeProducts = [],
 }: {
   dosageForms: Row[];
   drugCategories: Row[];
   drugStrengths: Row[];
   prescriptionTypes: Row[];
   starterProducts?: StarterProductRow[];
+  programmeProducts?: StarterProductRow[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -59,13 +64,25 @@ export function PharmacyCataloguesClient({
     }
     return init;
   });
+  const [progSelected, setProgSelected] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const p of programmeProducts) {
+      if (!p.alreadyInCatalogue) init[p.code] = true;
+    }
+    return init;
+  });
 
   const selectedCodes = useMemo(
     () => Object.entries(selected).filter(([, v]) => v).map(([k]) => k),
     [selected],
   );
+  const progSelectedCodes = useMemo(
+    () => Object.entries(progSelected).filter(([, v]) => v).map(([k]) => k),
+    [progSelected],
+  );
 
   const missingCount = starterProducts.filter((p) => !p.alreadyInCatalogue).length;
+  const progMissingCount = programmeProducts.filter((p) => !p.alreadyInCatalogue).length;
 
   function makeAdd(
     action: (input: unknown) => Promise<{ success: boolean; message: string }>,
@@ -150,7 +167,133 @@ export function PharmacyCataloguesClient({
         </div>
       </div>
 
-      <section className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+      
+      <section className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">TB / HIV programme pack (optional)</h2>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              For linked ART/TB sites only. These products are marked{" "}
+              <span className="font-medium text-foreground">programme</span> and are{" "}
+              <span className="font-medium text-foreground">hidden from open POS</span>.
+              Dispense via pharmacy / prescription — not walk-in retail sale.
+              Confirm lines against your current NASCOP / NTLD supply list before use.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {progMissingCount} of {programmeProducts.length} not yet in your catalogue
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending || progMissingCount === 0}
+              onClick={() => {
+                const next: Record<string, boolean> = { ...progSelected };
+                for (const p of programmeProducts) {
+                  if (!p.alreadyInCatalogue) next[p.code] = true;
+                }
+                setProgSelected(next);
+              }}
+            >
+              Select missing
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => setProgSelected({})}
+            >
+              Clear
+            </Button>
+            <Button
+              type="button"
+              disabled={pending || progSelectedCodes.length === 0}
+              onClick={() => {
+                startTransition(async () => {
+                  const result = await addProgrammeTbHivProductsAction(
+                    progSelectedCodes,
+                  );
+                  if (!result.success && result.created === 0) {
+                    toast.error(result.message);
+                    return;
+                  }
+                  toast.success(result.message);
+                  router.refresh();
+                });
+              }}
+            >
+              {pending
+                ? "Adding…"
+                : `Add ${progSelectedCodes.length || ""} programme product(s)`}
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border bg-card">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b bg-muted/50 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="p-2 w-10">Add</th>
+                <th className="p-2">Product</th>
+                <th className="p-2">SKU</th>
+                <th className="p-2">Form</th>
+                <th className="p-2">Category</th>
+                <th className="p-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {programmeProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-4 text-muted-foreground">
+                    No programme templates available.
+                  </td>
+                </tr>
+              ) : (
+                programmeProducts.map((p) => (
+                  <tr key={p.code} className="border-b last:border-0">
+                    <td className="p-2">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        disabled={p.alreadyInCatalogue || pending}
+                        checked={Boolean(progSelected[p.code])}
+                        onChange={(e) =>
+                          setProgSelected((prev) => ({
+                            ...prev,
+                            [p.code]: e.target.checked,
+                          }))
+                        }
+                        aria-label={`Select ${p.name}`}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <div className="font-medium text-foreground">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.genericName} · {p.strengthLabel}
+                      </div>
+                    </td>
+                    <td className="p-2 font-mono text-xs">{p.sku}</td>
+                    <td className="p-2">{p.dosageFormCode}</td>
+                    <td className="p-2 text-xs">{p.drugCategoryCode}</td>
+                    <td className="p-2">
+                      {p.alreadyInCatalogue ? (
+                        <span className="text-xs text-emerald-600">In catalogue</span>
+                      ) : (
+                        <span className="text-xs text-amber-700">Programme only</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+<section className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-semibold text-foreground">
