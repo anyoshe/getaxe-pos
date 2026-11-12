@@ -1,10 +1,11 @@
 /**
- * Template pharmacy product masters (starter list 400+ common retail formulary lines).
+ * Template pharmacy product masters (400+ retail formulary + paediatric oral liquids).
  * Not stock / not shared serials — each business gets its own product rows.
  * Owner receives opening stock or GRN only for lines they hold.
  */
 
 import { EXTENDED_PHARMACY_STARTER_PRODUCTS } from "./pharmacy-starter-products-extended";
+import { PEDIATRIC_SUSPENSION_STARTERS } from "./pharmacy-pediatric-suspensions";
 
 export type PharmacyStarterProduct = {
   code: string;
@@ -5626,6 +5627,7 @@ const BASE_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [
 export const DEFAULT_PHARMACY_STARTER_PRODUCTS: PharmacyStarterProduct[] = [
   ...BASE_PHARMACY_STARTER_PRODUCTS,
   ...EXTENDED_PHARMACY_STARTER_PRODUCTS,
+  ...PEDIATRIC_SUSPENSION_STARTERS,
 ];
 
 export function getPharmacyStarterByCodes(codes: string[]): PharmacyStarterProduct[] {

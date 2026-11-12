@@ -142,6 +142,25 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "21 days",
   "12s",
   "50s"
+,
+  "125/31.25 mg/5 mL",
+  "250/62.5 mg/5 mL",
+  "400/57 mg/5 mL",
+  "40 mg/5 mL",
+  "80 mg/5 mL",
+  "75 mg/5 mL",
+  "200/40 mg/5 mL",
+  "20/120 mg/5 mL",
+  "20/120 mg",
+  "2.5 mg/5 mL",
+  "7.5 mg/5 mL",
+  "1 mg/mL",
+  "40 mg/mL",
+  "400 IU/drop",
+  "30 mg/5 mL",
+  "15 mg/5 mL",
+  "100000 IU/mL",
+  "4.1 g"
 ];
 
 /**
