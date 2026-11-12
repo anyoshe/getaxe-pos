@@ -1522,7 +1522,7 @@ export function PosClient({
       />
 
       <header className="brand-gradient relative z-10 shrink-0 text-primary-foreground shadow-md">
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
+        <div className="mx-auto flex w-full flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 xl:max-w-[1720px] xl:px-8 2xl:px-12">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card/20 text-xs font-black backdrop-blur sm:h-10 sm:w-10 sm:text-sm">
               GA
@@ -1611,10 +1611,10 @@ export function PosClient({
       </header>
 
       {/* POS workspace: catalogue and selected products share the desktop width equally. */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden xl:grid xl:grid-cols-[60%_40%] xl:grid-rows-1">
+      <div className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden xl:max-w-[1720px] xl:px-8 2xl:px-12 xl:grid xl:grid-cols-[60%_40%] xl:grid-rows-1">
         {/* CATALOGUE — col 1 */}
         <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-background pb-20 xl:h-full xl:min-h-0 xl:pb-0">
-          <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3">
+          <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3 xl:px-5 2xl:px-7">
             <div className="relative">
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
@@ -1726,7 +1726,7 @@ export function PosClient({
             {posView === "browse" ? (
               <>
             {/* Categories + layout (supermarket aisles) */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 xl:ml-2">
               <div className="-mx-0.5 flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
                   type="button"
@@ -1810,7 +1810,7 @@ export function PosClient({
 
           <div
             className={
-              "min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3 " +
+              "min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] p-2 sm:p-3 xl:px-5 2xl:px-7 " +
               (query.trim().length >= 1 ? "max-lg:hidden" : "")
             }
           >
@@ -3136,7 +3136,7 @@ export function PosClient({
               <div className="mt-1 flex items-center justify-between gap-2">
                 <div className="min-w-0 text-sm font-medium">
                   {customerId
-                    ? posCustomers.find((c) => c.id === customerId)?.name || "Selected"
+                    ? posCustomers.find((c) => c.id === customerId)?.displayName || "Selected"
                     : customerPhone.trim()
                       ? customerPhone
                       : "Walk-in (optional)"}
