@@ -161,6 +161,24 @@ export const DEFAULT_DRUG_STRENGTHS: string[] = [
   "15 mg/5 mL",
   "100000 IU/mL",
   "4.1 g"
+,
+  "0.3%",
+  "0.1%",
+  "0.05%",
+  "0.03%",
+  "0.2%",
+  "50 mcg/spray",
+  "200 mcg",
+  "250 mcg",
+  "50/25 mcg",
+  "125/25 mcg",
+  "250/25 mcg",
+  "160/4.5 mcg",
+  "2.5 mg",
+  "0.25 mg",
+  "0.5 mg",
+  "combo",
+  "100000 IU/g"
 ];
 
 /**
