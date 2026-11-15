@@ -443,9 +443,15 @@ export async function createRecurringExpenseAction(input: {
     revalidatePath("/dashboard/attention");
     return { success: true as const, message: "Monthly fixed cost saved." };
   } catch (e) {
+    const raw = e instanceof Error ? e.message : String(e);
+    const missingTable =
+      /recurring_expenses/i.test(raw) &&
+      (/does not exist|relation/i.test(raw) || /Failed query/i.test(raw));
     return {
       success: false as const,
-      message: e instanceof Error ? e.message : "Failed to save recurring expense.",
+      message: missingTable
+        ? "Database is missing the recurring_expenses table. Run: pnpm db:migrate (apply 0045_recurring_expenses.sql) against this environment’s DATABASE_URL, then try again."
+        : raw || "Failed to save recurring expense.",
     };
   }
 }
