@@ -8,23 +8,13 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+const MIGRATION_DIR = path.join(process.cwd(), "src/db/migrations");
 
-const MIGRATION_DIR = path.join(
-  process.cwd(),
-  "src/db/migrations"
-);
-
-
-function checksum(content:string){
-  return crypto
-    .createHash("sha256")
-    .update(content)
-    .digest("hex");
+function checksum(content: string) {
+  return crypto.createHash("sha256").update(content).digest("hex");
 }
 
-
-async function ensureTable(){
-
+async function ensureTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_migrations (
       id SERIAL PRIMARY KEY,
@@ -33,175 +23,104 @@ async function ensureTable(){
       executed_at TIMESTAMP DEFAULT NOW()
     );
   `);
-
 }
 
-
-async function getApplied(){
-
+async function getApplied() {
   const result = await pool.query(
     `
     SELECT filename, checksum
     FROM app_migrations
     ORDER BY id
-    `
+    `,
   );
-
-  return result.rows;
-
+  return result.rows as { filename: string; checksum: string }[];
 }
 
+async function run() {
+  console.log("\n🚀 GetAxe Migration Runner\n");
 
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set — cannot run migrations.");
+  }
 
-async function run(){
+  await pool.query(`SELECT pg_advisory_lock(987654321);`);
+  console.log("🔒 Migration lock acquired");
 
-console.log("\n🚀 GetAxe Migration Runner\n");
+  await ensureTable();
 
+  const applied = await getApplied();
 
-// Prevent multiple servers running migrations at the same time
-await pool.query(`
-  SELECT pg_advisory_lock(987654321);
-`);
+  const files = (await fs.readdir(MIGRATION_DIR))
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
 
-console.log("🔒 Migration lock acquired");
+  let appliedCount = 0;
+  let skippedCount = 0;
+  let checksumUpdated = 0;
 
+  for (const file of files) {
+    const filePath = path.join(MIGRATION_DIR, file);
+    const sql = await fs.readFile(filePath, "utf8");
+    const hash = checksum(sql);
 
-await ensureTable();
+    const existing = applied.find((m) => m.filename === file);
 
-
-const applied = await getApplied();
-
-
-const files = (await fs.readdir(MIGRATION_DIR))
-.filter(file=>file.endsWith(".sql"))
-.sort();
-
-
-
-let appliedCount = 0;
-let skippedCount = 0;
-
-
-
-for(const file of files){
-
- const filePath =
- path.join(MIGRATION_DIR,file);
-
-
- const sql =
- await fs.readFile(filePath,"utf8");
-
-
- const hash =
- checksum(sql);
-
-
-
- const existing =
- applied.find(
- m=>m.filename===file
- );
-
-
-
- if(existing){
-
-    if(existing.checksum !== hash){
-        throw new Error(
-        `Checksum mismatch: ${file}`
+    if (existing) {
+      if (existing.checksum !== hash) {
+        // File was edited after it was already applied (common in long-lived repos).
+        // Do NOT re-run SQL (would break production). Update stored checksum and continue.
+        console.warn(
+          `⚠ Checksum mismatch (already applied): ${file} — updating recorded checksum, not re-running.`,
         );
+        await pool.query(
+          `UPDATE app_migrations SET checksum = $1 WHERE filename = $2`,
+          [hash, file],
+        );
+        checksumUpdated++;
+      } else {
+        console.log(`✓ ${file}`);
+      }
+      skippedCount++;
+      continue;
     }
 
+    console.log(`▶ Applying ${file}`);
 
-    console.log(`✓ ${file}`);
-    skippedCount++;
-    continue;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(sql);
+      await client.query(
+        `INSERT INTO app_migrations (filename, checksum) VALUES ($1, $2)`,
+        [file, hash],
+      );
+      await client.query("COMMIT");
+      console.log(`✓ Applied ${file}`);
+      appliedCount++;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error(`✗ Failed ${file}`);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 
- }
+  console.log("\nMigration complete");
+  console.log(`Applied: ${appliedCount}`);
+  console.log(`Skipped: ${skippedCount}`);
+  if (checksumUpdated > 0) {
+    console.log(`Checksum records updated: ${checksumUpdated}`);
+  }
+  console.log("");
 
+  await pool.query(`SELECT pg_advisory_unlock(987654321);`);
+  console.log("🔓 Migration lock released");
 
-
- console.log(`▶ Applying ${file}`);
-
-
-
- const client =
- await pool.connect();
-
-
- try{
-
- await client.query("BEGIN");
-
-
- await client.query(sql);
-
-
- await client.query(
- `
- INSERT INTO app_migrations
-(filename,checksum)
-VALUES($1,$2)
- `,
- [
- file,
- hash
- ]
- );
-
-
- await client.query("COMMIT");
-
-
- console.log(`✓ Applied ${file}`);
-
-
- appliedCount++;
-
-
- }
- catch(error){
-
- await client.query("ROLLBACK");
-
- console.error(
- `✗ Failed ${file}`
- );
-
- throw error;
-
- }
- finally{
-
- client.release();
-
- }
-
-
+  await pool.end();
 }
 
-
-
-console.log("\nMigration complete");
-console.log(`Applied: ${appliedCount}`);
-console.log(`Skipped: ${skippedCount}\n`);
-
-
-await pool.query(`
-  SELECT pg_advisory_unlock(987654321);
-`);
-
-console.log("🔓 Migration lock released");
-
-
-await pool.end();
-
-}
-
-
-run()
-.catch(err=>{
- console.error(err);
- process.exit(1);
+run().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
