@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { recurringExpenses } from "@/db/schema/finance/recurring_expenses";
@@ -14,6 +14,33 @@ export type RecurringExpenseRow = {
   categoryId: string;
   categoryName: string;
 };
+
+let ensuredTable = false;
+
+/** Idempotent — creates table if migration 0045 was not applied yet. */
+export async function ensureRecurringExpensesTable(): Promise<void> {
+  if (ensuredTable) return;
+  await db.execute(sql.raw(`
+CREATE TABLE IF NOT EXISTS recurring_expenses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  category_id uuid NOT NULL REFERENCES expense_categories(id),
+  name text NOT NULL,
+  amount numeric(12, 2) NOT NULL,
+  day_of_month integer NOT NULL DEFAULT 1,
+  notes text,
+  active boolean NOT NULL DEFAULT true,
+  created_by uuid REFERENCES users(id),
+  created_at timestamp NOT NULL DEFAULT now(),
+  updated_at timestamp NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS recurring_expenses_business_idx
+  ON recurring_expenses (business_id);
+CREATE INDEX IF NOT EXISTS recurring_expenses_active_idx
+  ON recurring_expenses (business_id, active);
+`));
+  ensuredTable = true;
+}
 
 function daysInMonth(year: number, monthIndex: number): number {
   return new Date(year, monthIndex + 1, 0).getDate();
@@ -40,6 +67,7 @@ export async function listRecurringExpenses(
   businessId: string,
   opts?: { activeOnly?: boolean },
 ): Promise<RecurringExpenseRow[]> {
+  await ensureRecurringExpensesTable();
   const rows = await db
     .select({
       id: recurringExpenses.id,
@@ -98,6 +126,16 @@ export async function projectUpcomingRecurring(
   upcomingCount: number;
   upcomingTotal: number;
 }> {
+  try {
+    await ensureRecurringExpensesTable();
+  } catch {
+    return {
+      items: [],
+      monthlyFixedTotal: 0,
+      upcomingCount: 0,
+      upcomingTotal: 0,
+    };
+  }
   const active = await listRecurringExpenses(businessId, { activeOnly: true });
   const monthlyFixedTotal = active.reduce((s, r) => s + r.amount, 0);
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -137,6 +175,7 @@ export async function createRecurringExpense(input: {
   notes?: string | null;
   createdBy?: string | null;
 }) {
+  await ensureRecurringExpensesTable();
   const [row] = await db
     .insert(recurringExpenses)
     .values({
@@ -158,6 +197,7 @@ export async function setRecurringExpenseActive(
   id: string,
   active: boolean,
 ) {
+  await ensureRecurringExpensesTable();
   await db
     .update(recurringExpenses)
     .set({ active, updatedAt: new Date() })
