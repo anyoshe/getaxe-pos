@@ -1,14 +1,16 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { financeService } from "@/features/finance/services/finance.service";
 import { ExpensesClient } from "@/features/finance/components/finance-pages";
+import { listRecurringExpenses } from "@/features/finance/services/recurring-expenses.service";
 
 export default async function ExpensesPage() {
   const user = await getCurrentUser();
   if (!user) return null;
-  const [rows, categories, cash] = await Promise.all([
+  const [rows, categories, cash, recurring] = await Promise.all([
     financeService.getExpenses(user.businessId).catch(() => []),
     financeService.getExpenseCategories(user.businessId).catch(() => []),
     financeService.getCashAccounts(user.businessId).catch(() => []),
+    listRecurringExpenses(user.businessId).catch(() => []),
   ]);
   return (
     <ExpensesClient
@@ -21,6 +23,7 @@ export default async function ExpensesPage() {
       }))}
       categories={categories.map((c) => ({ id: c.id, name: c.name }))}
       cashAccounts={cash.map((c) => ({ id: c.id, name: c.name }))}
+      recurring={recurring}
     />
   );
 }

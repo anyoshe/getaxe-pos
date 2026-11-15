@@ -4,6 +4,7 @@ export * from "./chart_of_accounts";
 export * from "./cash_accounts";
 export * from "./expense_categories";
 export * from "./expenses";
+export * from "./recurring_expenses";
 export * from "./income_categories";
 export * from "./incomes";
 export * from "./journal_entries";

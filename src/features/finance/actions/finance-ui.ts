@@ -402,3 +402,69 @@ export async function createChartAccountAction(input: unknown) {
     };
   }
 }
+
+/** --- Recurring monthly fixed costs --- */
+
+const recurringSchema = z.object({
+  categoryId: z.string().uuid(),
+  name: z.string().trim().min(2),
+  amount: z.coerce.number().positive(),
+  dayOfMonth: z.coerce.number().int().min(1).max(28),
+  notes: z.string().optional(),
+});
+
+export async function createRecurringExpenseAction(input: {
+  categoryId: string;
+  name: string;
+  amount: number | string;
+  dayOfMonth: number | string;
+  notes?: string;
+}) {
+  const user = await requireAuthorizedUser("accounts.update");
+  const parsed = recurringSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, message: "Check name, amount, and due day (1–28)." };
+  }
+  try {
+    const { createRecurringExpense } = await import(
+      "@/features/finance/services/recurring-expenses.service"
+    );
+    await createRecurringExpense({
+      businessId: user.businessId,
+      categoryId: parsed.data.categoryId,
+      name: parsed.data.name,
+      amount: parsed.data.amount,
+      dayOfMonth: parsed.data.dayOfMonth,
+      notes: parsed.data.notes,
+      createdBy: user.id,
+    });
+    revalidatePath("/finance/expenses");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/attention");
+    return { success: true as const, message: "Monthly fixed cost saved." };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to save recurring expense.",
+    };
+  }
+}
+
+export async function setRecurringExpenseActiveAction(id: string, active: boolean) {
+  const user = await requireAuthorizedUser("accounts.update");
+  try {
+    const { setRecurringExpenseActive } = await import(
+      "@/features/finance/services/recurring-expenses.service"
+    );
+    await setRecurringExpenseActive(user.businessId, id, active);
+    revalidatePath("/finance/expenses");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/attention");
+    return { success: true as const, message: active ? "Reactivated." : "Paused." };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Failed to update.",
+    };
+  }
+}

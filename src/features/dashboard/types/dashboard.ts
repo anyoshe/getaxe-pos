@@ -18,6 +18,8 @@ export interface DashboardSummary {
   /** Expenses dated in next 30 days or unpaid-looking recent */
   upcomingExpenseCount: number;
   upcomingExpenseTotal: number;
+  /** Sum of active monthly fixed cost templates */
+  monthlyFixedExpenseTotal?: number;
   openArCount: number;
   openApCount: number;
   /** Gross profit = sale line revenue − product costPrice × stock qty */

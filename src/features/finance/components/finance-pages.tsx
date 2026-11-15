@@ -18,6 +18,8 @@ import {
   createExpenseAction,
   createIncomeAction,
   createTaxRateAction,
+  createRecurringExpenseAction,
+  setRecurringExpenseActiveAction,
 } from "../actions/finance-ui";
 
 export function AccountsList({
@@ -581,10 +583,21 @@ export function ExpensesClient({
   expenses,
   categories,
   cashAccounts,
+  recurring = [],
 }: {
   expenses: { id: string; description: string; amount: string; status: string; expenseDate: string | Date }[];
   categories: { id: string; name: string }[];
   cashAccounts: { id: string; name: string }[];
+  recurring?: {
+    id: string;
+    name: string;
+    amount: number;
+    dayOfMonth: number;
+    notes: string | null;
+    active: boolean;
+    categoryId: string;
+    categoryName: string;
+  }[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -594,12 +607,183 @@ export function ExpensesClient({
   const [amount, setAmount] = useState("");
   const [paidTo, setPaidTo] = useState("");
 
+  const [recCatId, setRecCatId] = useState(categories[0]?.id ?? "");
+  const [recName, setRecName] = useState("");
+  const [recAmount, setRecAmount] = useState("");
+  const [recDay, setRecDay] = useState("1");
+
+  const monthlyFixed = recurring
+    .filter((r) => r.active)
+    .reduce((s, r) => s + Number(r.amount || 0), 0);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Expenses</h1>
         <p className="text-sm text-muted-foreground">
-          Operating costs paid from a cash/bank account (rent, utilities, salaries…).
+          Record payments as they happen, and set monthly fixed costs (rent, salaries,
+          utilities…) so the dashboard shows how sales cover those obligations.
+        </p>
+      </div>
+
+      <section className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">Monthly fixed costs</h2>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Anticipated recurring amounts. These feed the dashboard &quot;Expenses · next 30
+              days&quot; card and your break-even progress. They are not cash outflows until you
+              record a paid expense below.
+            </p>
+            {monthlyFixed > 0 ? (
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                Active monthly total:{" "}
+                {monthlyFixed.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="grid max-w-2xl gap-3 rounded-lg border bg-card p-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Category</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={recCatId}
+                onChange={(e) => setRecCatId(e.target.value)}
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>Due day of month (1–28)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={28}
+                value={recDay}
+                onChange={(e) => setRecDay(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input
+                placeholder="Shop rent, salaries, power…"
+                value={recName}
+                onChange={(e) => setRecName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Monthly amount</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={recAmount}
+                onChange={(e) => setRecAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button
+            type="button"
+            disabled={pending || !recName.trim() || !recAmount}
+            onClick={() =>
+              start(async () => {
+                const r = await createRecurringExpenseAction({
+                  categoryId: recCatId,
+                  name: recName,
+                  amount: Number(recAmount),
+                  dayOfMonth: Number(recDay),
+                });
+                if (!r.success) toast.error(r.message);
+                else {
+                  toast.success(r.message);
+                  setRecName("");
+                  setRecAmount("");
+                  router.refresh();
+                }
+              })
+            }
+          >
+            Add monthly fixed cost
+          </Button>
+        </div>
+        <div className="overflow-x-auto rounded-lg border bg-card">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="p-2">Name</th>
+                <th className="p-2">Category</th>
+                <th className="p-2">Due day</th>
+                <th className="p-2 text-right">Amount</th>
+                <th className="p-2">Status</th>
+                <th className="p-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {recurring.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-4 text-muted-foreground">
+                    No fixed costs yet — add rent, salaries, transport, utilities…
+                  </td>
+                </tr>
+              ) : (
+                recurring.map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="p-2 font-medium">{r.name}</td>
+                    <td className="p-2 text-muted-foreground">{r.categoryName}</td>
+                    <td className="p-2">{r.dayOfMonth}</td>
+                    <td className="p-2 text-right tabular-nums font-medium">
+                      {Number(r.amount).toLocaleString()}
+                    </td>
+                    <td className="p-2">
+                      {r.active ? (
+                        <span className="text-xs text-emerald-600">Active</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Paused</span>
+                      )}
+                    </td>
+                    <td className="p-2 text-right">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={pending}
+                        onClick={() =>
+                          start(async () => {
+                            const res = await setRecurringExpenseActiveAction(
+                              r.id,
+                              !r.active,
+                            );
+                            if (!res.success) toast.error(res.message);
+                            else {
+                              toast.success(res.message);
+                              router.refresh();
+                            }
+                          })
+                        }
+                      >
+                        {r.active ? "Pause" : "Resume"}
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div>
+        <h2 className="text-lg font-semibold">Record a payment</h2>
+        <p className="text-sm text-muted-foreground">
+          Cash leaves the drawer/bank when you record here (posts to accounts).
         </p>
       </div>
       <div className="grid max-w-xl gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
@@ -681,16 +865,24 @@ export function ExpensesClient({
             </tr>
           </thead>
           <tbody>
-            {expenses.map((e) => (
-              <tr key={e.id} className="border-t">
-                <td className="p-3 text-muted-foreground">
-                  {formatDateTimeNairobi(e.expenseDate)}
+            {expenses.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="p-4 text-muted-foreground">
+                  No payments recorded yet.
                 </td>
-                <td className="p-3">{e.description}</td>
-                <td className="p-3 font-medium">{Number(e.amount).toLocaleString()}</td>
-                <td className="p-3">{e.status}</td>
               </tr>
-            ))}
+            ) : (
+              expenses.map((e) => (
+                <tr key={e.id} className="border-t">
+                  <td className="p-3 text-muted-foreground">
+                    {formatDateTimeNairobi(e.expenseDate)}
+                  </td>
+                  <td className="p-3">{e.description}</td>
+                  <td className="p-3 font-medium">{Number(e.amount).toLocaleString()}</td>
+                  <td className="p-3">{e.status}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

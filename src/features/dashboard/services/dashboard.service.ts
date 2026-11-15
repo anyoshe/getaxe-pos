@@ -308,6 +308,23 @@ class DashboardService {
     const upcomingExpenseCount = Number(expAgg[0]?.c ?? 0);
     const upcomingExpenseTotal = Number(expAgg[0]?.total ?? 0);
 
+    let projectedExpenseCount = 0;
+    let projectedExpenseTotal = 0;
+    let monthlyFixedTotal = 0;
+    try {
+      const { projectUpcomingRecurring } = await import(
+        "@/features/finance/services/recurring-expenses.service"
+      );
+      const projected = await projectUpcomingRecurring(businessId, today);
+      projectedExpenseCount = projected.upcomingCount;
+      projectedExpenseTotal = projected.upcomingTotal;
+      monthlyFixedTotal = projected.monthlyFixedTotal;
+    } catch {
+      /* table may not exist until migrate */
+    }
+    const expenseAttentionCount = upcomingExpenseCount + projectedExpenseCount;
+    const expenseAttentionTotal = upcomingExpenseTotal + projectedExpenseTotal;
+
 
     const lowMap = new Map<string, LowStockItem>();
     for (const r of lowStockRows as {
@@ -530,13 +547,20 @@ class DashboardService {
       {
         kind: "expense" as const,
         title:
-          upcomingExpenseCount > 0
-            ? `Expenses · ${upcomingExpenseCount} in next 30 days`
-            : "Expenses · next 30 days",
+          expenseAttentionCount > 0
+            ? `Expenses · ${expenseAttentionCount} in next 30 days`
+            : monthlyFixedTotal > 0
+              ? "Expenses · monthly fixed costs set"
+              : "Expenses · next 30 days",
         detail:
-          upcomingExpenseCount > 0
-            ? `KES ${upcomingExpenseTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} scheduled / dated ahead`
-            : "Review recent and upcoming expense dates",
+          expenseAttentionCount > 0
+            ? `KES ${expenseAttentionTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} due / scheduled` +
+              (monthlyFixedTotal > 0
+                ? ` · ${grossProfitMonth >= monthlyFixedTotal ? "GP covers fixed costs this month" : `GP ${Math.min(100, Math.round((grossProfitMonth / monthlyFixedTotal) * 100))}% of monthly fixed`}`
+                : "")
+            : monthlyFixedTotal > 0
+              ? `KES ${monthlyFixedTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo fixed · add due day so next 30 days fills in`
+              : "Set rent, salaries, utilities under Finance → Expenses",
         href: "/dashboard/attention?kind=expense",
       },
       slowProducts.length > 0 && stockValue > 0
@@ -574,8 +598,9 @@ class DashboardService {
         stockValue,
         todayCashIn,
         todayCashByMethod,
-        upcomingExpenseCount,
-        upcomingExpenseTotal,
+        upcomingExpenseCount: expenseAttentionCount,
+        upcomingExpenseTotal: expenseAttentionTotal,
+        monthlyFixedExpenseTotal: monthlyFixedTotal,
         openArCount,
         openApCount,
         grossProfitMonth,

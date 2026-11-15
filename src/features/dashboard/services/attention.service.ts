@@ -480,5 +480,31 @@ export async function loadAttentionBundle(
       paidTo: r.paidTo,
     };
   });
+
+  try {
+    const { projectUpcomingRecurring } = await import(
+      "@/features/finance/services/recurring-expenses.service"
+    );
+    const projected = await projectUpcomingRecurring(businessId, today);
+    const existingKeys = new Set(
+      empty.expenses.map((e) => `${e.expenseDate}|${e.description}|${e.amount}`),
+    );
+    for (const item of projected.items) {
+      const key = `${item.expenseDate}|${item.description}|${item.amount}`;
+      if (existingKeys.has(key)) continue;
+      empty.expenses.push({
+        id: item.id,
+        description: item.description,
+        category: item.category,
+        amount: item.amount,
+        expenseDate: item.expenseDate,
+        status: item.status,
+        paidTo: null,
+      });
+    }
+    empty.expenses.sort((a, b) => a.expenseDate.localeCompare(b.expenseDate));
+  } catch {
+    /* migrate recurring_expenses first */
+  }
   return empty;
 }
