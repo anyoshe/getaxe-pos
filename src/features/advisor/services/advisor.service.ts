@@ -42,6 +42,10 @@ import {
   parsePriceMarginIntent,
   priceMarginActions,
 } from "./price-margin-explain";
+import {
+  formatProfitabilityOwnerAnswer,
+  parseProfitabilityIntent,
+} from "./profitability-health.service";
 
 export type AdvisorReplyAction = {
   label: string;
@@ -448,6 +452,14 @@ When asked for a daily/weekly/owner brief, summarise live sales, profit, cash, s
 
 When business facts include setup.isSetupComplete=false, prioritise finishing setup: state the next incomplete check, link to /settings/go-live, and only then operational KPIs.
 Vertical packs (pharmacy/hardware/agrovet/spares/general) are applied by the product after the owner confirms — explain what a pack does; do not claim you already changed data unless the user message says the pack was applied.
+
+
+PROFITABILITY (always use JSON field profitability when present):
+- Expense benchmarks are % of SALES REVENUE, not of net profit. Net is what remains after COGS and expenses.
+- Healthy product retail (pharmacy, spare, duka): rent ideally 5–10% (max ~12%) of sales; salaries ~8–18% (max ~20%); utilities ≤4%; transport ≤5%; other fixed ≤8%.
+- Gross margin targets depend on vertical (see profitability.targetGrossMarginPct). Aim for proxy net residual ≥5% of sales after monthly fixed costs.
+- When the owner asks if the business is profitable, cite overall, overallReason, each expenseBuckets status, and flags. Name which numbers are high or missing (cost prices, fixed costs, sales).
+- Do not invent figures — only use the JSON. If insufficient_data, tell them exactly what to record in GetAxe (Finance → Expenses monthly fixed costs; product cost prices; complete sales).
 `;
 
 type LlmResult = { text: string; provider: "xai" | "groq" };
@@ -714,8 +726,37 @@ export async function askBusinessAdvisor(
     }
   }
 
+  // Profitability vs expense allocation benchmarks
+  if (parseProfitabilityIntent(q)) {
+    const left = consumeUsage(businessId);
+    const health = ctx.profitability;
+    if (health) {
+      return {
+        answer: formatProfitabilityOwnerAnswer(health),
+        provider: "heuristic",
+        actions: [
+          { label: "Expenses & fixed costs", href: "/finance/expenses" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Products (cost prices)", href: "/inventory/products" },
+        ],
+        remainingToday: left,
+      };
+    }
+    return {
+      answer:
+        "I need monthly sales and Finance → Expenses **monthly fixed costs** (rent, salaries, utilities) to score profitability. Record those, then ask again: *Is my business profitable?*",
+      provider: "heuristic",
+      actions: [
+        { label: "Set fixed costs", href: "/finance/expenses" },
+        { label: "Open POS", href: "/sales/pos" },
+      ],
+      remainingToday: left,
+    };
+  }
+
   // Phase F — price & margin explanations
   if (parsePriceMarginIntent(q)) {
+
     const left = consumeUsage(businessId);
     const answer = await buildPriceMarginExplanation(businessId, q, ctx);
     return {

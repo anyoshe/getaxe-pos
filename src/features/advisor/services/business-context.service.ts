@@ -8,6 +8,7 @@ import {
   buildSetupCoachSnapshot,
   type SetupCoachSnapshot,
 } from "./setup-coach";
+import type { ProfitabilityHealth } from "./profitability-health.service";
 
 /** Compact, tenant-scoped facts for the advisor (no free-form DB access). */
 export type BusinessAdvisorContext = {
@@ -34,6 +35,8 @@ export type BusinessAdvisorContext = {
   businessName: string | null;
   businessType: string | null;
   setup: SetupCoachSnapshot;
+  /** Live expense vs revenue health (benchmark-driven) */
+  profitability: ProfitabilityHealth | null;
 };
 
 export async function buildBusinessAdvisorContext(
@@ -77,6 +80,21 @@ export async function buildBusinessAdvisorContext(
     checks: readiness.checks,
   });
 
+  let profitability: ProfitabilityHealth | null = null;
+  try {
+    const { buildProfitabilityHealth } = await import(
+      "./profitability-health.service"
+    );
+    profitability = await buildProfitabilityHealth({
+      businessId,
+      businessType: business?.businessType ?? null,
+      revenueMonth: Number(dash?.summary.revenueMonth ?? 0),
+      grossProfitMonth: Number(dash?.summary.grossProfitMonth ?? 0),
+    });
+  } catch {
+    profitability = null;
+  }
+
   return {
     asOf: new Date().toISOString(),
     salesToday: Number(dash?.summary.todaySales ?? 0),
@@ -107,6 +125,7 @@ export async function buildBusinessAdvisorContext(
     businessName: business?.name ?? null,
     businessType: business?.businessType ?? null,
     setup,
+    profitability,
   };
 }
 
