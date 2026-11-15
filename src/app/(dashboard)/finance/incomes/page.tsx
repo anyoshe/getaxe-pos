@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { financeService } from "@/features/finance/services/finance.service";
 import { IncomesClient } from "@/features/finance/components/finance-pages";
 
 export default async function IncomesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("income.view");
   const [rows, categories, cash] = await Promise.all([
     financeService.getIncomes(user.businessId).catch(() => []),
     financeService.getIncomeCategories(user.businessId).catch(() => []),

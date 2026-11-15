@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getApAging } from "@/features/finance/services/ap-aging.service";
 
 function money(n: number) {
@@ -11,8 +11,7 @@ function money(n: number) {
 }
 
 export default async function ApAgingPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("accounts.view");
 
   const aging = await getApAging(user.businessId);
   const { buckets, detail, source } = aging;

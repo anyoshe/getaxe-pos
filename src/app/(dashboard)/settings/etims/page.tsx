@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getEtimsSettingsAction } from "@/features/finance/actions/etims";
 import { EtimsSettingsClient } from "@/features/finance/components/etims-settings-client";
 
 export default async function EtimsSettingsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
   const res = await getEtimsSettingsAction();
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 md:p-6">

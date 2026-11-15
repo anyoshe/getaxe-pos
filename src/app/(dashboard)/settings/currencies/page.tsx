@@ -1,12 +1,11 @@
 import { db } from "@/db";
 import { currencies } from "@/db/schema/settings/currencies";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { fxService } from "@/features/settings/services/fx.service";
 import { CurrenciesClient } from "@/features/settings/components/currencies-client";
 
 export default async function CurrenciesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   const base =
     (user as { business?: { currency?: string } }).business?.currency ?? "KES";

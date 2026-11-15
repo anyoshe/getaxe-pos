@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { reportsOverviewService } from "@/features/reports/services/reports-overview.service";
 import { ReportsDashboard } from "@/features/reports/components/reports-dashboard";
 
@@ -9,8 +9,7 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("reports.view");
 
   const sp = await searchParams;
   const period =

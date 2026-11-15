@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { financeService } from "@/features/finance/services/finance.service";
 import { AccountsList } from "@/features/finance/components/finance-pages";
 import { db } from "@/db";
@@ -6,8 +6,7 @@ import { accountCategories } from "@/db/schema/finance/account_categories";
 import { and, eq, isNull, or, asc } from "drizzle-orm";
 
 export default async function FinanceAccountsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("accounts.view");
   await financeService.getChartOfAccounts(user.businessId).catch(() => []);
   const [accounts, categories] = await Promise.all([
     financeService.getChartOfAccounts(user.businessId).catch(() => []),

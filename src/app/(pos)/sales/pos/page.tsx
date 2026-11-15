@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { branchesService } from "@/features/settings/services/branches.service";
@@ -15,8 +15,7 @@ import { getBelowCostPolicyForBusiness } from "@/features/settings/actions/prici
 import { getEtimsSettingsRow } from "@/features/finance/services/etims-phase-a.service";
 
 export default async function FullScreenPosPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("sales.create");
 
   const cashAccountsRaw = await financeService
     .getCashAccounts(user.businessId)

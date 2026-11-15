@@ -1,6 +1,9 @@
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { RolesClient } from "@/features/users/components";
 
-export default function RolesSettingsPage() {
+export default async function RolesSettingsPage() {
+  await requirePageAccess("roles.view");
+
   return (
     <div className="space-y-4">
       <div>

@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { financeService } from "@/features/finance/services/finance.service";
 import { TaxRatesClient } from "@/features/finance/components/finance-pages";
 
 export default async function TaxRatesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("accounts.view");
   const rates = await financeService.getTaxRates(user.businessId).catch(() => []);
   return (
     <TaxRatesClient

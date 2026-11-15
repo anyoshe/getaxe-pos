@@ -1,11 +1,10 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { productBatchService, productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { TransferStockForm } from "@/features/inventory/components/stock-transfer/transfer-stock-form";
 
 export default async function TransfersPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("stock_transfers.view");
 
   const [batches, products, warehouses] = await Promise.all([
     productBatchService.getProductBatches(user.businessId),

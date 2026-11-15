@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { eq, sql } from "drizzle-orm";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { db } from "@/db";
 import { businesses } from "@/db/schema/core/businesses";
 import { products } from "@/db/schema/inventory/products";
@@ -13,8 +13,7 @@ import { ensureFinanceDefaults } from "@/features/finance/services/finance.servi
 export const dynamic = "force-dynamic";
 
 export default async function CompliancePage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   await ensureFinanceDefaults(user.businessId).catch(() => null);
 

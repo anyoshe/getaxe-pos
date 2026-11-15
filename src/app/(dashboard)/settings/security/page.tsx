@@ -1,6 +1,9 @@
+import { requireCurrentUser } from "@/lib/auth/current-user";
 import { ChangePasswordForm } from "@/features/settings/components/change-password-form";
 
-export default function SecuritySettingsPage() {
+export default async function SecuritySettingsPage() {
+  await requireCurrentUser();
+
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <div>

@@ -1,3 +1,4 @@
+import { requirePageAccess } from "@/lib/auth/authorize";
 import {
     Tabs,
     TabsContent,
@@ -10,7 +11,9 @@ import {
     RolesClient,
 } from "@/features/users/components";
 
-export default function UsersPage() {
+export default async function UsersPage() {
+  await requirePageAccess("users.view");
+
 
     return (
 

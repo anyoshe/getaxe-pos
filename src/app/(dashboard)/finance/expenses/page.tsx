@@ -1,11 +1,10 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { financeService } from "@/features/finance/services/finance.service";
 import { ExpensesClient } from "@/features/finance/components/finance-pages";
 import { listRecurringExpenses } from "@/features/finance/services/recurring-expenses.service";
 
 export default async function ExpensesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("expenses.view");
   const [rows, categories, cash, recurring] = await Promise.all([
     financeService.getExpenses(user.businessId).catch(() => []),
     financeService.getExpenseCategories(user.businessId).catch(() => []),

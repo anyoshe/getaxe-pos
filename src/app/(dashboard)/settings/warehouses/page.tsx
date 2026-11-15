@@ -1,6 +1,4 @@
-import {
-  getCurrentUser,
-} from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 
 import {
   getBranches,
@@ -17,11 +15,7 @@ import {
 export default async function Page() {
 
   const user =
-    await getCurrentUser();
-
-  if (!user) {
-    return null;
-  }
+    await requirePageAccess("warehouses.view");
 
   const [
     warehouses,

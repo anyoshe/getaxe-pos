@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { financeService } from "@/features/finance/services/finance.service";
 import { CashAccountsClient } from "@/features/finance/components/finance-pages";
 
 export default async function CashAccountsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("accounts.view");
   const [accounts, ledger] = await Promise.all([
     financeService.getCashAccountsWithBalances(user.businessId).catch(() => []),
     financeService.getChartOfAccounts(user.businessId).catch(() => []),

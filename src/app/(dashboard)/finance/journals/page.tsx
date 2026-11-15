@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { listJournals } from "@/features/finance/services/ap-aging.service";
 import { formatDateTimeNairobi } from "@/lib/timezone";
 
@@ -26,8 +26,7 @@ function readable(text: string | null | undefined, fallback = "—"): string {
 }
 
 export default async function JournalsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("journals.view");
 
   const journals = await listJournals(user.businessId);
 

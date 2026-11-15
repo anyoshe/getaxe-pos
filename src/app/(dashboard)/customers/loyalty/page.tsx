@@ -2,13 +2,12 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { customers } from "@/db/schema/sales/customers";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { loyaltyService } from "@/features/sales/services/loyalty.service";
 import { LoyaltyClient } from "@/features/sales/components/loyalty/loyalty-client";
 
 export default async function LoyaltyPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("loyalty.manage");
 
   const [program, customerRows, transactions] = await Promise.all([
     loyaltyService.getOrCreateProgram(user.businessId),

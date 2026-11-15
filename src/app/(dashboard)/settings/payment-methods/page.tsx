@@ -2,12 +2,11 @@ import { or, eq, isNull, and } from "drizzle-orm";
 
 import { db } from "@/db";
 import { paymentMethods } from "@/db/schema/settings/payment_methods";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { PaymentMethodsClient } from "@/features/settings/components/payment-methods-client";
 
 export default async function PaymentMethodsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("accounts.view");
 
   const methods = await db
     .select()

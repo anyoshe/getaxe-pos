@@ -1,8 +1,11 @@
+import { requirePageAccess } from "@/lib/auth/authorize";
 import Link from "next/link";
 
 import { FinancialReportsClient } from "@/features/reports/components/financial-reports-client";
 
-export default function FinanceReportsPage() {
+export default async function FinanceReportsPage() {
+  await requirePageAccess("reports.view");
+
   return (
     <div className="space-y-4 p-4 sm:p-6">
       <Link href="/reports" className="text-sm text-primary hover:underline">

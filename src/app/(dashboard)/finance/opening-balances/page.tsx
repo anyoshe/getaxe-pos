@@ -1,8 +1,11 @@
+import { requirePageAccess } from "@/lib/auth/authorize";
 import Link from "next/link";
 
 import { OpeningBalancesClient } from "@/features/finance/components/opening-balances-client";
 
-export default function OpeningBalancesPage() {
+export default async function OpeningBalancesPage() {
+  await requirePageAccess("accounts.update");
+
   return (
     <div className="space-y-4 p-4 sm:p-6">
       <Link

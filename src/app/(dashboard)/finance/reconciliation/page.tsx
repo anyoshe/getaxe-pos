@@ -1,11 +1,10 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { cashReconciliationService } from "@/features/finance/services/cash-reconciliation.service";
 import { CashReconciliationClient } from "@/features/finance/components/cash-reconciliation-client";
 import { financeService } from "@/features/finance/services/finance.service";
 
 export default async function CashReconciliationPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("accounts.view");
 
   // Ensure default cash drawer exists
   await financeService.getCashAccounts(user.businessId).catch(() => []);

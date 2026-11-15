@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getMpesaSettingsAction } from "@/features/finance/actions/mpesa";
 import { MpesaSettingsClient } from "@/features/finance/components/mpesa-settings-client";
 
 export default async function MpesaSettingsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
   const res = await getMpesaSettingsAction();
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 md:p-6">

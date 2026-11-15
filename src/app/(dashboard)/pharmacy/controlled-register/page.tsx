@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { db } from "@/db";
 import { products } from "@/db/schema/inventory/products";
@@ -13,8 +13,7 @@ import { formatDateTimeNairobi } from "@/lib/timezone";
 export const dynamic = "force-dynamic";
 
 export default async function ControlledRegisterPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("products.view");
 
   const caps = await new BusinessCapabilityRepository().listEnabled(
     user.businessId,

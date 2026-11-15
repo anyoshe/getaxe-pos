@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { productBatchService, productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { unitsService } from "@/features/settings/services/units.service";
@@ -9,8 +9,7 @@ import { db } from "@/db";
 import { inventoryBalances } from "@/db/schema/inventory/inventory_balances";
 
 export default async function AdjustmentsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("stock_adjustments.view");
 
   const [batches, products, warehouses, balances, units] = await Promise.all([
     productBatchService.getProductBatches(user.businessId),

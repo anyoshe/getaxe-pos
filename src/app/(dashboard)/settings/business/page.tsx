@@ -2,13 +2,12 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { businesses } from "@/db/schema/core/businesses";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { businessSettingsRepository } from "@/repositories/settings/business-settings.repository";
 import { BusinessProfileClient } from "@/features/settings/components/business-profile-client";
 
 export default async function BusinessSettingsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   const [biz] = await db
     .select()

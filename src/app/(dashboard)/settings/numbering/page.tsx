@@ -1,12 +1,11 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { numberingSequencesRepository } from "@/repositories/settings/numbering-sequences.repository";
 import { numberingSequencesService } from "@/features/settings/services/numbering-sequences.service";
 import { branchesRepository } from "@/repositories/settings/branches.repository";
 import { NumberingClient } from "@/features/settings/components/numbering-client";
 
 export default async function NumberingPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("numbering_sequences.view");
 
   const branches = await branchesRepository.findAll(user.businessId).catch(() => []);
   const branch = branches.find((b) => b.isHeadOffice) ?? branches[0];

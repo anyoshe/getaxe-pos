@@ -3,12 +3,11 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { activityLogs } from "@/db/schema/infrastructure/activity_logs";
 import { users } from "@/db/schema/users/users";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { formatDateTimeNairobi } from "@/lib/timezone";
 
 export default async function AuditLogPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   const rows = await db
     .select({

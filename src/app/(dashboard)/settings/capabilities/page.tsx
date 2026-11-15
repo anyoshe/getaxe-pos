@@ -1,12 +1,11 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { listCapabilitiesStateAction } from "@/features/settings/actions/capabilities-ui";
 import { CapabilitiesClient } from "@/features/settings/components/capabilities-client";
 
 export default async function CapabilitiesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   const state = await listCapabilitiesStateAction();
 

@@ -1,36 +1,13 @@
-import {
-  getCurrentUser,
-} from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 
-import {
-  getBranches,
-} from "@/features/settings/actions";
+import { getBranches } from "@/features/settings/actions";
 
-import {
-  BranchesClient,
-} from "@/features/settings/components/branches-client";
-
+import { BranchesClient } from "@/features/settings/components/branches-client";
 
 export default async function Page() {
+  const user = await requirePageAccess("branches.view");
 
-  const user =
-    await getCurrentUser();
+  const branches = await getBranches(user.businessId);
 
-
-  if (!user) {
-    return null;
-  }
-
-
-  const branches =
-    await getBranches(
-      user.businessId
-    );
-
-
-  return (
-    <BranchesClient
-      branches={branches}
-    />
-  );
+  return <BranchesClient branches={branches} />;
 }

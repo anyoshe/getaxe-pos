@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { financeService } from "@/features/finance/services/finance.service";
 import { PaymentsList } from "@/features/finance/components/finance-pages";
 
 export default async function FinancePaymentsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("payments.view");
   await financeService.getCashAccounts(user.businessId).catch(() => []);
   const payments = await financeService.getPayments(user.businessId).catch(() => []);
   return (
