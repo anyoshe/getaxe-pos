@@ -402,8 +402,13 @@ export function PosClient({
   const [customerDialogMode, setCustomerDialogMode] = useState<"select" | "create">("select");
   const [customerSaving, setCustomerSaving] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
+    customerType: "INDIVIDUAL" as "INDIVIDUAL" | "BUSINESS",
     firstName: "",
     lastName: "",
+    companyName: "",
+    tradingName: "",
+    registrationNumber: "",
+    taxPin: "",
     phone: "",
     idNumber: "",
     address: "",
@@ -878,15 +883,26 @@ export function PosClient({
     setCustomerSaving(true);
     try {
       const allowCredit = saleMode === "CREDIT";
+      const isBusiness = newCustomer.customerType === "BUSINESS";
       const result = await createCustomerAction({
-        customerType: "INDIVIDUAL",
+        customerType: newCustomer.customerType,
         firstName: newCustomer.firstName,
-        lastName: newCustomer.lastName,
+        lastName: newCustomer.lastName || null,
+        companyName: isBusiness ? newCustomer.companyName : null,
+        tradingName: isBusiness ? newCustomer.tradingName || null : null,
+        registrationNumber: isBusiness
+          ? newCustomer.registrationNumber || null
+          : null,
+        taxPin: isBusiness ? newCustomer.taxPin || null : null,
         phone: newCustomer.phone,
-        idNumber: newCustomer.idNumber,
+        idNumber: isBusiness ? newCustomer.idNumber || null : newCustomer.idNumber,
         address: newCustomer.address,
-        emergencyContact: newCustomer.emergencyContact,
-        emergencyPhone: newCustomer.emergencyPhone,
+        emergencyContact: isBusiness
+          ? newCustomer.emergencyContact || null
+          : newCustomer.emergencyContact,
+        emergencyPhone: isBusiness
+          ? newCustomer.emergencyPhone || null
+          : newCustomer.emergencyPhone,
         allowCredit,
         creditLimit: allowCredit ? newCustomer.creditLimit : 0,
       });
@@ -2990,38 +3006,261 @@ export function PosClient({
                   void createPosCustomer();
                 }}
               >
+                <div className="flex gap-2 rounded-xl border border-border/60 bg-muted/30 p-1">
+                  {(["INDIVIDUAL", "BUSINESS"] as const).map((typ) => (
+                    <button
+                      key={typ}
+                      type="button"
+                      onClick={() =>
+                        setNewCustomer((current) => ({
+                          ...current,
+                          customerType: typ,
+                        }))
+                      }
+                      className={
+                        "flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition " +
+                        (newCustomer.customerType === typ
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-background")
+                      }
+                    >
+                      {typ === "INDIVIDUAL" ? "Person" : "Company"}
+                    </button>
+                  ))}
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="new-pos-customer-first">First name *</Label>
-                    <Input id="new-pos-customer-first" className="h-10 rounded-xl" required value={newCustomer.firstName} onChange={(event) => setNewCustomer((current) => ({ ...current, firstName: event.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="new-pos-customer-last">Last name</Label>
-                    <Input id="new-pos-customer-last" className="h-10 rounded-xl" value={newCustomer.lastName} onChange={(event) => setNewCustomer((current) => ({ ...current, lastName: event.target.value }))} />
-                  </div>
+                  {newCustomer.customerType === "BUSINESS" ? (
+                    <>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label htmlFor="new-pos-customer-company">Company / business name *</Label>
+                        <Input
+                          id="new-pos-customer-company"
+                          className="h-10 rounded-xl"
+                          required
+                          value={newCustomer.companyName}
+                          onChange={(event) =>
+                            setNewCustomer((current) => ({
+                              ...current,
+                              companyName: event.target.value,
+                            }))
+                          }
+                          placeholder="Legal name as registered"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-pos-customer-first">Contact first name *</Label>
+                        <Input
+                          id="new-pos-customer-first"
+                          className="h-10 rounded-xl"
+                          required
+                          value={newCustomer.firstName}
+                          onChange={(event) =>
+                            setNewCustomer((current) => ({
+                              ...current,
+                              firstName: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-pos-customer-last">Contact surname</Label>
+                        <Input
+                          id="new-pos-customer-last"
+                          className="h-10 rounded-xl"
+                          value={newCustomer.lastName}
+                          onChange={(event) =>
+                            setNewCustomer((current) => ({
+                              ...current,
+                              lastName: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-pos-customer-first">First name *</Label>
+                        <Input
+                          id="new-pos-customer-first"
+                          className="h-10 rounded-xl"
+                          required
+                          value={newCustomer.firstName}
+                          onChange={(event) =>
+                            setNewCustomer((current) => ({
+                              ...current,
+                              firstName: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-pos-customer-last">Last name</Label>
+                        <Input
+                          id="new-pos-customer-last"
+                          className="h-10 rounded-xl"
+                          value={newCustomer.lastName}
+                          onChange={(event) =>
+                            setNewCustomer((current) => ({
+                              ...current,
+                              lastName: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="new-pos-customer-phone">Phone *</Label>
-                    <Input id="new-pos-customer-phone" className="h-10 rounded-xl" required minLength={7} inputMode="tel" value={newCustomer.phone} onChange={(event) => setNewCustomer((current) => ({ ...current, phone: event.target.value }))} />
+                    <Input
+                      id="new-pos-customer-phone"
+                      className="h-10 rounded-xl"
+                      required
+                      minLength={7}
+                      inputMode="tel"
+                      value={newCustomer.phone}
+                      onChange={(event) =>
+                        setNewCustomer((current) => ({
+                          ...current,
+                          phone: event.target.value,
+                        }))
+                      }
+                    />
                   </div>
                   {saleMode === "CREDIT" ? (
                     <>
+                      {newCustomer.customerType === "BUSINESS" ? (
+                        <>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="new-pos-customer-reg">Registration no. *</Label>
+                            <Input
+                              id="new-pos-customer-reg"
+                              className="h-10 rounded-xl"
+                              required
+                              value={newCustomer.registrationNumber}
+                              onChange={(event) =>
+                                setNewCustomer((current) => ({
+                                  ...current,
+                                  registrationNumber: event.target.value,
+                                }))
+                              }
+                              placeholder="PVT- / BN-"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="new-pos-customer-pin">KRA PIN *</Label>
+                            <Input
+                              id="new-pos-customer-pin"
+                              className="h-10 rounded-xl"
+                              required
+                              value={newCustomer.taxPin}
+                              onChange={(event) =>
+                                setNewCustomer((current) => ({
+                                  ...current,
+                                  taxPin: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="space-y-1.5 sm:col-span-2">
+                          <Label htmlFor="new-pos-customer-id">National ID / passport *</Label>
+                          <Input
+                            id="new-pos-customer-id"
+                            className="h-10 rounded-xl"
+                            required
+                            value={newCustomer.idNumber}
+                            onChange={(event) =>
+                              setNewCustomer((current) => ({
+                                ...current,
+                                idNumber: event.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      )}
                       <div className="space-y-1.5 sm:col-span-2">
-                        <Label htmlFor="new-pos-customer-id">National ID / passport *</Label>
-                        <Input id="new-pos-customer-id" className="h-10 rounded-xl" required value={newCustomer.idNumber} onChange={(event) => setNewCustomer((current) => ({ ...current, idNumber: event.target.value }))} />
+                        <Label htmlFor="new-pos-customer-address">
+                          {newCustomer.customerType === "BUSINESS"
+                            ? "Business address *"
+                            : "Physical address *"}
+                        </Label>
+                        <Input
+                          id="new-pos-customer-address"
+                          className="h-10 rounded-xl"
+                          required
+                          value={newCustomer.address}
+                          onChange={(event) =>
+                            setNewCustomer((current) => ({
+                              ...current,
+                              address: event.target.value,
+                            }))
+                          }
+                        />
                       </div>
-                      <div className="space-y-1.5 sm:col-span-2">
-                        <Label htmlFor="new-pos-customer-address">Physical address *</Label>
-                        <Input id="new-pos-customer-address" className="h-10 rounded-xl" required value={newCustomer.address} onChange={(event) => setNewCustomer((current) => ({ ...current, address: event.target.value }))} />
-                      </div>
+                      {newCustomer.customerType === "INDIVIDUAL" ? (
+                        <>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="new-pos-customer-next-kin">Next of kin *</Label>
+                            <Input
+                              id="new-pos-customer-next-kin"
+                              className="h-10 rounded-xl"
+                              required
+                              value={newCustomer.emergencyContact}
+                              onChange={(event) =>
+                                setNewCustomer((current) => ({
+                                  ...current,
+                                  emergencyContact: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="new-pos-customer-next-phone">Next of kin phone *</Label>
+                            <Input
+                              id="new-pos-customer-next-phone"
+                              className="h-10 rounded-xl"
+                              required
+                              inputMode="tel"
+                              value={newCustomer.emergencyPhone}
+                              onChange={(event) =>
+                                setNewCustomer((current) => ({
+                                  ...current,
+                                  emergencyPhone: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        </>
+                      ) : null}
                       <div className="space-y-1.5">
-                        <Label htmlFor="new-pos-customer-next-kin">Next of kin *</Label>
-                        <Input id="new-pos-customer-next-kin" className="h-10 rounded-xl" required value={newCustomer.emergencyContact} onChange={(event) => setNewCustomer((current) => ({ ...current, emergencyContact: event.target.value }))} />
+                        <Label htmlFor="new-pos-customer-limit">Credit limit (KES) *</Label>
+                        <Input
+                          id="new-pos-customer-limit"
+                          className="h-10 rounded-xl"
+                          required
+                          type="number"
+                          min="1"
+                          step="0.01"
+                          value={newCustomer.creditLimit}
+                          onChange={(event) =>
+                            setNewCustomer((current) => ({
+                              ...current,
+                              creditLimit: event.target.value,
+                            }))
+                          }
+                        />
                       </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="new-pos-customer-next-kin-phone">Next of kin phone *</Label>
-                        <Input id="new-pos-customer-next-kin-phone" className="h-10 rounded-xl" required minLength={7} inputMode="tel" value={newCustomer.emergencyPhone} onChange={(event) => setNewCustomer((current) => ({ ...current, emergencyPhone: event.target.value }))} />
-                      </div>
-                      <div className="space-y-1.5">
+                      <p className="self-end text-xs leading-5 text-muted-foreground">
+                        {newCustomer.customerType === "BUSINESS"
+                          ? "Company credit account — registration and KRA PIN required."
+                          : "Person credit account — ID and next of kin required."}
+                      </p>
+                    </>
+                  ) : null}
+                </div>
+<div className="space-y-1.5">
                         <Label htmlFor="new-pos-customer-limit">Credit limit (KES) *</Label>
                         <Input id="new-pos-customer-limit" className="h-10 rounded-xl" required type="number" min="1" step="0.01" value={newCustomer.creditLimit} onChange={(event) => setNewCustomer((current) => ({ ...current, creditLimit: event.target.value }))} />
                       </div>
