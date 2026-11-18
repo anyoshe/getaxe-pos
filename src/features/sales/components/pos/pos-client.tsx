@@ -2478,36 +2478,6 @@ export function PosClient({
             </div>
 
           </div>
-          <div className="shrink-0 border-t border-border/50 bg-accent/10 p-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                <UserRound className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{customerLabel || "Customer details"}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {customerLabel
-                    ? `${customerPhone || "Selected customer"}${customerPoints != null ? ` · ${customerPoints} pts` : ""}`
-                    : saleMode === "CREDIT"
-                      ? "Choose an eligible credit customer"
-                      : "Optional for cash sales"}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="shrink-0 rounded-xl border-primary/25 text-primary hover:bg-primary/5"
-                onClick={() => openCustomerDialog("select")}
-              >
-                {customerLabel ? "Change" : "Add details"}
-              </Button>
-              {customerId ? (
-                <Button type="button" variant="ghost" className="shrink-0 px-2" onClick={clearCustomer}>
-                  Clear
-                </Button>
-              ) : null}
-            </div>
-          </div>
           <div className="shrink-0 border-t border-border/50 p-2 sm:p-3">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Total</span>
@@ -2860,6 +2830,43 @@ export function PosClient({
                   Pay now (cash, M-Pesa, card…). Customer optional for loyalty.
                 </p>
               )}
+              {saleMode === "CASH" ? (
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                      <UserRound className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">
+                        {customerLabel || "Customer details"}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {customerLabel
+                          ? `${customerPhone || "Selected customer"}${customerPoints != null ? ` · ${customerPoints} pts` : ""}`
+                          : "Optional for cash sales"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="shrink-0 rounded-xl border-primary/25 px-2 text-xs text-primary hover:bg-primary/5"
+                      onClick={() => openCustomerDialog("select")}
+                    >
+                      {customerLabel ? "Change" : "Add details"}
+                    </Button>
+                    {customerId ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="shrink-0 px-2"
+                        onClick={clearCustomer}
+                      >
+                        Clear
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
               <div className="flex gap-2">
                 <Button
                   className="h-12 w-full rounded-xl text-base font-bold shadow-md"
@@ -3483,27 +3490,6 @@ export function PosClient({
               })
             )}
 
-            <div className="rounded-xl border bg-muted/30 p-3">
-              <div className="text-xs font-medium text-muted-foreground">Customer</div>
-              <div className="mt-1 flex items-center justify-between gap-2">
-                <div className="min-w-0 text-sm font-medium">
-                  {customerId
-                    ? posCustomers.find((c) => c.id === customerId)?.displayName || "Selected"
-                    : customerPhone.trim()
-                      ? customerPhone
-                      : "Walk-in (optional)"}
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="rounded-xl"
-                  onClick={() => openCustomerDialog("select")}
-                >
-                  {customerId || customerPhone ? "Change" : "Add"}
-                </Button>
-              </div>
-            </div>
           </div>
 
           <SheetFooter className="shrink-0 gap-2 border-t bg-card px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-col">
