@@ -57,8 +57,6 @@ import {
   type ReceiptData,
 } from "./sale-receipt"
 import { PosStatusStrip } from "./pos-status-strip";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { ConnectionStatus } from "@/components/layout/connection-status";
 import { useOffline } from "@/providers/offline-provider";
 import {
   outboxEnqueue,
@@ -1595,8 +1593,6 @@ export function PosClient({
             >
               {posOptionsOpen ? "Hide options" : "More options"}
             </button>
-            <ConnectionStatus />
-            <ThemeToggle className="rounded-lg bg-card/15 text-white hover:bg-card/25 hover:text-white" />
             {fullScreen ? (
               <Link
                 href="/dashboard"
@@ -3257,14 +3253,6 @@ export function PosClient({
                           ? "Company credit account — registration and KRA PIN required."
                           : "Person credit account — ID and next of kin required."}
                       </p>
-                    </>
-                  ) : null}
-                </div>
-<div className="space-y-1.5">
-                        <Label htmlFor="new-pos-customer-limit">Credit limit (KES) *</Label>
-                        <Input id="new-pos-customer-limit" className="h-10 rounded-xl" required type="number" min="1" step="0.01" value={newCustomer.creditLimit} onChange={(event) => setNewCustomer((current) => ({ ...current, creditLimit: event.target.value }))} />
-                      </div>
-                      <p className="self-end text-xs leading-5 text-muted-foreground">The customer will be enabled for credit using this limit.</p>
                     </>
                   ) : null}
                 </div>

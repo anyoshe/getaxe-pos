@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 
 export type PosStatusStripProps = {
@@ -100,6 +101,7 @@ export function PosStatusStrip({
           eTIMS · off
         </span>
       )}
+      <ThemeToggle className="h-7 w-7 shrink-0 rounded-full" />
     </div>
   );
 }
