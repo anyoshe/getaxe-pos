@@ -397,6 +397,7 @@ export function PosClient({
   const [amountTendered, setAmountTendered] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [posOptionsOpen, setPosOptionsOpen] = useState(false);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [customerDialogMode, setCustomerDialogMode] = useState<"select" | "create">("select");
   const [customerSaving, setCustomerSaving] = useState(false);
@@ -1490,6 +1491,8 @@ export function PosClient({
     },
   ];
 
+  const posStep: 1 | 2 | 3 = checkoutOpen ? 3 : cart.length > 0 ? 2 : 1;
+
   return (
     <div className={shell}>
       <div className="brand-stripe h-1.5 w-full shrink-0" />
@@ -1532,10 +1535,10 @@ export function PosClient({
             </div>
             <div className="min-w-0">
               <div className="text-base font-bold tracking-tight sm:text-lg">
-                GetAxe POS
+                Sell
               </div>
               <div className="truncate text-[10px] text-white/80 sm:text-xs">
-                {cashierName ? `Cashier · ${cashierName}` : "Point of sale"}
+                {cashierName ? cashierName : "Cashier"}
                 {branchId
                   ? ` · ${branches.find((b) => b.id === branchId)?.name ?? ""}`
                   : ""}
@@ -1544,54 +1547,38 @@ export function PosClient({
           </div>
 
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+            {/* Simple mode switch — plain words */}
             <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
-              {(["browse", "scan"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setPosView(m)}
-                  className={
-                    posView === m
-                      ? "rounded-full bg-card px-2.5 py-1.5 text-foreground shadow-sm"
-                      : "rounded-full px-2.5 py-1.5 text-white/85"
-                  }
-                >
-                  {m === "browse" ? "Browse" : "Scan"}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setPosView("browse")}
+                className={
+                  posView === "browse"
+                    ? "rounded-full bg-card px-3 py-1.5 text-foreground shadow-sm"
+                    : "rounded-full px-3 py-1.5 text-white/85"
+                }
+              >
+                Pick items
+              </button>
+              <button
+                type="button"
+                onClick={() => setPosView("scan")}
+                className={
+                  posView === "scan"
+                    ? "rounded-full bg-card px-3 py-1.5 text-foreground shadow-sm"
+                    : "rounded-full px-3 py-1.5 text-white/85"
+                }
+              >
+                Scan code
+              </button>
             </div>
-            <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
-              {(["retail", "wholesale"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setPriceMode(m)}
-                  className={
-                    priceMode === m
-                      ? "rounded-full bg-[oklch(0.70_0.14_85)] px-2.5 py-1.5 text-[oklch(0.25_0.05_55)] shadow-sm"
-                      : "rounded-full px-2.5 py-1.5 text-white/85"
-                  }
-                >
-                  {m === "retail" ? "Retail" : "Wholesale"}
-                </button>
-              ))}
-            </div>
-            <select
-              className="h-9 max-w-[9rem] flex-1 rounded-lg border-0 bg-card/15 px-2 text-xs text-white outline-none sm:flex-none"
-              value={warehouseId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setWarehouseId(id);
-                const wh = warehouses.find((w) => w.id === id);
-                if (wh?.branchId) setBranchId(wh.branchId);
-              }}
+            <button
+              type="button"
+              onClick={() => setPosOptionsOpen((v) => !v)}
+              className="rounded-lg bg-card/15 px-3 py-2 text-xs font-medium hover:bg-card/25"
             >
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id} className="text-foreground">
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              {posOptionsOpen ? "Hide options" : "More options"}
+            </button>
             <ConnectionStatus />
             <ThemeToggle className="rounded-lg bg-card/15 text-white hover:bg-card/25 hover:text-white" />
             {fullScreen ? (
@@ -1610,8 +1597,95 @@ export function PosClient({
               </Link>
             )}
           </div>
+
+          {posOptionsOpen ? (
+            <div className="flex w-full flex-wrap items-center gap-2 border-t border-white/15 pt-2">
+              <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
+                {(["retail", "wholesale"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPriceMode(m)}
+                    className={
+                      priceMode === m
+                        ? "rounded-full bg-[oklch(0.70_0.14_85)] px-2.5 py-1.5 text-[oklch(0.25_0.05_55)] shadow-sm"
+                        : "rounded-full px-2.5 py-1.5 text-white/85"
+                    }
+                  >
+                    {m === "retail" ? "Normal price" : "Wholesale price"}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-1.5 text-[11px] text-white/90">
+                <span className="shrink-0">Store room</span>
+                <select
+                  className="h-9 max-w-[11rem] rounded-lg border-0 bg-card/15 px-2 text-xs text-white outline-none"
+                  value={warehouseId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setWarehouseId(id);
+                    const wh = warehouses.find((w) => w.id === id);
+                    if (wh?.branchId) setBranchId(wh.branchId);
+                  }}
+                >
+                  {warehouses.map((w) => (
+                    <option key={w.id} value={w.id} className="text-foreground">
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
         </div>
       </header>
+
+      {/* Step guide — always visible so staff know order of work */}
+      <div className="shrink-0 border-b border-border/60 bg-card px-3 py-2 sm:px-5 xl:px-8">
+        <div className="mx-auto flex max-w-[1720px] items-stretch gap-1 sm:gap-2">
+          {(
+            [
+              { n: 1 as const, label: "1. Find products", hint: "Search, scan or tap" },
+              { n: 2 as const, label: "2. Check list", hint: "Change quantities" },
+              { n: 3 as const, label: "3. Take payment", hint: "Cash, M-Pesa or credit" },
+            ] as const
+          ).map((s) => {
+            const active = posStep === s.n;
+            const done = posStep > s.n;
+            return (
+              <div
+                key={s.n}
+                className={
+                  "flex min-w-0 flex-1 flex-col rounded-xl border px-2 py-1.5 sm:px-3 " +
+                  (active
+                    ? "border-primary bg-primary/10 shadow-sm"
+                    : done
+                      ? "border-emerald-500/30 bg-emerald-500/5"
+                      : "border-border/50 bg-muted/30")
+                }
+              >
+                <span
+                  className={
+                    "text-[11px] font-bold sm:text-xs " +
+                    (active ? "text-primary" : done ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground")
+                  }
+                >
+                  {done && !active ? "✓ " : ""}
+                  {s.label}
+                </span>
+                <span className="hidden text-[10px] text-muted-foreground sm:block">{s.hint}</span>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mx-auto mt-1.5 max-w-[1720px] text-[11px] text-muted-foreground sm:text-xs">
+          {posStep === 1
+            ? "Start here: add products to the sale."
+            : posStep === 2
+              ? "Products added — open the list to change numbers, then pay."
+              : "Choose how the customer pays, then finish the sale."}
+        </p>
+      </div>
 
       {/* POS workspace: catalogue and selected products share the desktop width equally. */}
       <div className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden xl:max-w-[1720px] xl:px-8 2xl:px-12 xl:grid xl:grid-cols-[60%_40%] xl:grid-rows-1">
@@ -2168,9 +2242,9 @@ export function PosClient({
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <div>
-                <div className="text-base font-semibold">Selected products</div>
+                <div className="text-base font-semibold">Step 2 · Your list</div>
                 <div className="text-xs text-muted-foreground">
-                  {cart.length} item{cart.length === 1 ? "" : "s"}
+                  {cart.length} product{cart.length === 1 ? "" : "s"} — change numbers if needed
                 </div>
               </div>
             </div>
@@ -2199,7 +2273,7 @@ export function PosClient({
               </div>
             ) : cart.length === 0 ? (
               <div className="flex min-h-[3rem] items-center justify-center rounded-xl border border-dashed border-chart-2/40 bg-chart-2/10 p-3 text-center text-xs text-muted-foreground">
-                Scan or tap products to start
+                Step 1 first: scan or tap products on the left
               </div>
             ) : (
               cart.map((line) => {
@@ -2434,13 +2508,13 @@ export function PosClient({
             ) : null}
             <Button
               type="button"
-              className="h-11 w-full rounded-xl font-bold"
+              className="h-12 w-full rounded-xl text-base font-bold"
               disabled={cart.length === 0}
               onClick={() => {
                 if (!notifyMissingSerials()) setCheckoutOpen(true);
               }}
             >
-              Checkout
+              Next: Pay
             </Button>
           </div>
         </section>
@@ -2449,14 +2523,14 @@ export function PosClient({
         <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
           <DialogContent className="flex max-h-[90dvh] max-w-2xl flex-col gap-0 overflow-hidden p-0">
             <DialogHeader className="shrink-0 border-b px-4 py-3">
-              <DialogTitle>Checkout</DialogTitle>
+              <DialogTitle>Step 3 · Take payment</DialogTitle>
             </DialogHeader>
             <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain p-2 pb-4 sm:p-3">
             <div
               className="space-y-2"
             >
-              <p className="text-xs font-semibold text-muted-foreground">
+              <p className="text-sm font-semibold text-foreground">
                 How is the customer paying?
               </p>
               <div className="grid grid-cols-2 gap-2.5">
@@ -2786,10 +2860,10 @@ export function PosClient({
                   onClick={checkout}
                 >
                   {pending
-                    ? "Processing…"
+                    ? "Please wait…"
                     : saleMode === "CREDIT"
-                      ? "Post credit invoice"
-                      : "Complete cash sale"}
+                      ? "Finish — customer pays later"
+                      : "Finish sale"}
                 </Button>
               </div>
             </div>
@@ -3001,18 +3075,20 @@ export function PosClient({
           <button
             type="button"
             onClick={() => setMobileCartOpen(true)}
-            className="flex min-h-12 flex-1 items-center justify-between gap-2 rounded-2xl border border-primary/25 bg-primary/10 px-3 py-2 text-left"
+            className="flex min-h-14 flex-1 items-center justify-between gap-2 rounded-2xl border border-primary/25 bg-primary/10 px-3 py-2 text-left"
           >
             <span className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                 <ShoppingCart className="h-4 w-4" />
               </span>
               <span>
-                <span className="block text-xs font-semibold text-foreground">
-                  {cart.length === 0 ? "Cart empty" : `${cart.length} item${cart.length === 1 ? "" : "s"}`}
+                <span className="block text-sm font-semibold text-foreground">
+                  {cart.length === 0
+                    ? "Your list is empty"
+                    : `${cart.length} product${cart.length === 1 ? "" : "s"}`}
                 </span>
-                <span className="block text-[10px] text-muted-foreground">
-                  Tap to review · adjust · checkout
+                <span className="block text-[11px] text-muted-foreground">
+                  {cart.length === 0 ? "Add products above first" : "Tap to check quantities"}
                 </span>
               </span>
             </span>
@@ -3022,13 +3098,18 @@ export function PosClient({
           </button>
           <Button
             type="button"
-            className="h-12 shrink-0 rounded-2xl px-4 font-bold"
+            className="h-14 shrink-0 rounded-2xl px-5 text-base font-bold"
             disabled={cart.length === 0}
             onClick={() => {
-              setMobileCartOpen(true);
+              if (!notifyMissingSerials()) {
+                setMobileCartOpen(false);
+                setCheckoutOpen(true);
+              } else {
+                setMobileCartOpen(true);
+              }
             }}
           >
-            Cart
+            Pay
           </Button>
         </div>
       </div>
@@ -3040,13 +3121,13 @@ export function PosClient({
         >
           <SheetHeader className="shrink-0 border-b px-4 py-3 text-left">
             <SheetTitle className="flex items-center justify-between gap-2">
-              <span>Sale · {cart.length} item{cart.length === 1 ? "" : "s"}</span>
+              <span>Step 2 · Your list ({cart.length})</span>
               <span className="text-base font-black tabular-nums text-primary">
                 {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </SheetTitle>
             <p className="text-xs text-muted-foreground">
-              Step 1 of 2 — review quantities, then continue to payment or credit.
+              Check numbers are correct, then press <strong>Next: Pay</strong>.
             </p>
           </SheetHeader>
 
@@ -3227,7 +3308,7 @@ export function PosClient({
                   setCheckoutOpen(true);
                 }}
               >
-                Pay / Credit
+                Next: Pay
               </Button>
             </div>
           </SheetFooter>
