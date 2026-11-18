@@ -343,7 +343,7 @@ export function PosClient({
     "grid",
   );
   /** browse = product catalogue; scan = search/scan + cart table (no product grid) */
-  const [posView, setPosView] = useState<"browse" | "scan">("browse");
+  const [posView, setPosView] = useState<"browse" | "scan">("scan");
   const [visibleCount, setVisibleCount] = useState(48);
   const [priceMode, setPriceMode] = useState<PriceMode>("retail");
   const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
@@ -1547,19 +1547,8 @@ export function PosClient({
           </div>
 
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-            {/* Simple mode switch — plain words */}
+            {/* Default = search/scan; pick-from-list is optional */}
             <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
-              <button
-                type="button"
-                onClick={() => setPosView("browse")}
-                className={
-                  posView === "browse"
-                    ? "rounded-full bg-card px-3 py-1.5 text-foreground shadow-sm"
-                    : "rounded-full px-3 py-1.5 text-white/85"
-                }
-              >
-                Pick items
-              </button>
               <button
                 type="button"
                 onClick={() => setPosView("scan")}
@@ -1569,7 +1558,18 @@ export function PosClient({
                     : "rounded-full px-3 py-1.5 text-white/85"
                 }
               >
-                Scan code
+                Search / scan
+              </button>
+              <button
+                type="button"
+                onClick={() => setPosView("browse")}
+                className={
+                  posView === "browse"
+                    ? "rounded-full bg-card px-3 py-1.5 text-foreground shadow-sm"
+                    : "rounded-full px-3 py-1.5 text-white/85"
+                }
+              >
+                Pick from list
               </button>
             </div>
             <button
@@ -1680,7 +1680,7 @@ export function PosClient({
         </div>
         <p className="mx-auto mt-1.5 max-w-[1720px] text-[11px] text-muted-foreground sm:text-xs">
           {posStep === 1
-            ? "Start here: add products to the sale."
+            ? "Start here: type a name, barcode, or scan — or switch to Pick from list."
             : posStep === 2
               ? "Products added — open the list to change numbers, then pay."
               : "Choose how the customer pays, then finish the sale."}
@@ -3088,7 +3088,7 @@ export function PosClient({
                     : `${cart.length} product${cart.length === 1 ? "" : "s"}`}
                 </span>
                 <span className="block text-[11px] text-muted-foreground">
-                  {cart.length === 0 ? "Add products above first" : "Tap to check quantities"}
+                  {cart.length === 0 ? "Search or scan a product first" : "Tap to check quantities"}
                 </span>
               </span>
             </span>
