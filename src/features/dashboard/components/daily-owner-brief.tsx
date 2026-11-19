@@ -69,7 +69,7 @@ export function DailyOwnerBriefCard({ brief }: { brief: DailyOwnerBrief }) {
               >
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Do this · {p.rank}
+                    Priority {p.rank}
                   </p>
                   <p className="mt-0.5 text-sm font-medium leading-snug text-foreground">
                     {p.title}
