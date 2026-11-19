@@ -270,7 +270,7 @@ export default async function DashboardPage() {
 
       <SectionHeader
         title="Money & stock"
-        description="Cash on hand, money owed, and profit after product cost"
+        description="Cash on hand, money owed, and gross profit"
       />
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {[
@@ -340,7 +340,7 @@ export default async function DashboardPage() {
         >
           <div>
             <p className="text-xs font-medium text-muted-foreground">
-              Profit after cost · this month
+              Gross profit · this month
             </p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
               KES{" "}

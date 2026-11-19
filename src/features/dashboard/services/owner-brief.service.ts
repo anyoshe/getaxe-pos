@@ -138,7 +138,7 @@ export function buildDailyOwnerBrief(
   narrativeParts.push(`Hi ${firstName} — here is ${shop} today.`);
   if (todayCount > 0) {
     narrativeParts.push(
-      `Sales so far: ${money(todaySales)} from ${todayCount} sale${todayCount === 1 ? "" : "s"}. After stock cost, about ${money(gpToday)} kept.`,
+      `Sales so far: ${money(todaySales)} from ${todayCount} sale${todayCount === 1 ? "" : "s"} (gross profit about ${money(gpToday)}).`,
     );
   } else {
     narrativeParts.push(
