@@ -166,12 +166,12 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          title="Today's Sales"
+          title="Sales today"
           value={`KSh ${Number(summary.todaySales).toLocaleString()}`}
           subtitle={
             saleCount === 0
-              ? "No completed sales today"
-              : `${saleCount} sale${saleCount === 1 ? "" : "s"} today`
+              ? "No completed sales yet"
+              : `${saleCount} sale${saleCount === 1 ? "" : "s"} completed`
           }
           icon={ShoppingCart}
           gradient="bg-gradient-to-r from-blue-600 to-indigo-600"
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
         <StatCard
           title="Customers"
           value={summary.customers.toString()}
-          subtitle="Registered in CRM"
+          subtitle="On your customer list"
           icon={Users}
           gradient="bg-gradient-to-r from-emerald-500 to-teal-500"
         />
@@ -188,17 +188,17 @@ export default async function DashboardPage() {
         <StatCard
           title="Products"
           value={summary.products.toString()}
-          subtitle="In catalogue"
+          subtitle="In your product list"
           icon={Package}
           gradient="bg-gradient-to-r from-amber-500 to-orange-500"
         />
 
         <StatCard
-          title="Needs restock"
+          title="Running low"
           value={summary.lowStock.toString()}
           subtitle={
             summary.lowStock === 0
-              ? "All tracked items healthy"
+              ? "Stock levels look fine"
               : "At or below reorder level"
           }
           icon={AlertTriangle}
@@ -211,11 +211,10 @@ export default async function DashboardPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="font-semibold">
-                Setup readiness · {readiness.score}%
+                Shop setup · {readiness.score}%
               </h2>
               <p className="text-sm text-muted-foreground">
-                Pick your vertical, load products, then open the till — one
-                screen for day one.
+                Finish these steps so sales and stock numbers stay accurate.
               </p>
             </div>
             <Link
@@ -241,7 +240,7 @@ export default async function DashboardPage() {
       )}
 
       <SectionHeader
-        title="Needs your attention"
+        title="Needs action"
         description="Priorities for the owner — restock, expiry, money owed, and slow stock"
       />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -270,8 +269,8 @@ export default async function DashboardPage() {
       </div>
 
       <SectionHeader
-        title="Money in the business"
-        description="Cash, stock capital, and real gross profit from sales vs product cost"
+        title="Money & stock"
+        description="Cash on hand, money owed, and profit after product cost"
       />
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {[
@@ -294,21 +293,21 @@ export default async function DashboardPage() {
             href: "/finance/payments",
           },
           {
-            label: "Open receivables",
+            label: "Owed by customers",
             value: Number(summary.openAr ?? 0),
-            hint: "Credit invoices due",
+            hint: "Credit sales not yet paid",
             href: "/sales/receivables",
           },
           {
-            label: "Open payables",
+            label: "Owed to suppliers",
             value: Number(summary.openAp ?? 0),
-            hint: "Supplier bills unpaid",
+            hint: "Supplier bills still unpaid",
             href: "/purchases/supplier-invoices",
           },
           {
             label: "Stock at cost",
             value: Number(summary.stockValue ?? 0),
-            hint: "Capital tied in inventory",
+            hint: "Value of stock at cost",
             href: "/inventory/stock",
           },
         ].map((kpi) => (
@@ -341,7 +340,7 @@ export default async function DashboardPage() {
         >
           <div>
             <p className="text-xs font-medium text-muted-foreground">
-              Gross profit · this month
+              Profit after cost · this month
             </p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
               KES{" "}
@@ -603,7 +602,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <QuickActionCard
-          title="Open POS"
+          title="Open till"
           description="Scan and sell at the register."
           href="/sales/pos"
           icon={ShoppingCart}

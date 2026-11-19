@@ -36,8 +36,8 @@ function money(n: number): string {
 }
 
 /**
- * Builds a daily “owner brief” from the same live dashboard payload —
- * no extra queries. Aimed at 10-second comprehension.
+ * Daily owner brief — medium plain language:
+ * clear for a busy shop owner, not childish, not accounting jargon.
  */
 export function buildDailyOwnerBrief(
   dashboard: OwnerDashboard,
@@ -52,10 +52,10 @@ export function buildDailyOwnerBrief(
   const ap = Number(s.openAp ?? 0);
   const low = Number(s.lowStock ?? 0);
   const expiring = dashboard.expiringBatches?.length ?? 0;
-  const lossCount = dashboard.lossSaleLines?.length ?? dashboard.lossProducts?.length ?? 0;
+  const lossCount =
+    dashboard.lossSaleLines?.length ?? dashboard.lossProducts?.length ?? 0;
 
-  const firstName =
-    opts?.ownerName?.trim().split(/\s+/)[0] || "there";
+  const firstName = opts?.ownerName?.trim().split(/\s+/)[0] || "there";
   const shop = opts?.businessName?.trim() || "your business";
 
   const priorities: OwnerBriefPriority[] = [];
@@ -63,12 +63,12 @@ export function buildDailyOwnerBrief(
   if (low > 0) {
     priorities.push({
       rank: priorities.length + 1,
-      title: `${low} product${low === 1 ? "" : "s"} need restock`,
+      title: `${low} item${low === 1 ? "" : "s"} running low`,
       detail:
         dashboard.lowStockItems
           ?.slice(0, 3)
           .map((p) => p.name)
-          .join(", ") || "Open restock list and raise a PO before shelves empty.",
+          .join(", ") || "Order stock before the shelf goes empty.",
       href: "/dashboard/attention?kind=restock",
       tone: "critical",
     });
@@ -78,8 +78,7 @@ export function buildDailyOwnerBrief(
     priorities.push({
       rank: priorities.length + 1,
       title: `${expiring} batch${expiring === 1 ? "" : "es"} near expiry`,
-      detail:
-        "Sell FEFO at the counter, promote, or write off — don’t reorder the same lines yet.",
+      detail: "Sell older stock first, discount, or write off. Avoid reordering the same lines yet.",
       href: "/dashboard/attention?kind=expiry",
       tone: "warning",
     });
@@ -88,8 +87,8 @@ export function buildDailyOwnerBrief(
   if (ar > 0) {
     priorities.push({
       rank: priorities.length + 1,
-      title: `Collect ${money(ar)} in credit`,
-      detail: `${s.openArCount || "Open"} invoice(s) on receivables.`,
+      title: `Collect ${money(ar)} owed to you`,
+      detail: `${s.openArCount || "Open"} credit sale${Number(s.openArCount) === 1 ? "" : "s"} still unpaid.`,
       href: "/sales/receivables",
       tone: "warning",
     });
@@ -99,7 +98,7 @@ export function buildDailyOwnerBrief(
     priorities.push({
       rank: priorities.length + 1,
       title: `Pay suppliers ${money(ap)}`,
-      detail: "Clear AP so GRNs and ageing stay truthful.",
+      detail: "Clear supplier balances so deliveries and records stay up to date.",
       href: "/purchases/supplier-invoices",
       tone: "info",
     });
@@ -108,9 +107,8 @@ export function buildDailyOwnerBrief(
   if (lossCount > 0) {
     priorities.push({
       rank: priorities.length + 1,
-      title: "Lines sold at or below cost",
-      detail:
-        "Review price list / markup so the counter is not giving stock away.",
+      title: "Some items sold at cost or loss",
+      detail: "Check selling prices so the counter is not undercutting your cost.",
       href: "/dashboard/profit?period=month",
       tone: "warning",
     });
@@ -119,9 +117,8 @@ export function buildDailyOwnerBrief(
   if (todayCount === 0 && priorities.length < 3) {
     priorities.push({
       rank: priorities.length + 1,
-      title: "No completed sales recorded today yet",
-      detail:
-        "If the shop is open, ensure POS sales are completed so live numbers stay true.",
+      title: "No sales completed today yet",
+      detail: "If the shop is open, finish sales on the till so today’s totals stay accurate.",
       href: "/sales/pos",
       tone: "info",
     });
@@ -130,44 +127,41 @@ export function buildDailyOwnerBrief(
   if (priorities.length === 0) {
     priorities.push({
       rank: 1,
-      title: "Nothing urgent flagged",
-      detail:
-        "Stock and money look steady. Spot-check tills and push high-margin lines at POS.",
+      title: "Nothing urgent right now",
+      detail: "Stock and cash look steady. Open the till when customers come in.",
       href: "/sales/pos",
       tone: "positive",
     });
   }
 
   const narrativeParts: string[] = [];
-  narrativeParts.push(
-    `Hi ${firstName} — snapshot for ${shop}.`,
-  );
+  narrativeParts.push(`Hi ${firstName} — here is ${shop} today.`);
   if (todayCount > 0) {
     narrativeParts.push(
-      `Today so far: ${money(todaySales)} across ${todayCount} sale${todayCount === 1 ? "" : "s"} (gross profit about ${money(gpToday)}).`,
+      `Sales so far: ${money(todaySales)} from ${todayCount} sale${todayCount === 1 ? "" : "s"}. After stock cost, about ${money(gpToday)} kept.`,
     );
   } else {
     narrativeParts.push(
-      `Today’s sales in the system are still ${money(0)}; month and cash figures below are live from completed work.`,
+      `No completed sales in the system yet today. Cash and monthly figures below still reflect finished work.`,
     );
   }
   narrativeParts.push(
-    `Cash & bank across tills: ${money(cash)}. Open AR ${money(ar)} · open AP ${money(ap)}.`,
+    `Cash & bank on hand: ${money(cash)}. Customers still owe you ${money(ar)}; you still owe suppliers ${money(ap)}.`,
   );
   if (low > 0 || expiring > 0) {
     narrativeParts.push(
-      `Attention: ${low} low-stock line${low === 1 ? "" : "s"}${expiring > 0 ? ` and ${expiring} batch(es) near expiry` : ""}.`,
+      `Watch: ${low} low-stock item${low === 1 ? "" : "s"}${expiring > 0 ? ` and ${expiring} batch(es) near expiry` : ""}.`,
     );
   }
 
   const hour = new Date().getHours();
-  const timeWord =
-    hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
+  const partOfDay =
+    hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
 
   return {
-    headline: `${timeWord} brief · what matters today`,
+    headline: `Good ${partOfDay}, ${firstName}`,
     narrative: narrativeParts.join(" "),
-    priorities: priorities.slice(0, 5),
+    priorities: priorities.slice(0, 6).map((p, i) => ({ ...p, rank: i + 1 })),
     snapshot: {
       todaySales,
       todaySalesCount: todayCount,

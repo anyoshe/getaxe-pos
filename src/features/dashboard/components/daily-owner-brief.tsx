@@ -38,7 +38,7 @@ export function DailyOwnerBriefCard({ brief }: { brief: DailyOwnerBrief }) {
               {brief.headline}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Live from your GetAxe books · use advisor for WhatsApp brief copy
+              From live sales and stock · ask the advisor to send this on WhatsApp
             </p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export function DailyOwnerBriefCard({ brief }: { brief: DailyOwnerBrief }) {
               >
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Priority {p.rank}
+                    Do this · {p.rank}
                   </p>
                   <p className="mt-0.5 text-sm font-medium leading-snug text-foreground">
                     {p.title}
@@ -79,7 +79,7 @@ export function DailyOwnerBriefCard({ brief }: { brief: DailyOwnerBrief }) {
                   </p>
                 </div>
                 <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                  Act
+                  Open
                   <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                 </span>
               </Link>

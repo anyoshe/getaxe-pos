@@ -85,11 +85,10 @@ export function resolveRoleHome(
   if (OWNER_NAMES.has(n) || n.includes("OWNER") || n.includes("ADMIN")) {
     return {
       kind: "owner",
-      title: "Your business today",
-      description:
-        "Sales, stock, cash and what needs attention — decide with facts even when you are not at the counter.",
+      title: "Business overview",
+      description: "Sales, stock, and cash at a glance — start with what needs action.",
       primaryHref: "/sales/pos",
-      primaryLabel: "Open POS",
+      primaryLabel: "Open till",
       loadOwnerDashboard: true,
       showOwnerBrief: true,
     };
@@ -102,7 +101,7 @@ export function resolveRoleHome(
       description:
         "Sell, take payment, and keep the till moving. Open POS when a customer is ready.",
       primaryHref: "/sales/pos",
-      primaryLabel: "Open POS",
+      primaryLabel: "Open till",
       loadOwnerDashboard: true,
       showOwnerBrief: false,
     };
@@ -165,7 +164,7 @@ export function resolveRoleHome(
       description:
         "Dispense, control register, and sell with batch and expiry in mind.",
       primaryHref: "/sales/pos",
-      primaryLabel: "Open POS",
+      primaryLabel: "Open till",
       loadOwnerDashboard: true,
       showOwnerBrief: false,
     };
@@ -178,7 +177,7 @@ export function resolveRoleHome(
       description:
         "Quotations, orders, invoices and the counter — close the sale.",
       primaryHref: "/sales/pos",
-      primaryLabel: "Open POS",
+      primaryLabel: "Open till",
       loadOwnerDashboard: true,
       showOwnerBrief: false,
     };
