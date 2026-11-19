@@ -240,8 +240,8 @@ export default async function DashboardPage() {
       )}
 
       <SectionHeader
-        title="Your priorities"
-        description="Start with these — restock, expiry, money owed, and slow-moving stock"
+        title="Needs action"
+        description="Your priorities right now — restock, expiry, money owed, and slow-moving stock"
       />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {attention.map((item, idx) => (
