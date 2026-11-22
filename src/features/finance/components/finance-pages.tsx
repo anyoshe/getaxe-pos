@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { formatDateTimeNairobi } from "@/lib/timezone";
+import { EmptyState } from "@/components/shared";
 import {
   createCashAccountAction,
   deactivateCashAccountAction,
@@ -912,38 +913,61 @@ export function ExpensesClient({
           Record expense
         </Button>
       </div>
-      <div className="overflow-x-auto rounded-xl border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left">
-            <tr>
-              <th className="p-3">Date</th>
-              <th className="p-3">Description</th>
-              <th className="p-3">Amount</th>
-              <th className="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {expenses.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="p-4 text-muted-foreground">
-                  No payments recorded yet.
-                </td>
-              </tr>
-            ) : (
-              expenses.map((e) => (
-                <tr key={e.id} className="border-t">
-                  <td className="p-3 text-muted-foreground">
-                    {formatDateTimeNairobi(e.expenseDate)}
-                  </td>
-                  <td className="p-3">{e.description}</td>
-                  <td className="p-3 font-medium">{Number(e.amount).toLocaleString()}</td>
-                  <td className="p-3">{e.status}</td>
+      {expenses.length === 0 ? (
+        <EmptyState
+          title="No expenses recorded yet"
+          description="Record rent, salaries, utilities and other costs so profit against fixed costs is clear."
+        />
+      ) : (
+        <>
+          <ul className="grid gap-3 md:hidden">
+            {expenses.map((e) => (
+              <li
+                key={e.id}
+                className="rounded-xl border border-border bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium leading-snug">{e.description}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {formatDateTimeNairobi(e.expenseDate)} · {e.status}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-base font-semibold tabular-nums">
+                    {Number(e.amount).toLocaleString()}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-xl border md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left">
+                <tr>
+                  <th className="p-3">Date</th>
+                  <th className="p-3">Description</th>
+                  <th className="p-3">Amount</th>
+                  <th className="p-3">Status</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {expenses.map((e) => (
+                  <tr key={e.id} className="border-t">
+                    <td className="p-3 text-muted-foreground">
+                      {formatDateTimeNairobi(e.expenseDate)}
+                    </td>
+                    <td className="p-3">{e.description}</td>
+                    <td className="p-3 font-medium">
+                      {Number(e.amount).toLocaleString()}
+                    </td>
+                    <td className="p-3">{e.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

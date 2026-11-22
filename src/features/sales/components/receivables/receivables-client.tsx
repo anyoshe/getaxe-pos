@@ -13,6 +13,7 @@ import {
   type ReceiptData,
 } from "@/features/sales/components/pos/sale-receipt";
 import { receiveCreditPaymentAction } from "@/features/sales/actions/receive-credit-payment";
+import { EmptyState } from "@/components/shared";
 
 export type OpenInvoice = {
   id: string;
@@ -179,57 +180,80 @@ export function ReceivablesClient({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-primary">
           Customer balances
         </h2>
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-secondary/50 text-left">
-              <tr>
-                <th className="p-3">Customer</th>
-                <th className="p-3">Phone</th>
-                <th className="p-3 text-right">Open invoices</th>
-                <th className="p-3 text-right">Invoiced</th>
-                <th className="p-3 text-right">Paid</th>
-                <th className="p-3 text-right">Balance</th>
-                <th className="p-3 text-right">Credit limit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="p-8 text-center text-muted-foreground"
-                  >
-                    No open customer balances.
-                  </td>
-                </tr>
-              ) : (
-                accounts.map((a) => (
-                  <tr key={a.customerId} className="border-t">
-                    <td className="p-3 font-medium">{a.customerName}</td>
-                    <td className="p-3 text-muted-foreground">
-                      {a.phone ?? "—"}
-                    </td>
-                    <td className="p-3 text-right tabular-nums">
-                      {a.openInvoices}
-                    </td>
-                    <td className="p-3 text-right tabular-nums">
-                      {money(a.totalInvoiced)}
-                    </td>
-                    <td className="p-3 text-right tabular-nums">
-                      {money(a.totalPaid)}
-                    </td>
-                    <td className="p-3 text-right font-semibold tabular-nums text-primary">
+        {accounts.length === 0 ? (
+          <EmptyState
+            title="No open balances"
+            description="When customers buy on credit, their balances appear here."
+            actionHref="/sales/pos"
+            actionLabel="Open till"
+          />
+        ) : (
+          <>
+            <ul className="grid gap-3 md:hidden">
+              {accounts.map((a) => (
+                <li
+                  key={a.customerId}
+                  className="rounded-xl border border-border bg-card p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{a.customerName}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {a.phone ?? "No phone"} · {a.openInvoices} open
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-base font-semibold tabular-nums text-rose-700 dark:text-rose-400">
                       {money(a.balance)}
-                    </td>
-                    <td className="p-3 text-right tabular-nums text-muted-foreground">
-                      {a.creditLimit > 0 ? money(a.creditLimit) : "—"}
-                    </td>
+                    </p>
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Limit {money(a.creditLimit)} · Paid {money(a.totalPaid)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-xl border md:block">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead className="bg-secondary/50 text-left">
+                  <tr>
+                    <th className="p-3">Customer</th>
+                    <th className="p-3">Phone</th>
+                    <th className="p-3 text-right">Open invoices</th>
+                    <th className="p-3 text-right">Invoiced</th>
+                    <th className="p-3 text-right">Paid</th>
+                    <th className="p-3 text-right">Balance</th>
+                    <th className="p-3 text-right">Credit limit</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {accounts.map((a) => (
+                    <tr key={a.customerId} className="border-t">
+                      <td className="p-3 font-medium">{a.customerName}</td>
+                      <td className="p-3 text-muted-foreground">
+                        {a.phone ?? "—"}
+                      </td>
+                      <td className="p-3 text-right tabular-nums">
+                        {a.openInvoices}
+                      </td>
+                      <td className="p-3 text-right tabular-nums">
+                        {money(a.totalInvoiced)}
+                      </td>
+                      <td className="p-3 text-right tabular-nums">
+                        {money(a.totalPaid)}
+                      </td>
+                      <td className="p-3 text-right font-semibold tabular-nums text-primary">
+                        {money(a.balance)}
+                      </td>
+                      <td className="p-3 text-right tabular-nums text-muted-foreground">
+                        {a.creditLimit > 0 ? money(a.creditLimit) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -246,69 +270,105 @@ export function ReceivablesClient({
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[560px] text-sm">
-              <thead className="bg-secondary/50 text-left">
-                <tr>
-                  <th className="p-3">Invoice</th>
-                  <th className="p-3">Customer</th>
-                  <th className="p-3">Date</th>
-                  <th className="p-3 text-right">Balance</th>
-                  <th className="p-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="p-8 text-center text-muted-foreground"
-                    >
-                      No pending credit invoices.
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((inv) => (
-                    <tr
-                      key={inv.id}
+          {filtered.length === 0 ? (
+            <EmptyState
+              title="No pending credit invoices"
+              description="Credit sales that still need payment will list here."
+              actionHref="/sales/pos"
+              actionLabel="Open till"
+            />
+          ) : (
+            <>
+              <ul className="grid gap-3 md:hidden">
+                {filtered.map((inv) => (
+                  <li key={inv.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectInvoice(inv)}
                       className={
-                        "border-t " +
-                        (selectedId === inv.id ? "bg-primary/10" : "")
+                        "w-full rounded-xl border p-4 text-left shadow-sm transition " +
+                        (selectedId === inv.id
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                          : "border-border bg-card hover:border-primary/30")
                       }
                     >
-                      <td className="p-3 font-mono text-xs font-medium">
-                        {inv.invoiceNumber}
-                      </td>
-                      <td className="p-3">
-                        {inv.customerName}
-                        {inv.phone ? (
-                          <span className="block text-xs text-muted-foreground">
-                            {inv.phone}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="p-3 text-muted-foreground">{inv.soldAt}</td>
-                      <td className="p-3 text-right font-semibold tabular-nums">
-                        {money(inv.balanceDue)}
-                      </td>
-                      <td className="p-3 text-right">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={
-                            selectedId === inv.id ? "default" : "outline"
-                          }
-                          onClick={() => selectInvoice(inv)}
-                        >
-                          Collect
-                        </Button>
-                      </td>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-mono text-sm font-semibold">
+                            {inv.invoiceNumber}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm">{inv.customerName}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {new Date(inv.soldAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-base font-semibold tabular-nums">
+                          {money(inv.balanceDue)}
+                        </p>
+                      </div>
+                      <p className="mt-2 text-xs font-medium text-primary">
+                        {selectedId === inv.id
+                          ? "Selected · pay below →"
+                          : "Tap to collect →"}
+                      </p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto rounded-xl border md:block">
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead className="bg-secondary/50 text-left">
+                    <tr>
+                      <th className="p-3">Invoice</th>
+                      <th className="p-3">Customer</th>
+                      <th className="p-3">Date</th>
+                      <th className="p-3 text-right">Balance</th>
+                      <th className="p-3" />
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {filtered.map((inv) => (
+                      <tr
+                        key={inv.id}
+                        className={
+                          "border-t " +
+                          (selectedId === inv.id ? "bg-primary/10" : "")
+                        }
+                      >
+                        <td className="p-3 font-mono text-xs font-medium">
+                          {inv.invoiceNumber}
+                        </td>
+                        <td className="p-3">
+                          {inv.customerName}
+                          {inv.phone ? (
+                            <span className="block text-xs text-muted-foreground">
+                              {inv.phone}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="p-3 text-muted-foreground">{inv.soldAt}</td>
+                        <td className="p-3 text-right font-semibold tabular-nums">
+                          {money(inv.balanceDue)}
+                        </td>
+                        <td className="p-3 text-right">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={
+                              selectedId === inv.id ? "default" : "outline"
+                            }
+                            onClick={() => selectInvoice(inv)}
+                          >
+                            Collect
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </section>
 
         {/* Collect form */}
