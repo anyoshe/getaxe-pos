@@ -1039,8 +1039,7 @@ export function PosClient({
       if (saleMode === "CREDIT") {
         const creditCustomer = posCustomers.find((customer) => customer.id === customerId);
         if (!creditCustomer?.allowCredit) {
-          setCheckoutOpen(false);
-      setMobileCartOpen(false);
+          toast.error("Select a credit customer before finishing.");
           openCustomerDialog("select");
           return;
         }
@@ -2509,12 +2508,51 @@ export function PosClient({
             </DialogHeader>
             <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card">
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain p-2 pb-4 sm:p-3">
+            <div className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-2.5">
+              <p className="text-sm font-semibold text-foreground">
+                1. Cash now or credit?
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSaleMode("CASH");
+                    if (paymentMethod === "CREDIT") setPaymentMethod("CASH");
+                  }}
+                  className={
+                    saleMode === "CASH"
+                      ? "min-h-[2.75rem] rounded-xl border-2 border-primary bg-primary/10 px-2 py-2 text-sm font-bold text-primary"
+                      : "min-h-[2.75rem] rounded-xl border border-border bg-background px-2 py-2 text-sm font-medium text-muted-foreground"
+                  }
+                >
+                  Pay now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSaleMode("CREDIT");
+                    setPaymentMethod("CREDIT");
+                  }}
+                  className={
+                    saleMode === "CREDIT"
+                      ? "min-h-[2.75rem] rounded-xl border-2 border-primary bg-primary/10 px-2 py-2 text-sm font-bold text-primary"
+                      : "min-h-[2.75rem] rounded-xl border border-border bg-background px-2 py-2 text-sm font-medium text-muted-foreground"
+                  }
+                >
+                  Credit (later)
+                </button>
+              </div>
+            </div>
             <div
               className="space-y-2"
             >
               <p className="text-sm font-semibold text-foreground">
-                How is the customer paying?
+                {saleMode === "CREDIT"
+                  ? "2. Credit sale — no till payment"
+                  : "2. How are they paying?"}
               </p>
+              {saleMode === "CASH" ? (
+              <>
               <div className="grid grid-cols-2 gap-2.5">
                 {payMethods.map((m) => {
                   const Icon = m.icon;
@@ -2719,7 +2757,6 @@ export function PosClient({
                   </div>
                 </div>
               ) : null}
-            </div>
 
             {saleMode === "CASH" && paymentMethod === "CASH" ? (
               <div className="grid grid-cols-2 gap-2">
@@ -2752,7 +2789,13 @@ export function PosClient({
                 </div>
               </div>
             ) : null}
-
+              </>
+              ) : (
+                <p className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
+                  Credit sale — no cash, M-Pesa, or card on this screen. Choose the customer below, then finish.
+                </p>
+              )}
+            </div>
 
           </div>
 
@@ -2782,91 +2825,73 @@ export function PosClient({
               </span>
             </div>
 
-            {/* Mobile: step 1 → continue to pay */}
-            {/* Mobile step 2 + always on desktop: sale type + complete */}
+            {/* Customer + complete — mode chosen above in scroll area */}
             <div
               className="space-y-2"
             >
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSaleMode("CASH");
-                    if (paymentMethod === "CREDIT") setPaymentMethod("CASH");
-                  }}
-                  className={
-                    saleMode === "CASH"
-                      ? "min-h-[3rem] rounded-2xl border-2 border-primary bg-primary/10 px-2 py-2.5 text-sm font-bold text-primary"
-                      : "min-h-[3rem] rounded-2xl border border-border bg-muted/40 px-2 py-2.5 text-sm font-medium text-muted-foreground"
-                  }
-                >
-                  Cash sale
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSaleMode("CREDIT");
-                    setPaymentMethod("CREDIT");
-                    setCheckoutOpen(false);
-      setMobileCartOpen(false);
-                    openCustomerDialog("select");
-                  }}
-                  className={
-                    saleMode === "CREDIT"
-                      ? "min-h-[3rem] rounded-2xl border-2 border-primary bg-primary/10 px-2 py-2.5 text-sm font-bold text-primary"
-                      : "min-h-[3rem] rounded-2xl border border-border bg-muted/40 px-2 py-2.5 text-sm font-medium text-muted-foreground"
-                  }
-                >
-                  Credit invoice
-                </button>
-              </div>
+              <p className="text-xs font-semibold text-muted-foreground">
+                3. Customer · then finish
+              </p>
               {saleMode === "CREDIT" ? (
                 <p className="text-[11px] text-muted-foreground">
-                  Posts to Accounts Receivable. Customer required before
-                  completing.
+                  Customer must be on credit — choose or create them below before finishing.
                 </p>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
-                  Pay now (cash, M-Pesa, card…). Customer optional for loyalty.
+                  Choose how they pay above. Customer is optional (loyalty / receipt name).
                 </p>
               )}
-              {saleMode === "CASH" ? (
-                <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                      <UserRound className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {customerLabel || "Customer details"}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {customerLabel
-                          ? `${customerPhone || "Selected customer"}${customerPoints != null ? ` · ${customerPoints} pts` : ""}`
-                          : "Optional for cash sales"}
-                      </p>
-                    </div>
+              {/* Customer always after cash vs credit — optional on cash, required on credit */}
+              <div
+                className={
+                  "rounded-xl border p-3 " +
+                  (saleMode === "CREDIT"
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-border/60 bg-muted/30")
+                }
+              >
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {saleMode === "CREDIT" ? "Customer (required)" : "Customer (optional)"}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                    <UserRound className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">
+                      {customerLabel ||
+                        (saleMode === "CREDIT"
+                          ? "Select credit customer"
+                          : "Walk-in / no customer")}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {customerLabel
+                        ? `${customerPhone || "Selected"}${customerPoints != null ? ` · ${customerPoints} pts` : ""}`
+                        : saleMode === "CREDIT"
+                          ? "Must allow credit"
+                          : "Skip if cash walk-in"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0 rounded-xl border-primary/25 px-2 text-xs text-primary hover:bg-primary/5"
+                    onClick={() => openCustomerDialog("select")}
+                  >
+                    {customerLabel ? "Change" : saleMode === "CREDIT" ? "Select" : "Add"}
+                  </Button>
+                  {customerId && saleMode === "CASH" ? (
                     <Button
                       type="button"
-                      variant="outline"
-                      className="shrink-0 rounded-xl border-primary/25 px-2 text-xs text-primary hover:bg-primary/5"
-                      onClick={() => openCustomerDialog("select")}
+                      variant="ghost"
+                      className="shrink-0 px-2"
+                      onClick={clearCustomer}
                     >
-                      {customerLabel ? "Change" : "Add details"}
+                      Clear
                     </Button>
-                    {customerId ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="shrink-0 px-2"
-                        onClick={clearCustomer}
-                      >
-                        Clear
-                      </Button>
-                    ) : null}
-                  </div>
+                  ) : null}
                 </div>
-              ) : null}
+              </div>
               <div className="flex gap-2">
                 <Button
                   className="h-12 w-full rounded-xl text-base font-bold shadow-md"
@@ -2874,7 +2899,9 @@ export function PosClient({
                   disabled={
                     pending ||
                     cart.length === 0 ||
-                    missingSerialLines.length > 0
+                    missingSerialLines.length > 0 ||
+                    (saleMode === "CREDIT" &&
+                      !posCustomers.find((c) => c.id === customerId)?.allowCredit)
                   }
                   onClick={checkout}
                 >
