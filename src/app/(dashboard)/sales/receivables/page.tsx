@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { businesses } from "@/db/schema/core/businesses";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import {
   listCustomerArBalancesAction,
   listOpenCreditInvoicesAction,
@@ -10,8 +10,7 @@ import {
 import { ReceivablesClient } from "@/features/sales/components/receivables/receivables-client";
 
 export default async function ReceivablesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("sales.create");
 
   const [inv, acc, businessRow] = await Promise.all([
     listOpenCreditInvoicesAction(),

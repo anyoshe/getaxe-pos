@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { salesQueryService } from "@/features/sales/services/sales-query.service";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,8 +19,7 @@ function fmt(d: Date | string) {
 }
 
 export default async function InvoicesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("sales.view");
 
   const rows = await salesQueryService.listSales(user.businessId, {
     status: "COMPLETED",

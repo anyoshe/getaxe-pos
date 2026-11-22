@@ -1,14 +1,13 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getStockMovements } from "@/features/inventory/queries";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDateTimeNairobi } from "@/lib/timezone";
 
 export default async function StockMovementsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("stock_movements.view");
 
   const movements = await getStockMovements({
     businessId: user.businessId,

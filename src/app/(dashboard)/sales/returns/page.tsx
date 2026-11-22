@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { salesQueryService } from "@/features/sales/services/sales-query.service";
 import { ReturnSaleForm } from "@/features/sales/components/returns/return-sale-form";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,8 +13,7 @@ export default async function ReturnsPage({
 }: {
   searchParams: Promise<{ saleId?: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("sales.void");
   const sp = await searchParams;
 
   const [sales, returns] = await Promise.all([

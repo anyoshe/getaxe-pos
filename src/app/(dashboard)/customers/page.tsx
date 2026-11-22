@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { salesQueryService } from "@/features/sales/services/sales-query.service";
 import { CustomersClient } from "@/features/sales/components/customers/customers-client";
 
 export default async function CustomersPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("customers.view");
 
   const customers = await salesQueryService.listCustomers(user.businessId);
 

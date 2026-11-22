@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import {
   productService,
   productContextService,
@@ -12,8 +12,7 @@ export default async function Page({
     | Promise<{ q?: string; page?: string }>
     | { q?: string; page?: string };
 }) {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("products.view");
 
   const sp = await Promise.resolve(searchParams ?? {});
   const q = typeof sp.q === "string" ? sp.q : "";

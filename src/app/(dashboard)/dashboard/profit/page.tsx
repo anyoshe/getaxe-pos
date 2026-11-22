@@ -1,3 +1,4 @@
+import { requirePageAccess } from "@/lib/auth/authorize";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -20,6 +21,8 @@ export default async function ProfitPage({
     | Promise<{ period?: string; view?: string }>
     | { period?: string; view?: string };
 }) {
+  await requirePageAccess("dashboard.view");
+
   const sp = await Promise.resolve(searchParams ?? {});
   const period = sp.period === "today" ? "today" : "month";
   const view = sp.view === "loss" ? "loss" : sp.view === "top" ? "top" : "all";

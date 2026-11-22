@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { salesQueryService } from "@/features/sales/services/sales-query.service";
@@ -8,8 +8,7 @@ import { productSerials } from "@/db/schema/inventory/product_serials";
 import { and, eq } from "drizzle-orm";
 
 export default async function QuotationsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("sales.view");
 
   const [products, warehouses, drafts, serialRows] = await Promise.all([
     productService.getProducts(user.businessId),

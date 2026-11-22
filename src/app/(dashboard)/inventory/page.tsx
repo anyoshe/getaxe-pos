@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { formatDateTimeNairobi } from "@/lib/timezone";
 
 import {
@@ -43,7 +43,7 @@ function formatCurrency(value: number) {
 }
 
 export default async function InventoryPage() {
-  const user = await getCurrentUser();
+  const user = await requirePageAccess("products.view");
 
   if (!user) {
     return null;

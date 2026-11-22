@@ -1,14 +1,13 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { productBatchService } from "@/features/inventory/services";
 import { productService } from "@/features/inventory/services";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default async function BatchesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("product_batches.view");
 
   const [batches, products] = await Promise.all([
     productBatchService.getProductBatches(user.businessId),

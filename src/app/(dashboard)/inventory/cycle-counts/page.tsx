@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { warehousesRepository } from "@/repositories/settings/warehouses.repository";
 import { stockCountsRepository } from "@/repositories/inventory/stock-counts.repository";
 import { CycleCountsClient } from "@/features/inventory/components/cycle-counts/cycle-counts-client";
 
 export default async function CycleCountsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("stock_movements.view");
 
   const caps = await new BusinessCapabilityRepository().listEnabled(
     user.businessId,

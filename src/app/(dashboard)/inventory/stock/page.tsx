@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getStockOnHand } from "@/features/inventory/queries/stock-on-hand.query";
 import { StockOnHandActions } from "@/features/inventory/components/stock/stock-on-hand-actions";
 
 export default async function StockOnHandPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("stock_movements.view");
 
   const rows = await getStockOnHand({
     businessId: user.businessId,

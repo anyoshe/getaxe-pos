@@ -1,10 +1,9 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getSetupReadiness } from "@/features/settings/services/setup-readiness.service";
 import { ReadinessClient } from "@/features/settings/components/readiness-client";
 
 export default async function ReadinessPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   const readiness = await getSetupReadiness(user.businessId);
 

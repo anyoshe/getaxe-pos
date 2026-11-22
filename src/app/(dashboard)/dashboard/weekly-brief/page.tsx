@@ -1,12 +1,11 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { buildWeeklyOwnerBrief } from "@/features/dashboard/services/weekly-owner-brief.service";
 import { WeeklyOwnerBriefClient } from "@/features/dashboard/components/weekly-owner-brief-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function WeeklyBriefPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("dashboard.view");
 
   const brief = await buildWeeklyOwnerBrief(user.businessId);
 

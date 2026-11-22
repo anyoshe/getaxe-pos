@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { pharmacyReferenceRepository } from "@/repositories/pharmacy/reference-data.repository";
 import { PharmacyCataloguesClient } from "@/features/inventory/components/pharmacy-catalogues/pharmacy-catalogues-client";
 import {
@@ -10,8 +10,7 @@ import { products } from "@/db/schema/inventory/products";
 import { and, eq, inArray } from "drizzle-orm";
 
 export default async function PharmacyCataloguesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("products.view");
 
   const programmeTemplates = listProgrammeTbHivTemplates();
   const programmeSkus = programmeTemplates.map((t) => t.sku);

@@ -1,6 +1,4 @@
-import {
-  getCurrentUser,
-} from "@/lib/auth/current-user";
+import { } from "@/lib/auth/current-user";
 
 import {
   priceListService,
@@ -11,12 +9,7 @@ import {
 } from "@/features/inventory/components/price-lists";
 
 export default async function Page() {
-  const user =
-    await getCurrentUser();
-
-  if (!user) {
-    return null;
-  }
+  const user = await requirePageAccess("price_lists.view");
 
   const priceLists =
     await priceListService.getPriceLists(

@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { SettingsHub } from "@/features/settings/components/settings-hub";
 import { branchesRepository } from "@/repositories/settings/branches.repository";
 import { warehousesRepository } from "@/repositories/settings/warehouses.repository";
@@ -6,8 +6,7 @@ import { userRepository } from "@/repositories/users/user.repository";
 import { unitsRepository } from "@/repositories/settings/units.repository";
 
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   const [branches, warehouses, users, units] = await Promise.all([
     branchesRepository.count(user.businessId).catch(() => 0),

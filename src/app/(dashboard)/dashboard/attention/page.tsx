@@ -1,3 +1,4 @@
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getAttentionBundleAction } from "@/features/dashboard/actions/attention-actions";
 import { AttentionCenter } from "@/features/dashboard/components/attention-center";
 
@@ -17,6 +18,8 @@ export default async function AttentionPage({
 }: {
   searchParams: Promise<{ kind?: string }> | { kind?: string };
 }) {
+  await requirePageAccess("dashboard.view");
+
   const sp = await Promise.resolve(searchParams);
   const kind = KINDS.has(sp.kind ?? "") ? (sp.kind as string) : "restock";
   const res = await getAttentionBundleAction(kind);

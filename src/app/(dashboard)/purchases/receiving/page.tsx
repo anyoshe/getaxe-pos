@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { productUnits } from "@/db/schema/inventory/product_units";
 import { units } from "@/db/schema/settings/units";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { productService } from "@/features/inventory/services";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { purchasesQueryService } from "@/features/purchases/services";
@@ -16,8 +16,7 @@ export default async function GoodsReceivingPage({
 }: {
   searchParams?: Promise<{ po?: string }> | { po?: string };
 }) {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("goods_receipts.view");
 
   const sp =
     searchParams &&

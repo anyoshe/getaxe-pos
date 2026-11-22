@@ -1,11 +1,10 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { warehousesService } from "@/features/settings/services/warehouses.service";
 import { supplierService } from "@/features/inventory/services";
 import { ReceiveStockForm } from "@/features/inventory/components/stock-receive";
 
 export default async function ReceiveStockPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("stock_movements.view");
 
   const [warehouses, suppliers] = await Promise.all([
     warehousesService.getWarehouses(user.businessId),

@@ -1,8 +1,11 @@
+import { requirePageAccess } from "@/lib/auth/authorize";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export default function StaffSopPage() {
+export default async function StaffSopPage() {
+  await requirePageAccess("business.view");
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 sm:p-6 print:max-w-none print:p-0">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 
 import {
   productService,
@@ -22,7 +22,7 @@ function isMissingColumnError(err: unknown): boolean {
 }
 
 export default async function Page() {
-  const user = await getCurrentUser();
+  const user = await requirePageAccess("product_prices.view");
 
   if (!user) {
     return null;

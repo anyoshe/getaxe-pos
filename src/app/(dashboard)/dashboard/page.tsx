@@ -35,7 +35,7 @@ import {
 import { resolveRoleHome } from "@/features/dashboard/lib/role-home";
 import { buildDailyOwnerBrief } from "@/features/dashboard/services/owner-brief.service";
 import { getSetupReadiness } from "@/features/settings/services/setup-readiness.service";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import Link from "next/link";
 import type { AttentionKind } from "@/features/dashboard/types";
 
@@ -58,7 +58,7 @@ function attentionStyles(kind: AttentionKind) {
 }
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
+  const user = await requirePageAccess("dashboard.view");
   const roleName = user?.role?.name ?? null;
   const home = resolveRoleHome(roleName);
   const dashboard = await getOwnerDashboardAction();

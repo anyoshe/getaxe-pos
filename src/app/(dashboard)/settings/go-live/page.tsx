@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { getSetupReadiness } from "@/features/settings/services/setup-readiness.service";
 import { GoLiveDayClient } from "@/features/settings/components/go-live-day-client";
 import { businessRepository } from "@/repositories/core/business.repository";
@@ -6,8 +6,7 @@ import { businessRepository } from "@/repositories/core/business.repository";
 export const dynamic = "force-dynamic";
 
 export default async function GoLiveDayPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("business.view");
 
   const [readiness, business] = await Promise.all([
     getSetupReadiness(user.businessId),

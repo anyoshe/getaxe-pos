@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { productUnits } from "@/db/schema/inventory/product_units";
 import { units } from "@/db/schema/settings/units";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { productService } from "@/features/inventory/services";
 import { supplierService } from "@/features/inventory/services/suppliers.service";
 import { purchasesQueryService } from "@/features/purchases/services";
@@ -29,8 +29,7 @@ export default async function PurchaseOrdersPage({
   }
   const openCreate = sp.open === "1" || !!initialPrefill?.length;
 
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("purchase_orders.view");
 
   const [orders, suppliers, products, unitRows, allUnits] = await Promise.all([
     purchasesQueryService.getPurchaseOrders(user.businessId).catch(() => []),

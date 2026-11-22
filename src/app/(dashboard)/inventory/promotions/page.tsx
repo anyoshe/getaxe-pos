@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
 
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { BusinessCapabilityRepository } from "@/features/capabilities/repositories";
 import { promotionsRepository } from "@/repositories/inventory/promotions.repository";
 import { productRepository } from "@/repositories/inventory/products.repository";
 import { PromotionsClient } from "@/features/inventory/components/promotions/promotions-client";
 
 export default async function PromotionsPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("products.view");
 
   const caps = await new BusinessCapabilityRepository().listEnabled(
     user.businessId,

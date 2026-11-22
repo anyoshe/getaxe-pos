@@ -3,14 +3,13 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { cashAccounts } from "@/db/schema/finance/cash_accounts";
 import { chartOfAccounts } from "@/db/schema/finance/chart_of_accounts";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 import { supplierInvoiceService } from "@/features/purchases/services/supplier-invoice.service";
 import { supplierRepository } from "@/repositories/inventory/suppliers.repository";
 import { SupplierInvoicesClient } from "@/features/purchases/components/supplier-invoices/supplier-invoices-client";
 
 export default async function SupplierInvoicesPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const user = await requirePageAccess("purchase_orders.view");
 
   const [invoices, suppliers, payFromAccounts] = await Promise.all([
     supplierInvoiceService.list(user.businessId).catch(() => []),
