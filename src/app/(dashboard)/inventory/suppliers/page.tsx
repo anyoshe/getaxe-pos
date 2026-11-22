@@ -1,4 +1,4 @@
-import { } from "@/lib/auth/current-user";
+import { requirePageAccess } from "@/lib/auth/authorize";
 
 import {
   supplierService,
