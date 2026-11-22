@@ -12,6 +12,9 @@ import { db } from "@/db";
 import { taxRates } from "@/db/schema/finance/tax_rates";
 import { expenses } from "@/db/schema/finance/expenses";
 import { incomes } from "@/db/schema/finance/incomes";
+import { expenseCategories } from "@/db/schema/finance/expense_categories";
+import { incomeCategories } from "@/db/schema/finance/income_categories";
+import { and, eq, sql } from "drizzle-orm";
 import { cashAccounts } from "@/db/schema/finance/cash_accounts";
 import { chartOfAccounts } from "@/db/schema/finance/chart_of_accounts";
 import { financeService } from "../services/finance.service";
@@ -51,6 +54,125 @@ export async function createTaxRateAction(input: unknown) {
     return {
       success: false as const,
       message: e instanceof Error ? e.message : "Failed to create tax rate.",
+    };
+  }
+}
+
+
+export async function createExpenseCategoryAction(input: unknown) {
+  const user = await requireAuthorizedUser("accounts.update");
+  const parsed = z
+    .object({
+      name: z.string().trim().min(1, "Category name is required").max(120),
+      description: z.string().trim().max(500).optional().nullable(),
+    })
+    .safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, message: "Enter a category name." };
+  }
+  const name = parsed.data.name;
+  try {
+    const existingRows = await db
+      .select()
+      .from(expenseCategories)
+      .where(eq(expenseCategories.businessId, user.businessId));
+    const existing = existingRows.find(
+      (r) => r.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) {
+      if (!existing.active) {
+        await db
+          .update(expenseCategories)
+          .set({ active: true, updatedAt: new Date() })
+          .where(eq(expenseCategories.id, existing.id));
+      }
+      revalidatePath("/finance/expenses");
+      return {
+        success: true as const,
+        message: "Category already existed — selected.",
+        id: existing.id,
+        name: existing.name,
+      };
+    }
+    const [row] = await db
+      .insert(expenseCategories)
+      .values({
+        businessId: user.businessId,
+        name,
+        description: parsed.data.description ?? null,
+        active: true,
+      })
+      .returning();
+    revalidatePath("/finance/expenses");
+    return {
+      success: true as const,
+      message: "Expense category created.",
+      id: row.id,
+      name: row.name,
+    };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Could not create category.",
+    };
+  }
+}
+
+export async function createIncomeCategoryAction(input: unknown) {
+  const user = await requireAuthorizedUser("accounts.update");
+  const parsed = z
+    .object({
+      name: z.string().trim().min(1, "Category name is required").max(120),
+      description: z.string().trim().max(500).optional().nullable(),
+    })
+    .safeParse(input);
+  if (!parsed.success) {
+    return { success: false as const, message: "Enter a category name." };
+  }
+  const name = parsed.data.name;
+  try {
+    const existingRows = await db
+      .select()
+      .from(incomeCategories)
+      .where(eq(incomeCategories.businessId, user.businessId));
+    const existing = existingRows.find(
+      (r) => r.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) {
+      if (!existing.active) {
+        await db
+          .update(incomeCategories)
+          .set({ active: true, updatedAt: new Date() })
+          .where(eq(incomeCategories.id, existing.id));
+      }
+      revalidatePath("/finance/incomes");
+      return {
+        success: true as const,
+        message: "Category already existed — selected.",
+        id: existing.id,
+        name: existing.name,
+      };
+    }
+    const [row] = await db
+      .insert(incomeCategories)
+      .values({
+        businessId: user.businessId,
+        name,
+        description: parsed.data.description ?? null,
+        active: true,
+      })
+      .returning();
+    revalidatePath("/finance/incomes");
+    return {
+      success: true as const,
+      message: "Income category created.",
+      id: row.id,
+      name: row.name,
+    };
+  } catch (e) {
+    return {
+      success: false as const,
+      message: e instanceof Error ? e.message : "Could not create category.",
     };
   }
 }

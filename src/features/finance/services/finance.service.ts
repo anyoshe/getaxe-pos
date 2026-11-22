@@ -11,6 +11,10 @@ import { cashAccounts } from "@/db/schema/finance/cash_accounts";
 import { taxRates } from "@/db/schema/finance/tax_rates";
 import { paymentMethods } from "@/db/schema/settings/payment_methods";
 import { expenseCategories } from "@/db/schema/finance/expense_categories";
+import {
+  DEFAULT_EXPENSE_CATEGORIES,
+  DEFAULT_INCOME_CATEGORIES,
+} from "@/features/finance/constants/default-categories";
 import { expenses } from "@/db/schema/finance/expenses";
 import { incomeCategories } from "@/db/schema/finance/income_categories";
 import { incomes } from "@/db/schema/finance/incomes";
@@ -270,30 +274,43 @@ export async function ensureFinanceDefaults(businessId: string) {
     }
   }
 
-  // Expense / income categories
+  // Expense / income categories — seed full catalogue; skip names already present
   const expCats = await db
     .select()
     .from(expenseCategories)
     .where(eq(expenseCategories.businessId, businessId));
-  if (expCats.length === 0) {
-    await db.insert(expenseCategories).values([
-      { businessId, name: "Rent", active: true },
-      { businessId, name: "Utilities", active: true },
-      { businessId, name: "Salaries", active: true },
-      { businessId, name: "Transport", active: true },
-      { businessId, name: "Miscellaneous", active: true },
-    ]);
+  const expNames = new Set(expCats.map((c) => c.name.trim().toLowerCase()));
+  const expToAdd = DEFAULT_EXPENSE_CATEGORIES.filter(
+    (c) => !expNames.has(c.name.trim().toLowerCase()),
+  );
+  if (expToAdd.length > 0) {
+    await db.insert(expenseCategories).values(
+      expToAdd.map((c) => ({
+        businessId,
+        name: c.name,
+        description: c.description ?? null,
+        active: true,
+      })),
+    );
   }
 
   const incCats = await db
     .select()
     .from(incomeCategories)
     .where(eq(incomeCategories.businessId, businessId));
-  if (incCats.length === 0) {
-    await db.insert(incomeCategories).values([
-      { businessId, name: "Sales", active: true },
-      { businessId, name: "Other income", active: true },
-    ]);
+  const incNames = new Set(incCats.map((c) => c.name.trim().toLowerCase()));
+  const incToAdd = DEFAULT_INCOME_CATEGORIES.filter(
+    (c) => !incNames.has(c.name.trim().toLowerCase()),
+  );
+  if (incToAdd.length > 0) {
+    await db.insert(incomeCategories).values(
+      incToAdd.map((c) => ({
+        businessId,
+        name: c.name,
+        description: c.description ?? null,
+        active: true,
+      })),
+    );
   }
 
 

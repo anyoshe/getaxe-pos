@@ -17,6 +17,8 @@ import {
   updateChartAccountAction,
   createExpenseAction,
   createIncomeAction,
+  createExpenseCategoryAction,
+  createIncomeCategoryAction,
   createTaxRateAction,
   createRecurringExpenseAction,
   setRecurringExpenseActiveAction,
@@ -601,7 +603,10 @@ export function ExpensesClient({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [catList, setCatList] = useState(categories);
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [newCatName, setNewCatName] = useState("");
+  const [showNewCat, setShowNewCat] = useState(false);
   const [cashAccountId, setCashAccountId] = useState(cashAccounts[0]?.id ?? "");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -793,14 +798,67 @@ export function ExpensesClient({
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "__new__") {
+                  setShowNewCat(true);
+                  return;
+                }
+                setShowNewCat(false);
+                setCategoryId(v);
+              }}
             >
-              {categories.map((c) => (
+              {catList.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
+              <option value="__new__">+ Create new category…</option>
             </select>
+            {showNewCat ? (
+              <div className="mt-2 flex gap-2">
+                <Input
+                  placeholder="New category name"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  className="h-9"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={pending || !newCatName.trim()}
+                  onClick={() =>
+                    start(async () => {
+                      const r = await createExpenseCategoryAction({
+                        name: newCatName.trim(),
+                      });
+                      if (!r.success) {
+                        toast.error(r.message);
+                        return;
+                      }
+                      toast.success(r.message);
+                      setCatList((prev) => {
+                        if (prev.some((c) => c.id === r.id)) return prev;
+                        return [...prev, { id: r.id, name: r.name }].sort((a, b) =>
+                          a.name.localeCompare(b.name),
+                        );
+                      });
+                      setCategoryId(r.id);
+                      setRecCatId((id) => id || r.id);
+                      setNewCatName("");
+                      setShowNewCat(false);
+                      router.refresh();
+                    })
+                  }
+                >
+                  Save
+                </Button>
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                Pick a type, or create one if it is missing (Other is available).
+              </p>
+            )}
           </div>
           <div className="space-y-1">
             <Label>Paid from</Label>
@@ -901,7 +959,10 @@ export function IncomesClient({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [catList, setCatList] = useState(categories);
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [newCatName, setNewCatName] = useState("");
+  const [showNewCat, setShowNewCat] = useState(false);
   const [cashAccountId, setCashAccountId] = useState(cashAccounts[0]?.id ?? "");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -912,7 +973,7 @@ export function IncomesClient({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Other income</h1>
         <p className="text-sm text-muted-foreground">
-          Non-POS income (service fees, refunds in, etc.). POS sales appear under Payments.
+          Non-POS income (service fees, commissions, refunds…). Till sales stay under Payments.
         </p>
       </div>
       <div className="grid max-w-xl gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
@@ -922,14 +983,66 @@ export function IncomesClient({
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "__new__") {
+                  setShowNewCat(true);
+                  return;
+                }
+                setShowNewCat(false);
+                setCategoryId(v);
+              }}
             >
-              {categories.map((c) => (
+              {catList.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
+              <option value="__new__">+ Create new category…</option>
             </select>
+            {showNewCat ? (
+              <div className="mt-2 flex gap-2">
+                <Input
+                  placeholder="New category name"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  className="h-9"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={pending || !newCatName.trim()}
+                  onClick={() =>
+                    start(async () => {
+                      const r = await createIncomeCategoryAction({
+                        name: newCatName.trim(),
+                      });
+                      if (!r.success) {
+                        toast.error(r.message);
+                        return;
+                      }
+                      toast.success(r.message);
+                      setCatList((prev) => {
+                        if (prev.some((c) => c.id === r.id)) return prev;
+                        return [...prev, { id: r.id, name: r.name }].sort((a, b) =>
+                          a.name.localeCompare(b.name),
+                        );
+                      });
+                      setCategoryId(r.id);
+                      setNewCatName("");
+                      setShowNewCat(false);
+                      router.refresh();
+                    })
+                  }
+                >
+                  Save
+                </Button>
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                Pick a type, or create one if it is missing (Other is available).
+              </p>
+            )}
           </div>
           <div className="space-y-1">
             <Label>Received into</Label>
