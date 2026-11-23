@@ -1180,7 +1180,7 @@ export function PosClient({
             serialNumbers: l.serialized ? l.selectedSerials : [],
           })),
           offline: true,
-        };
+        });
         setCart([]);
         setAmountTendered("");
         setPaymentReference("");
