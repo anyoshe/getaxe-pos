@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import type { CurrentUser } from "@/lib/auth/current-user";
+import { ForbiddenBanner } from "@/components/shared/forbidden-banner";
 
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
@@ -39,6 +40,9 @@ export function AppShell({ children, user }: AppShellProps) {
 
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-5 md:px-6 lg:px-8">
+            <Suspense fallback={null}>
+              <ForbiddenBanner />
+            </Suspense>
             {children}
           </div>
         </main>
