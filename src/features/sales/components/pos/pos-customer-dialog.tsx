@@ -1,5 +1,6 @@
-import type { Dispatch, SetStateAction } from "react";
 "use client";
+
+import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

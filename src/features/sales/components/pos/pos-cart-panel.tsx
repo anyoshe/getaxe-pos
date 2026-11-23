@@ -1,5 +1,7 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
+
 import { ShoppingCart, Trash2, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -7,7 +9,7 @@ import type { CartLine, PosBatchOption } from "./pos-types";
 
 export type PosCartPanelProps = {
   cart: CartLine[];
-  setCart: React.Dispatch<React.SetStateAction<CartLine[]>>;
+  setCart: Dispatch<SetStateAction<CartLine[]>>;
   total: number;
   missingSerialLines: CartLine[];
   notifyMissingSerials: () => boolean;
@@ -29,8 +31,7 @@ export function PosCartPanel({
   freeSerials,
 }: PosCartPanelProps) {
   return (
-        {/* Selected products and customer details */}
-        <section className="hidden min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-border/60 bg-gradient-to-b from-accent/20 via-accent/10 to-background xl:flex xl:h-full xl:border-t-0 xl:border-l xl:border-border/60">
+    <section className="hidden min-h-0 w-full flex-1 flex-col overflow-hidden border-t border-border/60 bg-gradient-to-b from-accent/20 via-accent/10 to-background xl:flex xl:h-full xl:border-t-0 xl:border-l xl:border-border/60">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

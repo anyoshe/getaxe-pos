@@ -64,8 +64,7 @@ export function PosCatalogPanel({
   searchHits,
 }: PosCatalogPanelProps) {
   return (
-        {/* CATALOGUE — col 1 */}
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-background pb-20 xl:h-full xl:min-h-0 xl:pb-0">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-background pb-20 xl:h-full xl:min-h-0 xl:pb-0">
           <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3 xl:px-5 2xl:px-7">
             <div className="relative">
               <div className="flex gap-2">
