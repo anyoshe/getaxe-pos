@@ -43,6 +43,17 @@ function customerDisplay(c: {
   };
 }
 
+export type PosCustomerOption = {
+  id: string;
+  displayName: string;
+  contactName: string | null;
+  isBusiness: boolean;
+  phone: string | null;
+  allowCredit: boolean;
+  creditLimit: number;
+  loyaltyPoints: number;
+};
+
 /** Customers available on POS (picker). Credit-enabled sorted first when credit mode. */
 export async function listPosCustomersAction() {
   const user = await requireAuthorizedUser("sales.create");
@@ -111,7 +122,7 @@ export async function lookupCustomerByPhoneAction(phone: string) {
     .getOrCreateProgram(user.businessId)
     .catch(() => null);
 
-  const d = customerDisplay(customer as any);
+  const d = customerDisplay(customer);
 
   return {
     success: true as const,
@@ -123,10 +134,10 @@ export async function lookupCustomerByPhoneAction(phone: string) {
       phone: customer.phone,
       customerNumber: customer.customerNumber,
       loyaltyPoints: Number(customer.loyaltyPoints ?? 0),
-      companyName: (customer as any).companyName ?? null,
-      customerType: (customer as any).customerType ?? "INDIVIDUAL",
-      allowCredit: Boolean((customer as any).allowCredit),
-      creditLimit: Number((customer as any).creditLimit ?? 0),
+      companyName: customer.companyName ?? null,
+      customerType: customer.customerType ?? "INDIVIDUAL",
+      allowCredit: Boolean(customer.allowCredit),
+      creditLimit: Number(customer.creditLimit ?? 0),
       ...d,
     },
     program: program
@@ -195,7 +206,7 @@ export async function ensurePosCustomerAction(input: unknown) {
       });
     }
 
-    const d = customerDisplay(existing as any);
+    const d = customerDisplay(existing);
     return {
       success: true as const,
       customerId: existing.id,
@@ -203,8 +214,8 @@ export async function ensurePosCustomerAction(input: unknown) {
       ...d,
       phone: existing.phone ?? phone,
       loyaltyPoints: Number(existing.loyaltyPoints ?? 0),
-      companyName: (existing as any).companyName ?? null,
-      customerType: (existing as any).customerType ?? "INDIVIDUAL",
+      companyName: existing.companyName ?? null,
+      customerType: existing.customerType ?? "INDIVIDUAL",
     };
   }
 
@@ -222,7 +233,7 @@ export async function ensurePosCustomerAction(input: unknown) {
       active: true,
       allowCredit: false,
       creditLimit: "0",
-    } as any);
+    });
 
     return {
       success: true as const,

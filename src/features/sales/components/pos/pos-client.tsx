@@ -69,6 +69,7 @@ import {
   ensurePosCustomerAction,
   listPosCustomersAction,
   lookupCustomerByPhoneAction,
+  type PosCustomerOption,
   previewLoyaltyEarnAction,
 } from "../../actions/pos-customer";
 import { createCustomerAction } from "../../actions/create-customer";
@@ -420,18 +421,7 @@ export function PosClient({
   const [customerLabel, setCustomerLabel] = useState<string | null>(null);
   const [customerPoints, setCustomerPoints] = useState<number | null>(null);
   const [customerContactName, setCustomerContactName] = useState<string | null>(null);
-  const [posCustomers, setPosCustomers] = useState<
-    Array<{
-      id: string;
-      displayName: string;
-      contactName: string | null;
-      phone: string | null;
-      allowCredit: boolean;
-      creditLimit: number;
-      loyaltyPoints: number;
-      isBusiness: boolean;
-    }>
-  >([]);
+  const [posCustomers, setPosCustomers] = useState<PosCustomerOption[]>([]);
   const [earnPreview, setEarnPreview] = useState<number | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -451,7 +441,7 @@ export function PosClient({
 
   useEffect(() => {
     void listPosCustomersAction().then((r) => {
-      if (r.success) setPosCustomers(r.customers as any);
+      if (r.success) setPosCustomers(r.customers);
     });
   }, []);
 
@@ -915,12 +905,12 @@ export function PosClient({
       ]);
       if (!lookup.success || !lookup.found) {
         toast.error("Customer was created, but could not be selected. Find them by phone in the customer picker.");
-        if (refreshedCustomers.success) setPosCustomers(refreshedCustomers.customers as any);
+        if (refreshedCustomers.success) setPosCustomers(refreshedCustomers.customers);
         return;
       }
 
       if (refreshedCustomers.success) {
-        setPosCustomers(refreshedCustomers.customers as any);
+        setPosCustomers(refreshedCustomers.customers);
       }
       setCustomerId(lookup.customer.id);
       setCustomerLabel(lookup.customer.displayName);
@@ -1143,10 +1133,10 @@ export function PosClient({
           resolvedCustomerId = ensured.customerId;
           setCustomerId(ensured.customerId);
           setCustomerLabel(ensured.displayName);
-          setCustomerContactName((ensured as any).contactName ?? null);
+          setCustomerContactName(ensured.contactName ?? null);
           if (ensured.created) {
             void listPosCustomersAction().then((r) => {
-              if (r.success) setPosCustomers(r.customers as any);
+              if (r.success) setPosCustomers(r.customers);
             });
           }
           receiptNote = `Customer: ${ensured.displayName} (${ensured.phone})`;
@@ -1269,7 +1259,7 @@ export function PosClient({
             serialNumbers: l.serialized ? l.selectedSerials : [],
           })),
           offline: true,
-        } as any);
+        };
         setCart([]);
         setAmountTendered("");
         setPaymentReference("");
