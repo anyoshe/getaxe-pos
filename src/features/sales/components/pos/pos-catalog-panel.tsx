@@ -1,12 +1,18 @@
 "use client";
 
 import type { Dispatch, KeyboardEvent, RefObject, SetStateAction } from "react";
-import { ScanBarcode, ShoppingCart } from "lucide-react";
+import { Minus, Plus, ScanBarcode, ShoppingCart, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
-import type { CartLine, PosProduct, PosProductUnit } from "./pos-types";
+import type {
+  CartLine,
+  PosBatchOption,
+  PosProduct,
+  PosProductUnit,
+  PriceMode,
+} from "./pos-types";
 
 export type PosCatalogPanelProps = {
   scanRef: RefObject<HTMLInputElement | null>;
@@ -14,9 +20,8 @@ export type PosCatalogPanelProps = {
   setQuery: (v: string) => void;
   onScanKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
   posView: "browse" | "scan";
-  setPosView: (v: "browse" | "scan") => void;
   showCamera: boolean;
-  setShowCamera: (v: boolean) => void;
+  setShowCamera: Dispatch<SetStateAction<boolean>>;
   categoryFilter: string;
   setCategoryFilter: (id: string) => void;
   categories: { id: string; name: string }[];
@@ -31,8 +36,12 @@ export type PosCatalogPanelProps = {
   cart: CartLine[];
   setCart: Dispatch<SetStateAction<CartLine[]>>;
   unitsMap: Record<string, PosProductUnit[]>;
-  priceFor: (p: PosProduct, unitId: string | null, factor: number) => number;
-  warehouseId: string | null;
+  priceMode: PriceMode;
+  resolveCode: (code: string) => void;
+  setLineUnit: (productId: string, unitId: string) => void;
+  batchesFor: (productId: string) => PosBatchOption[];
+  toggleSerial: (productId: string, serial: string) => void;
+  freeSerials: (productId: string) => string[];
   searchHits: (term: string, limit?: number) => PosProduct[];
 };
 
@@ -42,7 +51,6 @@ export function PosCatalogPanel({
   setQuery,
   onScanKeyDown,
   posView,
-  setPosView,
   showCamera,
   setShowCamera,
   categoryFilter,
@@ -59,10 +67,18 @@ export function PosCatalogPanel({
   cart,
   setCart,
   unitsMap,
-  priceFor,
-  warehouseId,
+  priceMode,
+  resolveCode,
+  setLineUnit,
+  batchesFor,
+  toggleSerial,
+  freeSerials,
   searchHits,
 }: PosCatalogPanelProps) {
+  const browsing = Boolean(query.trim()) || categoryFilter !== "all";
+  const hasMore = visibleProducts.length < filtered.length;
+  const searchSuggestions = query.trim() ? searchHits(query, 15) : [];
+
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-primary/10 via-primary/5 to-background pb-20 xl:h-full xl:min-h-0 xl:pb-0">
           <div className="z-10 shrink-0 space-y-2 border-b border-border/50 bg-background/95 p-2.5 backdrop-blur sm:p-3 xl:px-5 2xl:px-7">

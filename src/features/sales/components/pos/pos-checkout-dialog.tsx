@@ -60,6 +60,11 @@ export type PosCheckoutDialogProps = {
   customerPhone: string;
   customerPoints: number | null;
   posCustomers: PosCustomerOption[];
+  mpesaStkEnabled: boolean;
+  stkBusy: boolean;
+  requestMpesaStk: () => Promise<void>;
+  mpesaSim: boolean;
+  stkStatus: string | null;
   clearCustomer: () => void;
   openCustomerDialog: (mode?: "select" | "create") => void;
   pending: boolean;
@@ -106,6 +111,11 @@ export function PosCheckoutDialog(props: PosCheckoutDialogProps) {
     customerPhone,
     customerPoints,
     posCustomers,
+    mpesaStkEnabled,
+    stkBusy,
+    requestMpesaStk,
+    mpesaSim,
+    stkStatus,
     clearCustomer,
     openCustomerDialog,
     pending,

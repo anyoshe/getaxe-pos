@@ -20,6 +20,7 @@ export type NewPosCustomerDraft = {
   firstName: string;
   lastName: string;
   companyName: string;
+  tradingName: string;
   phone: string;
   idNumber: string;
   registrationNumber: string;
@@ -43,6 +44,11 @@ export type PosCustomerDialogProps = {
   setCustomerName: (v: string) => void;
   setCustomerPoints: (v: number | null) => void;
   setCustomerContactName: (v: string | null) => void;
+  customerPhone: string;
+  clearCustomer: () => void;
+  openCustomerDialog: (mode?: "select" | "create") => void;
+  lookupCustomer: () => Promise<void>;
+  lookingUp: boolean;
   posCustomers: PosCustomerOption[];
   newCustomer: NewPosCustomerDraft;
   setNewCustomer: Dispatch<SetStateAction<NewPosCustomerDraft>>;
@@ -64,6 +70,11 @@ export function PosCustomerDialog({
   setCustomerName,
   setCustomerPoints,
   setCustomerContactName,
+  customerPhone,
+  clearCustomer,
+  openCustomerDialog,
+  lookupCustomer,
+  lookingUp,
   posCustomers,
   newCustomer,
   setNewCustomer,

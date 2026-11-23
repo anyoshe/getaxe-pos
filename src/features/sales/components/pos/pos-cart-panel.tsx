@@ -5,11 +5,18 @@ import type { Dispatch, SetStateAction } from "react";
 import { ShoppingCart, Trash2, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { CartLine, PosBatchOption } from "./pos-types";
+import type {
+  CartLine,
+  PosBatchOption,
+  PosProductUnit,
+} from "./pos-types";
 
 export type PosCartPanelProps = {
+  posView: "browse" | "scan";
   cart: CartLine[];
   setCart: Dispatch<SetStateAction<CartLine[]>>;
+  unitsMap: Record<string, PosProductUnit[]>;
+  setLineUnit: (productId: string, unitId: string) => void;
   total: number;
   missingSerialLines: CartLine[];
   notifyMissingSerials: () => boolean;
@@ -20,8 +27,11 @@ export type PosCartPanelProps = {
 };
 
 export function PosCartPanel({
+  posView,
   cart,
   setCart,
+  unitsMap,
+  setLineUnit,
   total,
   missingSerialLines,
   notifyMissingSerials,

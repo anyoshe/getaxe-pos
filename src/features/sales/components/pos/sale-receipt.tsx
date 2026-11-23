@@ -50,6 +50,7 @@ export type ReceiptData = {
   total: number;
   lines: ReceiptLine[];
   notes?: string | null;
+  offline?: boolean;
   /** Phase A eTIMS stamp (simulation or pending live) */
   etims?: {
     status: string;

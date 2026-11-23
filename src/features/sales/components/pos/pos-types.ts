@@ -26,7 +26,7 @@ export type PosProduct = {
 
 /** productId → warehouseId → qty from inventory_balances (same as Stock on Hand) */
 export type StockByProductWarehouse = Record<string, Record<string, number>>;
-export export type SerialsByProductWarehouse = Record<string, Record<string, string[]>>;
+export type SerialsByProductWarehouse = Record<string, Record<string, string[]>>;
 export type PosBatchOption = {
   batchId: string;
   batchNumber: string;

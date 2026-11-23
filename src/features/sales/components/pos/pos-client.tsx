@@ -1,97 +1,30 @@
 "use client";
 
-import { searchPosProductsAction } from "@/features/sales/actions/search-pos-products";
-
-import {
-  applyPromotion,
-} from "@/features/inventory/services/promotion-price";
-
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import { useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  ScanBarcode,
-  X,
-  Banknote,
-  CreditCard,
-  Smartphone,
-  ShoppingCart,
-  Trash2,
-  Minus,
-  Plus,
-  UserRound,
-  Building2,
-} from "lucide-react";
+import { Banknote, Building2, CreditCard, Smartphone } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { BarcodeScanner } from "@/features/inventory/components/products/entry/barcode-scanner";
-
-import { createSaleAction } from "../../actions/create-sale";
-import {
-  getMpesaPosFlagsAction,
   initiateMpesaStkAction,
   queryMpesaStkAction,
 } from "@/features/finance/actions/mpesa";
-import {
-  SaleReceipt,
-  type ReceiptBusiness,
-  type ReceiptData,
-} from "./sale-receipt"
+import { SaleReceipt } from "./sale-receipt";
 import { PosStatusStrip } from "./pos-status-strip";
 import { PosCustomerDialog } from "./pos-customer-dialog";
 import { PosCheckoutDialog } from "./pos-checkout-dialog";
 import { PosCatalogPanel } from "./pos-catalog-panel";
 import { PosCartPanel } from "./pos-cart-panel";
+import { PosHeader } from "./pos-header";
+import { PosMobileCart } from "./pos-mobile-cart";
+import { createPosCheckoutHandler } from "./pos-checkout-handler";
+import { usePosClientState } from "./use-pos-client-state";
 import { useOffline } from "@/providers/offline-provider";
 import {
-  outboxEnqueue,
-  newOutboxId,
-  offlineInvoiceLabel,
   savePosCatalog,
-  type OutboxSalePayload,
 } from "@/lib/offline/outbox";
-import {
-  ensurePosCustomerAction,
-  listPosCustomersAction,
-  lookupCustomerByPhoneAction,
-  type PosCustomerOption,
-  previewLoyaltyEarnAction,
-} from "../../actions/pos-customer";
-import { createCustomerAction } from "../../actions/create-customer";
 
-import type {
-  PosProduct,
-  PosProductUnit,
-  StockByProductWarehouse,
-  SerialsByProductWarehouse,
-  PosBatchOption,
-  ActivePromotion,
-  WarehouseOption,
-  BranchOption,
-  SerialsByProduct,
-  PriceMode,
-  CartLine,
-  RecentSale,
-  PosClientProps,
-} from "./pos-types";
+import type { PosClientProps } from "./pos-types";
 
 // Re-export for page consumers that imported from pos-client
 export type {
@@ -138,742 +71,123 @@ export function PosClient({
     });
   }, [online, products, stockByProductWarehouse]);
   const [pending, startTransition] = useTransition();
-  const scanRef = useRef<HTMLInputElement>(null);
-
-  const [catalog, setCatalog] = useState(products);
-  const [stockMap, setStockMap] = useState(stockByProductWarehouse);
-  const [unitsMap, setUnitsMap] = useState(productUnitsByProduct);
-  const [pricesMap, setPricesMap] = useState(pricesByProductUnit);
-  const [batchesMap, setBatchesMap] = useState(batchesByProductWarehouse);
-  const [serialsMap, setSerialsMap] = useState(serialsByProductWarehouse);
-  const [searching, setSearching] = useState(false);
-
-  const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    setCatalog(products);
-  }, [products]);
-
-  useEffect(() => {
-    setStockMap(stockByProductWarehouse);
-  }, [stockByProductWarehouse]);
-
-  const sellable = useMemo(
-    () => catalog.filter((p) => p.active !== false),
-    [catalog],
-  );
-
-  // Server search-first: load matches beyond the initial seed catalogue
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setSearching(false);
-      return;
-    }
-    let cancelled = false;
-    setSearching(true);
-    const timer = setTimeout(() => {
-      void searchPosProductsAction({ query: q, limit: 30 }).then((r) => {
-        if (cancelled || !r.success) {
-          setSearching(false);
-          return;
-        }
-        setCatalog((prev) => {
-          const map = new Map(prev.map((p) => [p.id, p]));
-          for (const raw of r.products) {
-            map.set(raw.id, {
-              id: raw.id,
-              name: raw.name,
-              sku: raw.sku,
-              barcode: raw.barcode,
-              categoryId: raw.categoryId,
-              categoryName: raw.categoryName,
-              productType: String(raw.productType ?? "physical"),
-              trackInventory: raw.trackInventory,
-              trackBatch: raw.trackBatch,
-              trackExpiry: raw.trackExpiry,
-              serialized: raw.serialized,
-              isControlled: raw.isControlled,
-              supplyChannel: (raw as { supplyChannel?: string }).supplyChannel ?? "private",
-              costPrice: raw.costPrice,
-              retailPrice: Number(raw.retailPrice ?? 0),
-              wholesalePrice: Number(raw.wholesalePrice ?? 0),
-              unitPrice: Number(
-                raw.sellingPrice ?? raw.retailPrice ?? 0
-              ),
-              active: raw.active !== false,
-            });
-          }
-          return Array.from(map.values());
-        });
-        const s = r.support;
-        setStockMap((prev) => ({ ...prev, ...s.stockByProductWarehouse }));
-        setUnitsMap((prev) => {
-          const next = { ...prev };
-          for (const [pid, list] of Object.entries(s.productUnitsByProduct)) {
-            next[pid] = list.map((u) => ({
-              unitId: u.unitId,
-              factorToStock: u.factorToStock,
-              isSalesDefault: u.isSalesDefault,
-              isStockUnit: u.isStockUnit,
-              allowSale: u.allowSale,
-              unitCode: u.unitCode,
-              unitName: u.unitName,
-              label: u.label || u.unitName || u.unitCode || "Unit",
-            }));
-          }
-          return next;
-        });
-        setPricesMap((prev) => ({ ...prev, ...s.unitPricesByProduct }));
-        setBatchesMap((prev) => ({ ...prev, ...s.batchesByProductWarehouse }));
-        setSerialsMap((prev) => {
-          const next = { ...prev };
-          for (const [pid, list] of Object.entries(s.serialsByProduct)) {
-            const byWh: Record<string, string[]> = { ...(next[pid] ?? {}) };
-            for (const ser of list) {
-              const wh = ser.warehouseId ?? "_";
-              byWh[wh] = [...(byWh[wh] ?? []), ser.serialNumber];
-            }
-            next[pid] = byWh;
-          }
-          return next;
-        });
-        setSearching(false);
-      });
-    }, 280);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [query]);
-
-
-  const productByCode = useMemo(() => {
-    const map = new Map<string, PosProduct>();
-    for (const p of sellable) {
-      if (p.barcode) map.set(p.barcode.trim().toLowerCase(), p);
-      if (p.sku) map.set(p.sku.trim().toLowerCase(), p);
-      map.set(p.id, p);
-    }
-    return map;
-  }, [sellable]);
-
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [catalogLayout, setCatalogLayout] = useState<"grid" | "list" | "compact">(
-    "grid",
-  );
-  /** browse = product catalogue; scan = search/scan + cart table (no product grid) */
-  const [posView, setPosView] = useState<"browse" | "scan">("scan");
-  const [visibleCount, setVisibleCount] = useState(48);
-  const [priceMode, setPriceMode] = useState<PriceMode>("retail");
-  const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
-  const [branchId, setBranchId] = useState(
-    warehouses[0]?.branchId ?? branches[0]?.id ?? "",
-  );
-
-  function stockOnHand(productId: string, whId: string = warehouseId): number {
-    return Number(stockMap[productId]?.[whId] ?? 0);
-  }
-
-  function batchesFor(
-    productId: string,
-    whId: string = warehouseId,
-  ): PosBatchOption[] {
-    const raw = batchesMap[productId]?.[whId] ?? [];
-    // FEFO: earliest expiry first; no-expiry last; prefer qty remaining
-    return [...raw].sort((a, b) => {
-      const ea = a.expiryDate ? Date.parse(a.expiryDate) : Number.POSITIVE_INFINITY;
-      const eb = b.expiryDate ? Date.parse(b.expiryDate) : Number.POSITIVE_INFINITY;
-      if (ea !== eb) return ea - eb;
-      return (b.quantity ?? 0) - (a.quantity ?? 0);
-    });
-  }
-
-  /** Prefer earliest-expiring batch with stock; null if none. */
-  function pickFefoBatchId(productId: string): string | null {
-    const list = batchesFor(productId).filter((b) => (b.quantity ?? 0) > 1e-9);
-    const pool = list.length > 0 ? list : batchesFor(productId);
-    return pool[0]?.batchId ?? null;
-  }
-  const [paymentMethod, setPaymentMethod] = useState<
-    "CASH" | "MPESA" | "CARD" | "BANK_TRANSFER" | "MOBILE_MONEY" | "CREDIT"
-  >("CASH");
-  const [mobileProvider, setMobileProvider] = useState<"MPESA" | "AIRTEL" | "OTHER">(
-    "MPESA",
-  );
-  const [mpesaStkEnabled, setMpesaStkEnabled] = useState(false);
-  const [mpesaSim, setMpesaSim] = useState(true);
-  const [stkBusy, setStkBusy] = useState(false);
-  const [stkStatus, setStkStatus] = useState<string | null>(null);
-  const [bankChannel, setBankChannel] = useState<
-    "TRANSFER" | "DEPOSIT" | "RTGS" | "EFT" | "CHEQUE"
-  >("TRANSFER");
-  const [paymentReference, setPaymentReference] = useState("");
-  const [originBank, setOriginBank] = useState("");
-  const [selectedCashAccountId, setSelectedCashAccountId] = useState("");
-  /** Cash sale (immediate payment) vs credit invoice (AR / customer account). */
-  const [saleMode, setSaleMode] = useState<"CASH" | "CREDIT">("CASH");
-  const [lastReceipt, setLastReceipt] = useState<ReceiptData | null>(null);
-  const [amountTendered, setAmountTendered] = useState("");
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [mobileCartOpen, setMobileCartOpen] = useState(false);
-  const [posOptionsOpen, setPosOptionsOpen] = useState(false);
-  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
-  const [customerDialogMode, setCustomerDialogMode] = useState<"select" | "create">("select");
-  const [customerSaving, setCustomerSaving] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({
-    customerType: "INDIVIDUAL" as "INDIVIDUAL" | "BUSINESS",
-    firstName: "",
-    lastName: "",
-    companyName: "",
-    tradingName: "",
-    registrationNumber: "",
-    taxPin: "",
-    phone: "",
-    idNumber: "",
-    address: "",
-    emergencyContact: "",
-    emergencyPhone: "",
-    creditLimit: "",
+  const posState = usePosClientState({
+    business,
+    products,
+    warehouses,
+    branches,
+    availableSerials: initialSerials,
+    stockByProductWarehouse,
+    serialsByProductWarehouse,
+    productUnitsByProduct,
+    pricesByProductUnit,
+    batchesByProductWarehouse,
+    activePromotions,
+    fullScreen,
+    cashierName,
+    recentSales,
+    cashAccounts,
+    etimsStatusLabel,
+    belowCostSalePolicy,
   });
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerId, setCustomerId] = useState<string | null>(null);
-  const [customerLabel, setCustomerLabel] = useState<string | null>(null);
-  const [customerPoints, setCustomerPoints] = useState<number | null>(null);
-  const [customerContactName, setCustomerContactName] = useState<string | null>(null);
-  const [posCustomers, setPosCustomers] = useState<PosCustomerOption[]>([]);
-  const [earnPreview, setEarnPreview] = useState<number | null>(null);
-  const [lookingUp, setLookingUp] = useState(false);
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [serialPool, setSerialPool] =
-    useState<SerialsByProduct>(initialSerials);
-  const [showCamera, setShowCamera] = useState(false);
-
-  useEffect(() => {
-    scanRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    if (posView === "scan") {
-      scanRef.current?.focus();
-    }
-  }, [posView]);
-
-  useEffect(() => {
-    void listPosCustomersAction().then((r) => {
-      if (r.success) setPosCustomers(r.customers);
-    });
-  }, []);
-
-  useEffect(() => {
-    const next: SerialsByProduct = {};
-    for (const [pid, byWh] of Object.entries(serialsMap)) {
-      next[pid] = byWh[warehouseId] ?? [];
-    }
-    if (Object.keys(serialsMap).length === 0) {
-      setSerialPool(initialSerials);
-      return;
-    }
-    setSerialPool(next);
-    setCart((prev) =>
-      prev.map((line) => ({
-        ...line,
-        selectedSerials: line.selectedSerials.filter((s) =>
-          (next[line.productId] ?? []).includes(s),
-        ),
-      })),
-    );
-  }, [warehouseId, serialsMap, initialSerials]);
-
-  /**
-   * Price for one sell unit:
-   * 1) explicit product_prices for that unit if set
-   * 2) else piece/retail (or wholesale) × factorToStock
-   */
-  const priceFor = useCallback(
-    (p: PosProduct, unitId?: string | null, factorToStock = 1) => {
-      const base =
-        priceMode === "wholesale" ? p.wholesalePrice : p.retailPrice;
-      let raw = base;
-      if (unitId) {
-        const explicit = pricesMap[p.id]?.[unitId];
-        if (explicit != null && explicit > 0) raw = explicit;
-        else {
-          const factor = factorToStock > 0 ? factorToStock : 1;
-          raw = base * factor;
-        }
-      } else {
-        const factor = factorToStock > 0 ? factorToStock : 1;
-        raw = base * factor;
-      }
-      // Promotions only on retail path (not wholesale mode)
-      if (priceMode === "wholesale" || activePromotions.length === 0) {
-        return raw;
-      }
-      return applyPromotion(raw, p.id, activePromotions).price;
-    },
-    [priceMode, pricesMap, activePromotions],
-  );
-
-  // When switching retail/wholesale, update cart unit prices
-  useEffect(() => {
-    setCart((prev) =>
-      prev.map((line) => {
-        const p = sellable.find((x) => x.id === line.productId);
-        if (!p) return line;
-        return {
-          ...line,
-          unitPrice: priceFor(p, line.unitId, line.factorToStock),
-        };
-      }),
-    );
-  }, [priceMode, priceFor, sellable]);
-
-
-  const categories = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of sellable) {
-      if (p.categoryId && p.categoryName) {
-        map.set(p.categoryId, p.categoryName);
-      }
-    }
-    return Array.from(map.entries())
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [sellable]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = sellable;
-
-    if (categoryFilter !== "all") {
-      list = list.filter((p) => p.categoryId === categoryFilter);
-    }
-
-    if (q) {
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.sku?.toLowerCase().includes(q) ||
-          p.barcode?.toLowerCase().includes(q) ||
-          p.categoryName?.toLowerCase().includes(q),
-      );
-    }
-
-    // Prefer in-stock first for quick picks
-    list = [...list].sort((a, b) => {
-      const sa = stockOnHand(a.id);
-      const sb = stockOnHand(b.id);
-      if (sa > 0 && sb <= 0) return -1;
-      if (sb > 0 && sa <= 0) return 1;
-      return a.name.localeCompare(b.name);
-    });
-
-    // Scan-first supermarket mode: without search/category, only surface a
-    // limited "quick pick" set so 1000+ SKUs never dump onto the till.
-    const browsing = Boolean(q) || categoryFilter !== "all";
-    if (!browsing) {
-      list = list.filter((p) => {
-        if (p.productType === "service" || p.trackInventory === false) return true;
-        return stockOnHand(p.id) > 0;
-      });
-    }
-
-    return list;
-  }, [query, sellable, categoryFilter, warehouseId, stockByProductWarehouse]);
-
-  const visibleProducts = useMemo(
-    () => filtered.slice(0, visibleCount),
-    [filtered, visibleCount],
-  );
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setVisibleCount(48);
-  }, [query, categoryFilter]);
-
-
-  function freeSerials(productId: string): string[] {
-    const pool =
-      serialsByProductWarehouse[productId]?.[warehouseId] ??
-      serialPool[productId] ??
-      [];
-    const takenElsewhere = new Set(
-      cart
-        .filter((l) => l.productId !== productId)
-        .flatMap((l) => l.selectedSerials),
-    );
-    return pool.filter((s) => !takenElsewhere.has(s));
-  }
-
-  function defaultUnitFor(productId: string): PosProductUnit | null {
-    const list = unitsMap[productId] ?? [];
-    if (list.length === 0) return null;
-    // Prefer piece/tablet (sales default or stock unit) — never force box/strip
-    return (
-      list.find((u) => u.isSalesDefault && u.factorToStock <= 1) ??
-      list.find((u) => u.isStockUnit) ??
-      list.find((u) => u.isSalesDefault) ??
-      list.find((u) => u.factorToStock <= 1) ??
-      list[0]
-    );
-  }
-
-  const addProduct = useCallback(
-    (p: PosProduct) => {
-      const u = defaultUnitFor(p.id);
-      const factor = u?.factorToStock && u.factorToStock > 0 ? u.factorToStock : 1;
-      const onHand = stockOnHand(p.id);
-      const isService = p.productType === "service" || !p.trackInventory;
-      const linePrice = priceFor(p, u?.unitId ?? null, factor);
-      if (!isService && !(linePrice > 0)) {
-        toast.error(
-          `No retail selling price for ${p.name}. Set price under Product prices (or category markup + Apply), then refresh POS.`,
-        );
-        return;
-      }
-
-      setCart((prev) => {
-        const existing = prev.find(
-          (l) => l.productId === p.id && l.unitId === (u?.unitId ?? null),
-        );
-        const nextQtyStock =
-          ((existing?.quantity ?? 0) + 1) * factor;
-        if (!isService && onHand <= 0) {
-          toast.error(
-            `No stock for ${p.name} in this warehouse. Check Stock on Hand or switch warehouse.`,
-          );
-          return prev;
-        }
-        if (!isService && nextQtyStock > onHand + 1e-9) {
-          toast.error(
-            `Only ${onHand} stock unit(s) of ${p.name} in this warehouse.`,
-          );
-          return prev;
-        }
-        if (existing) {
-          return prev.map((l) =>
-            l.productId === p.id && l.unitId === (u?.unitId ?? null)
-              ? {
-                  ...l,
-                  quantity: l.quantity + 1,
-                  unitPrice: priceFor(
-                    p,
-                    u?.unitId ?? null,
-                    u?.factorToStock ?? 1,
-                  ),
-                }
-              : l,
-          );
-        }
-        return [
-          ...prev,
-          {
-            productId: p.id,
-            name: p.name,
-            sku: p.sku ?? null,
-            quantity: 1,
-            unitPrice: priceFor(p, u?.unitId ?? null, u?.factorToStock ?? 1),
-            unitId: u?.unitId ?? null,
-            unitLabel: u?.label ?? "unit",
-            factorToStock: u?.factorToStock ?? 1,
-            serialized: p.serialized,
-            isControlled: Boolean(p.isControlled),
-            trackBatch: Boolean(p.trackBatch),
-            trackExpiry: Boolean(p.trackExpiry),
-            selectedSerials: [],
-            selectedBatchId:
-              (p.trackBatch || p.trackExpiry)
-                ? pickFefoBatchId(p.id)
-                : null,
-          },
-        ];
-      });
-      toast.success(p.name, {
-        description: u ? `Added (${u.label})` : "Added to cart",
-      });
-    },
-    [priceFor, unitsMap],
-  );
-
-  function setLineUnit(productId: string, unitId: string) {
-    const u = (unitsMap[productId] ?? []).find(
-      (x) => x.unitId === unitId,
-    );
-    if (!u) return;
-    const p = sellable.find((x) => x.id === productId);
-    setCart((prev) =>
-      prev.map((l) =>
-        l.productId === productId
-          ? {
-              ...l,
-              unitId: u.unitId,
-              unitLabel: u.label,
-              factorToStock: u.factorToStock,
-              unitPrice: p
-                ? priceFor(p, u.unitId, u.factorToStock)
-                : l.unitPrice,
-            }
-          : l,
-      ),
-    );
-  }
-
-  function searchHits(term: string, limit = 12): PosProduct[] {
-    const key = term.trim().toLowerCase();
-    if (!key) return [];
-    const exact =
-      productByCode.get(key) ??
-      sellable.find(
-        (p) =>
-          p.barcode?.toLowerCase() === key ||
-          (p.sku?.toLowerCase() === key),
-      );
-    if (exact) return [exact];
-
-    const scored = sellable
-      .map((p) => {
-        const name = p.name.toLowerCase();
-        const sku = p.sku?.toLowerCase() ?? "";
-        const bc = p.barcode?.toLowerCase() ?? "";
-        let score = 0;
-        if (name === key || sku === key || bc === key) score = 100;
-        else if (name.startsWith(key) || sku.startsWith(key)) score = 80;
-        else if (name.includes(key) || sku.includes(key) || bc.includes(key))
-          score = 50;
-        else return null;
-        return { p, score };
-      })
-      .filter(Boolean) as { p: PosProduct; score: number }[];
-
-    scored.sort((a, b) => b.score - a.score || a.p.name.localeCompare(b.p.name));
-    return scored.slice(0, limit).map((x) => x.p);
-  }
-
-  function resolveCode(code: string) {
-    const key = code.trim();
-    if (!key) return;
-    const hits = searchHits(key, 8);
-    if (hits.length === 0) {
-      toast.error(`No product matches “${code.trim()}”`);
-      return;
-    }
-    // Exact barcode/SKU or single hit → add immediately
-    const lower = key.toLowerCase();
-    const exact = hits.find(
-      (p) =>
-        p.barcode?.toLowerCase() === lower ||
-        p.sku?.toLowerCase() === lower ||
-        p.name.toLowerCase() === lower,
-    );
-    if (exact || hits.length === 1) {
-      addProduct(exact ?? hits[0]);
-      setQuery("");
-      scanRef.current?.focus();
-      return;
-    }
-    // Multiple name matches — keep query so dropdown shows; toast guides
-    toast.message(`${hits.length} matches — tap one below to add`);
-  }
-
-  function onScanKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      resolveCode(query);
-    }
-    if (e.key === "Escape") {
-      setQuery("");
-    }
-  }
-
-  function toggleSerial(productId: string, serial: string) {
-    setCart((prev) =>
-      prev.map((line) => {
-        if (line.productId !== productId) return line;
-        const has = line.selectedSerials.includes(serial);
-        if (has) {
-          return {
-            ...line,
-            selectedSerials: line.selectedSerials.filter((s) => s !== serial),
-          };
-        }
-        if (line.selectedSerials.length >= line.quantity) {
-          toast.message(`Only ${line.quantity} serial(s) needed.`);
-          return line;
-        }
-        return { ...line, selectedSerials: [...line.selectedSerials, serial] };
-      }),
-    );
-  }
-
-  async function lookupCustomer() {
-    if (!customerPhone.trim()) {
-      toast.message("Enter a phone number to look up.");
-      return;
-    }
-    setLookingUp(true);
-    try {
-      const result = await lookupCustomerByPhoneAction(customerPhone);
-      if (!result.success) {
-        toast.error(result.message);
-        return;
-      }
-      if (result.found) {
-        if (saleMode === "CREDIT" && !result.customer.allowCredit) {
-          toast.error("This customer is not enabled for credit. Choose an eligible credit customer.");
-          return;
-        }
-        setCustomerId(result.customer.id);
-        setCustomerLabel(result.customer.displayName);
-        setCustomerContactName(
-          (result.customer as { contactName?: string | null }).contactName ?? null,
-        );
-        setCustomerName(
-          (result.customer as { contactName?: string | null }).contactName ||
-            result.customer.displayName,
-        );
-        setCustomerPhone(result.customer.phone ?? customerPhone);
-        setCustomerPoints(result.customer.loyaltyPoints ?? 0);
-        setPosCustomers((current) =>
-          current.some((customer) => customer.id === result.customer.id)
-            ? current
-            : [
-                {
-                  id: result.customer.id,
-                  displayName: result.customer.displayName,
-                  contactName:
-                    (result.customer as { contactName?: string | null }).contactName ?? null,
-                  phone: result.customer.phone ?? null,
-                  allowCredit: result.customer.allowCredit,
-                  creditLimit: result.customer.creditLimit,
-                  loyaltyPoints: result.customer.loyaltyPoints ?? 0,
-                  isBusiness: result.customer.customerType === "BUSINESS",
-                },
-                ...current,
-              ],
-        );
-        toast.success(
-          `Member: ${result.customer.displayName} · ${result.customer.loyaltyPoints ?? 0} pts`,
-        );
-      } else {
-        setCustomerId(null);
-        setCustomerLabel(null);
-        setCustomerPoints(null);
-        toast.message(result.message);
-      }
-    } finally {
-      setLookingUp(false);
-    }
-  }
-
-  function clearCustomer() {
-    setCustomerId(null);
-    setCustomerLabel(null);
-    setCustomerPhone("");
-    setCustomerName("");
-    setCustomerPoints(null);
-    setEarnPreview(null);
-  }
-
-  function openCustomerDialog(mode: "select" | "create" = "select") {
-    setCustomerDialogMode(mode);
-    if (mode === "create") {
-      setNewCustomer((current) => ({
-        ...current,
-        firstName: current.firstName || customerName,
-        phone: current.phone || customerPhone,
-      }));
-    }
-    setCustomerDialogOpen(true);
-  }
-
-  async function createPosCustomer() {
-    setCustomerSaving(true);
-    try {
-      const allowCredit = saleMode === "CREDIT";
-      const isBusiness = newCustomer.customerType === "BUSINESS";
-      const result = await createCustomerAction({
-        customerType: newCustomer.customerType,
-        firstName: newCustomer.firstName,
-        lastName: newCustomer.lastName || null,
-        companyName: isBusiness ? newCustomer.companyName : null,
-        tradingName: isBusiness ? newCustomer.tradingName || null : null,
-        registrationNumber: isBusiness
-          ? newCustomer.registrationNumber || null
-          : null,
-        taxPin: isBusiness ? newCustomer.taxPin || null : null,
-        phone: newCustomer.phone,
-        idNumber: isBusiness ? newCustomer.idNumber || null : newCustomer.idNumber,
-        address: newCustomer.address,
-        emergencyContact: isBusiness
-          ? newCustomer.emergencyContact || null
-          : newCustomer.emergencyContact,
-        emergencyPhone: isBusiness
-          ? newCustomer.emergencyPhone || null
-          : newCustomer.emergencyPhone,
-        allowCredit,
-        creditLimit: allowCredit ? newCustomer.creditLimit : 0,
-      });
-      if (!result.success) {
-        toast.error(result.message);
-        return;
-      }
-
-      const [lookup, refreshedCustomers] = await Promise.all([
-        lookupCustomerByPhoneAction(newCustomer.phone),
-        listPosCustomersAction(),
-      ]);
-      if (!lookup.success || !lookup.found) {
-        toast.error("Customer was created, but could not be selected. Find them by phone in the customer picker.");
-        if (refreshedCustomers.success) setPosCustomers(refreshedCustomers.customers);
-        return;
-      }
-
-      if (refreshedCustomers.success) {
-        setPosCustomers(refreshedCustomers.customers);
-      }
-      setCustomerId(lookup.customer.id);
-      setCustomerLabel(lookup.customer.displayName);
-      setCustomerContactName(lookup.customer.contactName ?? null);
-      setCustomerPhone(lookup.customer.phone ?? newCustomer.phone);
-      setCustomerName(lookup.customer.contactName || lookup.customer.displayName);
-      setCustomerPoints(lookup.customer.loyaltyPoints ?? 0);
-      setCustomerDialogOpen(false);
-      if (saleMode === "CREDIT") setCheckoutOpen(true);
-      toast.success(result.message);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create customer.");
-    } finally {
-      setCustomerSaving(false);
-    }
-  }
-
-  const total = cart.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
-  const missingSerialLines = cart.filter((line) => {
-    if (!line.serialized) return false;
-    const factor = line.factorToStock > 0 ? line.factorToStock : 1;
-    const stockQuantity = line.quantity * factor;
-    return (
-      factor !== 1 ||
-      !Number.isInteger(stockQuantity) ||
-      line.selectedSerials.length !== Math.round(stockQuantity) ||
-      new Set(line.selectedSerials).size !== line.selectedSerials.length
-    );
-  });
-
-  function notifyMissingSerials() {
-    if (missingSerialLines.length === 0) return false;
-    toast.error(
-      `Select one serial / chassis number for each unit of: ${missingSerialLines.map((line) => line.name).join(", ")}.`,
-    );
-    return true;
-  }
-
-  // Client-side estimate: 1 pt per 100 (server program may differ; refreshed on lookup)
-  const estimatedEarn =
-    customerId && total > 0 ? Math.floor(total / 100) : 0;
-
+  const {
+    scanRef,
+    setStockMap,
+    unitsMap,
+    query,
+    setQuery,
+    sellable,
+    categoryFilter,
+    setCategoryFilter,
+    catalogLayout,
+    setCatalogLayout,
+    posView,
+    setPosView,
+    setVisibleCount,
+    priceMode,
+    setPriceMode,
+    warehouseId,
+    setWarehouseId,
+    branchId,
+    setBranchId,
+    paymentMethod,
+    setPaymentMethod,
+    mobileProvider,
+    setMobileProvider,
+    mpesaStkEnabled,
+    mpesaSim,
+    stkBusy,
+    setStkBusy,
+    stkStatus,
+    setStkStatus,
+    bankChannel,
+    setBankChannel,
+    paymentReference,
+    setPaymentReference,
+    originBank,
+    setOriginBank,
+    selectedCashAccountId,
+    setSelectedCashAccountId,
+    saleMode,
+    setSaleMode,
+    lastReceipt,
+    setLastReceipt,
+    amountTendered,
+    setAmountTendered,
+    checkoutOpen,
+    setCheckoutOpen,
+    mobileCartOpen,
+    setMobileCartOpen,
+    posOptionsOpen,
+    setPosOptionsOpen,
+    customerDialogOpen,
+    setCustomerDialogOpen,
+    customerDialogMode,
+    setCustomerDialogMode,
+    customerSaving,
+    newCustomer,
+    setNewCustomer,
+    customerPhone,
+    setCustomerPhone,
+    customerName,
+    setCustomerName,
+    customerId,
+    setCustomerId,
+    customerLabel,
+    setCustomerLabel,
+    customerPoints,
+    setCustomerPoints,
+    customerContactName,
+    setCustomerContactName,
+    posCustomers,
+    setPosCustomers,
+    lookingUp,
+    cart,
+    setCart,
+    setSerialPool,
+    showCamera,
+    setShowCamera,
+    stockOnHand,
+    batchesFor,
+    categories,
+    filtered,
+    visibleProducts,
+    freeSerials,
+    addProduct,
+    setLineUnit,
+    searchHits,
+    resolveCode,
+    onScanKeyDown,
+    toggleSerial,
+    lookupCustomer,
+    clearCustomer,
+    openCustomerDialog,
+    createPosCustomer,
+    total,
+    missingSerialLines,
+    notifyMissingSerials,
+    estimatedEarn,
+  } = posState;
 
   async function requestMpesaStk() {
     const phone =
@@ -936,413 +250,6 @@ export function PosClient({
     }
   }
 
-  function checkout() {
-    startTransition(async () => {
-      if (!warehouseId || !branchId) {
-        toast.error("Select warehouse.");
-        return;
-      }
-      if (cart.length === 0) {
-        toast.error("Cart is empty.");
-        return;
-      }
-      if (notifyMissingSerials()) return;
-      if (saleMode === "CREDIT") {
-        const creditCustomer = posCustomers.find((customer) => customer.id === customerId);
-        if (!creditCustomer?.allowCredit) {
-          toast.error("Select a credit customer before finishing.");
-          openCustomerDialog("select");
-          return;
-        }
-      }
-      if (belowCostSalePolicy !== "off") {
-        for (const line of cart) {
-          const prod = sellable.find((x) => x.id === line.productId);
-          if (!prod || prod.productType === "service") continue;
-          const cost = Number(prod.costPrice ?? 0);
-          const factor = line.factorToStock > 0 ? line.factorToStock : 1;
-          const costForLineUnit = cost * factor;
-          const atOrBelow =
-            cost > 0 && line.unitPrice + 1e-9 <= costForLineUnit + 0.009;
-          if (!atOrBelow) continue;
-          const msg =
-            Math.abs(line.unitPrice - costForLineUnit) < 0.009
-              ? `${line.name}: price equals cost (${costForLineUnit.toFixed(2)}).`
-              : `${line.name}: selling ${line.unitPrice.toFixed(2)} is below cost ${costForLineUnit.toFixed(2)}.`;
-          if (belowCostSalePolicy === "block") {
-            toast.error(
-              `${msg} Update Product prices or set policy to Warn under Settings → Pricing policy.`,
-            );
-            return;
-          }
-          toast.warning(`${msg} Completing under warn policy.`);
-        }
-      }
-      for (const line of cart) {
-        const prod = sellable.find((x) => x.id === line.productId);
-        if (prod && prod.productType !== "service" && prod.trackInventory !== false) {
-          const factor = line.factorToStock > 0 ? line.factorToStock : 1;
-          const need = line.quantity * factor;
-          const onHand = stockOnHand(line.productId);
-          if (need > onHand + 1e-9) {
-            toast.error(
-              `${line.name}: need ${need} stock unit(s), only ${onHand} in this warehouse (matches Stock on Hand).`,
-            );
-            return;
-          }
-        }
-      }
-      for (const line of cart) {
-        if (
-          (line.trackBatch || line.trackExpiry) &&
-          batchesFor(line.productId).length > 0 &&
-          !line.selectedBatchId
-        ) {
-          toast.error(
-            `${line.name}: select a batch / expiry date before completing the sale.`,
-          );
-          return;
-        }
-      }
-      for (const line of cart) {
-        const prod = sellable.find((x) => x.id === line.productId) as
-          | { isControlled?: boolean; supplyChannel?: string }
-          | undefined;
-        if (prod?.supplyChannel === "programme") {
-          toast.error(
-            `${line.name} is programme stock (TB/HIV) — not sold on open POS. Use pharmacy dispensation.`,
-          );
-          return;
-        }
-        if (prod?.isControlled && !customerId && !customerPhone.trim()) {
-          toast.error(
-            `${line.name} is controlled — record customer name/phone or select a customer for the register.`,
-          );
-          return;
-        }
-      }
-      // Credit invoice must be on a registered customer account (AR)
-      if (saleMode === "CREDIT") {
-        if (!customerId) {
-          toast.error(
-            "Credit invoice requires a customer account. Look up the customer by phone or register them first.",
-          );
-          return;
-        }
-      }
-
-      let resolvedCustomerId = customerId;
-      let receiptNote: string | null = null;
-      const isOffline =
-        typeof navigator !== "undefined" && !navigator.onLine;
-
-      // Optional: link or create customer when phone was entered (online only)
-      if (customerPhone.trim().length >= 7) {
-        if (isOffline) {
-          receiptNote = customerName.trim()
-            ? `Customer: ${customerName.trim()} (${customerPhone.trim()})`
-            : `Customer phone: ${customerPhone.trim()}`;
-        } else {
-          const ensured = await ensurePosCustomerAction({
-            phone: customerPhone,
-            firstName: customerName.trim() || null,
-          });
-          if (!ensured.success) {
-            toast.error(ensured.message);
-            return;
-          }
-          resolvedCustomerId = ensured.customerId;
-          setCustomerId(ensured.customerId);
-          setCustomerLabel(ensured.displayName);
-          setCustomerContactName(ensured.contactName ?? null);
-          if (ensured.created) {
-            void listPosCustomersAction().then((r) => {
-              if (r.success) setPosCustomers(r.customers);
-            });
-          }
-          receiptNote = `Customer: ${ensured.displayName} (${ensured.phone})`;
-        }
-      } else if (customerName.trim()) {
-        // Name only on receipt — no CRM record without phone
-        receiptNote = `Walk-in: ${customerName.trim()}`;
-      }
-
-      type PayMethod =
-        | "CASH"
-        | "MPESA"
-        | "CARD"
-        | "BANK_TRANSFER"
-        | "CHEQUE"
-        | "MOBILE_MONEY"
-        | "CREDIT";
-      let effectiveMethod: PayMethod =
-        saleMode === "CREDIT" ? "CREDIT" : paymentMethod;
-      if (saleMode !== "CREDIT" && paymentMethod === "MPESA") {
-        effectiveMethod =
-          mobileProvider === "MPESA" ? "MPESA" : "MOBILE_MONEY";
-      }
-      if (saleMode !== "CREDIT" && paymentMethod === "BANK_TRANSFER") {
-        effectiveMethod =
-          bankChannel === "CHEQUE" ? "CHEQUE" : "BANK_TRANSFER";
-      }
-      const paymentDetailParts: string[] = [];
-      if (saleMode !== "CREDIT" && paymentMethod === "MPESA") {
-        paymentDetailParts.push(`Provider: ${mobileProvider}`);
-      }
-      if (saleMode !== "CREDIT" && paymentMethod === "BANK_TRANSFER") {
-        paymentDetailParts.push(`Channel: ${bankChannel}`);
-        if (originBank.trim()) paymentDetailParts.push(`From: ${originBank.trim()}`);
-        const dest = bankAccounts.find((a) => a.id === selectedCashAccountId);
-        if (dest) {
-          paymentDetailParts.push(
-            `To: ${dest.name}${dest.bankName ? ` (${dest.bankName})` : ""}${dest.accountNumber ? ` ${dest.accountNumber}` : ""}`,
-          );
-        }
-      }
-      const salePayload: OutboxSalePayload = {
-        warehouseId,
-        branchId,
-        customerId: resolvedCustomerId,
-        notes:
-          saleMode === "CREDIT"
-            ? `Credit invoice${receiptNote ? ` · ${receiptNote}` : ""}`
-            : receiptNote
-              ? `Cash sale · ${receiptNote}`
-              : "Cash sale",
-        paymentMethod: effectiveMethod,
-        cashAccountId:
-          saleMode === "CREDIT"
-            ? null
-            : selectedCashAccountId || null,
-        paymentReference: paymentReference.trim() || null,
-        paymentDetail: paymentDetailParts.length
-          ? paymentDetailParts.join(" · ")
-          : null,
-        items: cart.map((l) => ({
-          productId: l.productId,
-          quantity: l.quantity,
-          unitId: l.unitId,
-          preferredBatchIds: l.selectedBatchId ? [l.selectedBatchId] : [],
-          unitPrice: l.unitPrice,
-          serialNumbers: l.serialized ? l.selectedSerials : [],
-          name: l.name,
-        })),
-        pendingCustomer:
-          !resolvedCustomerId && customerPhone.trim().length >= 7
-            ? {
-                phone: customerPhone.trim(),
-                firstName: customerName.trim() || null,
-              }
-            : null,
-        totalHint: total,
-        clientSaleId: newOutboxId(),
-      };
-
-      // Offline or network failure → queue, never drop the sale
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        await outboxEnqueue({
-          id: salePayload.clientSaleId,
-          type: "create_sale",
-          createdAt: new Date().toISOString(),
-          payload: salePayload,
-          attempts: 0,
-        });
-        await refreshOutbox();
-        toast.success("Sale saved offline — will sync when online");
-        setStockMap((prev) => {
-          const next = { ...prev };
-          const wh = warehouseId;
-          for (const l of cart) {
-            const factor = l.factorToStock > 0 ? l.factorToStock : 1;
-            const need = l.quantity * factor;
-            const byWh = { ...(next[l.productId] ?? {}) };
-            const cur = Number(byWh[wh] ?? 0);
-            byWh[wh] = Math.max(0, cur - need);
-            next[l.productId] = byWh;
-          }
-          return next;
-        });
-        setLastReceipt({
-          invoiceNumber: offlineInvoiceLabel(salePayload.clientSaleId),
-          soldAt: new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" }),
-          total: total,
-          subtotal: total,
-          amountPaid: saleMode === "CREDIT" ? 0 : total,
-          balanceDue: saleMode === "CREDIT" ? total : 0,
-          paymentMethod: effectiveMethod,
-          isCredit: saleMode === "CREDIT",
-          notes: salePayload.notes,
-          lines: cart.map((l) => ({
-            name: l.name,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            total: l.quantity * l.unitPrice,
-            serialNumbers: l.serialized ? l.selectedSerials : [],
-          })),
-          offline: true,
-        });
-        setCart([]);
-        setAmountTendered("");
-        setPaymentReference("");
-        setOriginBank("");
-        scanRef.current?.focus();
-        return;
-      }
-
-      let result: { success: boolean; message: string };
-      try {
-        result = await createSaleAction({
-          warehouseId: salePayload.warehouseId,
-          branchId: salePayload.branchId,
-          customerId: salePayload.customerId,
-          notes: salePayload.notes,
-          paymentMethod: salePayload.paymentMethod,
-          cashAccountId: salePayload.cashAccountId ?? null,
-          paymentReference: salePayload.paymentReference ?? null,
-          paymentDetail: salePayload.paymentDetail ?? null,
-          items: salePayload.items,
-          clientSaleId: salePayload.clientSaleId,
-        });
-      } catch (e) {
-        await outboxEnqueue({
-          id: salePayload.clientSaleId,
-          type: "create_sale",
-          createdAt: new Date().toISOString(),
-          payload: salePayload,
-          attempts: 0,
-          lastError: e instanceof Error ? e.message : String(e),
-        });
-        await refreshOutbox();
-        toast.success("Network issue — sale queued offline for sync");
-        setCart([]);
-        setAmountTendered("");
-        scanRef.current?.focus();
-        return;
-      }
-
-      if (!result.success) {
-        toast.error(result.message);
-        return;
-      }
-
-      // Build printable receipt from cart + server response
-      const res = result as {
-        invoiceNumber?: string;
-        total?: number;
-        subtotal?: number;
-        amountPaid?: number;
-        balanceDue?: number;
-        paymentMethod?: string;
-        isCredit?: boolean;
-        soldAt?: string;
-        notes?: string | null;
-      };
-      const tenderedNum = Number(amountTendered);
-      const saleTotal = Number(res.total ?? total);
-      const paidNum = Number(
-        res.isCredit || saleMode === "CREDIT"
-          ? res.amountPaid ?? 0
-          : saleTotal,
-      );
-      const changeNum =
-        !res.isCredit &&
-        saleMode !== "CREDIT" &&
-        Number.isFinite(tenderedNum) &&
-        tenderedNum > 0
-          ? Math.max(0, tenderedNum - saleTotal)
-          : 0;
-      setCheckoutOpen(false);
-      setMobileCartOpen(false);
-      setLastReceipt({
-        invoiceNumber: res.invoiceNumber ?? "—",
-        soldAt: res.soldAt ?? new Date().toLocaleString("en-KE", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "Africa/Nairobi",
-        }),
-        cashierName: cashierName ?? null,
-        customerName:
-          (res as { customerDisplayName?: string }).customerDisplayName ||
-          customerLabel ||
-          customerName.trim() ||
-          null,
-        contactName:
-          (res as { customerContactName?: string | null }).customerContactName ||
-          customerContactName ||
-          null,
-        customerPhone:
-          (res as { customerPhone?: string | null }).customerPhone ||
-          customerPhone.trim() ||
-          null,
-        paymentMethod: res.paymentMethod ?? effectiveMethod,
-        isCredit: Boolean(res.isCredit ?? saleMode === "CREDIT"),
-        amountPaid: paidNum,
-        balanceDue: Number(res.balanceDue ?? 0),
-        amountTendered:
-          Number.isFinite(tenderedNum) && tenderedNum > 0
-            ? tenderedNum
-            : paidNum,
-        changeDue: changeNum,
-        subtotal: Number(res.subtotal ?? total),
-        total: saleTotal,
-        notes: salePayload.notes,
-        etims: (res as { etims?: ReceiptData["etims"] }).etims ?? null,
-        lines: cart.map((l) => ({
-          name: l.name,
-          quantity: l.quantity,
-          unitLabel: l.unitLabel ?? null,
-          unitPrice: l.unitPrice,
-          total: l.quantity * l.unitPrice,
-          sku: l.sku ?? null,
-          serialNumbers:
-            l.serialized && l.selectedSerials.length > 0
-              ? [...l.selectedSerials]
-              : undefined,
-        })),
-      });
-
-      if (resolvedCustomerId) {
-        const preview = await previewLoyaltyEarnAction(total).catch(() => null);
-        const pts = preview?.success ? preview.points : estimatedEarn;
-        toast.success(
-          pts > 0
-            ? `${result.message} · ~${pts} loyalty point(s) awarded`
-            : result.message,
-        );
-      } else {
-        toast.success(result.message);
-      }
-      setCart([]);
-      setAmountTendered("");
-      // Keep member phone for next sale (supermarket style); clear if walk-in only
-      if (!resolvedCustomerId) {
-        setCustomerName("");
-        setCustomerPhone("");
-        setCustomerPoints(null);
-      }
-      setSerialPool((prev) => {
-        const next = { ...prev };
-        for (const line of cart) {
-          if (!line.serialized) continue;
-          const sold = new Set(line.selectedSerials);
-          next[line.productId] = (next[line.productId] ?? []).filter(
-            (s) => !sold.has(s),
-          );
-        }
-        return next;
-      });
-      router.refresh();
-      scanRef.current?.focus();
-    });
-  }
-
-
-
-
   const shell = fullScreen
     ? "fixed inset-0 z-50 flex flex-col overflow-hidden bg-background"
     : "flex h-[min(100dvh,56rem)] max-h-[100dvh] flex-col overflow-hidden rounded-2xl border shadow-sm";
@@ -1351,13 +258,6 @@ export function PosClient({
     paymentMethod === "CASH" && amountTendered
       ? Math.max(0, Number(amountTendered) - total)
       : null;
-
-  const browsing =
-    Boolean(query.trim()) || categoryFilter !== "all";
-  const hasMore = visibleProducts.length < filtered.length;
-  const searchSuggestions =
-    query.trim().length >= 1 ? searchHits(query, 15) : [];
-
 
   const bankAccounts = cashAccounts.filter(
     (a) => a.active !== false && a.type === "BANK" && !a.name.toLowerCase().includes("card"),
@@ -1417,6 +317,56 @@ export function PosClient({
 
   const posStep: 1 | 2 | 3 = checkoutOpen ? 3 : cart.length > 0 ? 2 : 1;
 
+  const checkout = createPosCheckoutHandler({
+    startTransition,
+    refresh: () => router.refresh(),
+    warehouseId,
+    branchId,
+    cart,
+    total,
+    notifyMissingSerials,
+    saleMode,
+    posCustomers,
+    customerId,
+    openCustomerDialog,
+    belowCostSalePolicy,
+    sellable,
+    stockOnHand,
+    batchesFor,
+    customerPhone,
+    customerName,
+    customerLabel,
+    customerContactName,
+    setCustomerId,
+    setCustomerLabel,
+    setCustomerContactName,
+    setCustomerName,
+    setCustomerPhone,
+    setCustomerPoints,
+    setPosCustomers,
+    paymentMethod,
+    mobileProvider,
+    bankChannel,
+    originBank,
+    bankAccounts,
+    selectedCashAccountId,
+    paymentReference,
+    amountTendered,
+    setPaymentReference,
+    setCheckoutOpen,
+    setMobileCartOpen,
+    refreshOutbox,
+    setStockMap,
+    setLastReceipt,
+    setCart,
+    setAmountTendered,
+    setOriginBank,
+    scanRef,
+    setSerialPool,
+    cashierName,
+    estimatedEarn,
+  });
+
   return (
     <div className={shell}>
       <div className="brand-stripe h-1.5 w-full shrink-0" />
@@ -1451,163 +401,26 @@ export function PosClient({
         etimsLabel={etimsStatusLabel}
       />
 
-      <header className="brand-gradient relative z-10 shrink-0 text-primary-foreground shadow-md">
-        <div className="mx-auto flex w-full flex-wrap items-center gap-2 px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 xl:max-w-[1720px] xl:px-8 2xl:px-12">
-          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card/20 text-xs font-black backdrop-blur sm:h-10 sm:w-10 sm:text-sm">
-              GA
-            </div>
-            <div className="min-w-0">
-              <div className="text-base font-bold tracking-tight sm:text-lg">
-                Sell
-              </div>
-              <div className="truncate text-[10px] text-white/80 sm:text-xs">
-                {cashierName ? cashierName : "Cashier"}
-                {branchId
-                  ? ` · ${branches.find((b) => b.id === branchId)?.name ?? ""}`
-                  : ""}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-            {/* Default = search/scan; pick-from-list is optional */}
-            <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
-              <button
-                type="button"
-                onClick={() => setPosView("scan")}
-                className={
-                  posView === "scan"
-                    ? "rounded-full bg-card px-3 py-1.5 text-foreground shadow-sm"
-                    : "rounded-full px-3 py-1.5 text-white/85"
-                }
-              >
-                Search / scan
-              </button>
-              <button
-                type="button"
-                onClick={() => setPosView("browse")}
-                className={
-                  posView === "browse"
-                    ? "rounded-full bg-card px-3 py-1.5 text-foreground shadow-sm"
-                    : "rounded-full px-3 py-1.5 text-white/85"
-                }
-              >
-                Pick from list
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPosOptionsOpen((v) => !v)}
-              className="rounded-lg bg-card/15 px-3 py-2 text-xs font-medium hover:bg-card/25"
-            >
-              {posOptionsOpen ? "Hide options" : "More options"}
-            </button>
-            {fullScreen ? (
-              <Link
-                href="/dashboard"
-                className="rounded-lg bg-card/15 px-3 py-2 text-xs font-medium hover:bg-card/25"
-              >
-                Exit
-              </Link>
-            ) : (
-              <Link
-                href="/sales/pos"
-                className="rounded-lg bg-[oklch(0.70_0.14_85)]/90 px-3 py-2 text-xs font-semibold text-[oklch(0.25_0.05_55)]"
-              >
-                Full screen
-              </Link>
-            )}
-          </div>
-
-          {posOptionsOpen ? (
-            <div className="flex w-full flex-wrap items-center gap-2 border-t border-white/15 pt-2">
-              <div className="flex rounded-full bg-black/20 p-0.5 text-[11px] font-semibold">
-                {(["retail", "wholesale"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setPriceMode(m)}
-                    className={
-                      priceMode === m
-                        ? "rounded-full bg-[oklch(0.70_0.14_85)] px-2.5 py-1.5 text-[oklch(0.25_0.05_55)] shadow-sm"
-                        : "rounded-full px-2.5 py-1.5 text-white/85"
-                    }
-                  >
-                    {m === "retail" ? "Normal price" : "Wholesale price"}
-                  </button>
-                ))}
-              </div>
-              <label className="flex items-center gap-1.5 text-[11px] text-white/90">
-                <span className="shrink-0">Store room</span>
-                <select
-                  className="h-9 max-w-[11rem] rounded-lg border-0 bg-card/15 px-2 text-xs text-white outline-none"
-                  value={warehouseId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setWarehouseId(id);
-                    const wh = warehouses.find((w) => w.id === id);
-                    if (wh?.branchId) setBranchId(wh.branchId);
-                  }}
-                >
-                  {warehouses.map((w) => (
-                    <option key={w.id} value={w.id} className="text-foreground">
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          ) : null}
-        </div>
-      </header>
-
-      {/* Step guide — always visible so staff know order of work */}
-      <div className="shrink-0 border-b border-border/60 bg-card px-3 py-2 sm:px-5 xl:px-8">
-        <div className="mx-auto flex max-w-[1720px] items-stretch gap-1 sm:gap-2">
-          {(
-            [
-              { n: 1 as const, label: "1. Find products", hint: "Search, scan or tap" },
-              { n: 2 as const, label: "2. Check list", hint: "Change quantities" },
-              { n: 3 as const, label: "3. Take payment", hint: "Cash, M-Pesa or credit" },
-            ] as const
-          ).map((s) => {
-            const active = posStep === s.n;
-            const done = posStep > s.n;
-            return (
-              <div
-                key={s.n}
-                className={
-                  "flex min-w-0 flex-1 flex-col rounded-xl border px-2 py-1.5 sm:px-3 " +
-                  (active
-                    ? "border-primary bg-primary/10 shadow-sm"
-                    : done
-                      ? "border-emerald-500/30 bg-emerald-500/5"
-                      : "border-border/50 bg-muted/30")
-                }
-              >
-                <span
-                  className={
-                    "text-[11px] font-bold sm:text-xs " +
-                    (active ? "text-primary" : done ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground")
-                  }
-                >
-                  {done && !active ? "✓ " : ""}
-                  {s.label}
-                </span>
-                <span className="hidden text-[10px] text-muted-foreground sm:block">{s.hint}</span>
-              </div>
-            );
-          })}
-        </div>
-        <p className="mx-auto mt-1.5 max-w-[1720px] text-[11px] text-muted-foreground sm:text-xs">
-          {posStep === 1
-            ? "Start here: type a name, barcode, or scan — or switch to Pick from list."
-            : posStep === 2
-              ? "Products added — open the list to change numbers, then pay."
-              : "Choose how the customer pays, then finish the sale."}
-        </p>
-      </div>
+      <PosHeader
+        cashierName={cashierName}
+        branches={branches}
+        branchId={branchId}
+        posStep={posStep}
+        posView={posView}
+        setPosView={setPosView}
+        posOptionsOpen={posOptionsOpen}
+        setPosOptionsOpen={setPosOptionsOpen}
+        fullScreen={fullScreen}
+        priceMode={priceMode}
+        setPriceMode={setPriceMode}
+        warehouseId={warehouseId}
+        setWarehouseId={setWarehouseId}
+        warehouses={warehouses}
+        onWarehouseChange={(id) => {
+          const warehouse = warehouses.find((item) => item.id === id);
+          if (warehouse?.branchId) setBranchId(warehouse.branchId);
+        }}
+      />
 
       {/* POS workspace: catalogue and selected products share the desktop width equally. */}
       <div className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden xl:max-w-[1720px] xl:px-8 2xl:px-12 xl:grid xl:grid-cols-[60%_40%] xl:grid-rows-1">
@@ -1617,7 +430,6 @@ export function PosClient({
           setQuery={setQuery}
           onScanKeyDown={onScanKeyDown}
           posView={posView}
-          setPosView={setPosView}
           showCamera={showCamera}
           setShowCamera={setShowCamera}
           categoryFilter={categoryFilter}
@@ -1634,13 +446,20 @@ export function PosClient({
           cart={cart}
           setCart={setCart}
           unitsMap={unitsMap}
-          priceFor={priceFor}
-          warehouseId={warehouseId}
+          priceMode={priceMode}
+          resolveCode={resolveCode}
+          setLineUnit={setLineUnit}
+          batchesFor={batchesFor}
+          toggleSerial={toggleSerial}
+          freeSerials={freeSerials}
           searchHits={searchHits}
         />
         <PosCartPanel
+          posView={posView}
           cart={cart}
           setCart={setCart}
+          unitsMap={unitsMap}
+          setLineUnit={setLineUnit}
           total={total}
           missingSerialLines={missingSerialLines}
           notifyMissingSerials={notifyMissingSerials}
@@ -1680,6 +499,11 @@ export function PosClient({
           customerPhone={customerPhone}
           customerPoints={customerPoints}
           posCustomers={posCustomers}
+          mpesaStkEnabled={mpesaStkEnabled}
+          stkBusy={stkBusy}
+          requestMpesaStk={requestMpesaStk}
+          mpesaSim={mpesaSim}
+          stkStatus={stkStatus}
           clearCustomer={clearCustomer}
           openCustomerDialog={openCustomerDialog}
           pending={pending}
@@ -1701,6 +525,11 @@ export function PosClient({
           setCustomerName={setCustomerName}
           setCustomerPoints={setCustomerPoints}
           setCustomerContactName={setCustomerContactName}
+          customerPhone={customerPhone}
+          clearCustomer={clearCustomer}
+          openCustomerDialog={openCustomerDialog}
+          lookupCustomer={lookupCustomer}
+          lookingUp={lookingUp}
           posCustomers={posCustomers}
           newCustomer={newCustomer}
           setNewCustomer={setNewCustomer}
@@ -1716,230 +545,17 @@ export function PosClient({
       </div>
 
 
-      {/* Mobile: catalog-only + bottom bar + cart sheet → checkout dialog */}
-      <div className="xl:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-card/95 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md">
-        <div className="mx-auto flex max-w-lg items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setMobileCartOpen(true)}
-            className="flex min-h-14 flex-1 items-center justify-between gap-2 rounded-2xl border border-primary/25 bg-primary/10 px-3 py-2 text-left"
-          >
-            <span className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <ShoppingCart className="h-4 w-4" />
-              </span>
-              <span>
-                <span className="block text-sm font-semibold text-foreground">
-                  {cart.length === 0
-                    ? "Your list is empty"
-                    : `${cart.length} product${cart.length === 1 ? "" : "s"}`}
-                </span>
-                <span className="block text-[11px] text-muted-foreground">
-                  {cart.length === 0 ? "Search or scan a product first" : "Tap to check quantities"}
-                </span>
-              </span>
-            </span>
-            <span className="text-lg font-black tabular-nums text-primary">
-              {total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-            </span>
-          </button>
-          <Button
-            type="button"
-            className="h-14 shrink-0 rounded-2xl px-5 text-base font-bold"
-            disabled={cart.length === 0}
-            onClick={() => {
-              if (!notifyMissingSerials()) {
-                setMobileCartOpen(false);
-                setCheckoutOpen(true);
-              } else {
-                setMobileCartOpen(true);
-              }
-            }}
-          >
-            Pay
-          </Button>
-        </div>
-      </div>
-
-      <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
-        <SheetContent
-          side="bottom"
-          className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-t-2xl p-0"
-        >
-          <SheetHeader className="shrink-0 border-b px-4 py-3 text-left">
-            <SheetTitle className="flex items-center justify-between gap-2">
-              <span>Step 2 · Your list ({cart.length})</span>
-              <span className="text-base font-black tabular-nums text-primary">
-                {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </SheetTitle>
-            <p className="text-xs text-muted-foreground">
-              Check numbers are correct, then press <strong>Next: Pay</strong>.
-            </p>
-          </SheetHeader>
-
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-3">
-            {cart.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                No products yet. Close and scan or tap items.
-              </div>
-            ) : (
-              cart.map((line) => {
-                const options = freeSerials(line.productId);
-                return (
-                <div
-                  key={line.productId}
-                  className="rounded-xl border border-border/70 bg-card p-3 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{line.name}</div>
-                      <div className="text-[11px] text-muted-foreground tabular-nums">
-                        @ {line.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-destructive"
-                      onClick={() =>
-                        setCart((c) => c.filter((x) => x.productId !== line.productId))
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-0.5">
-                      <button
-                        type="button"
-                        className="flex h-9 w-9 items-center justify-center rounded-md text-lg font-bold"
-                        onClick={() =>
-                          setCart((c) =>
-                            c
-                              .map((x) =>
-                                x.productId === line.productId
-                                  ? { ...x, quantity: Math.max(0, Number(x.quantity) - 1) }
-                                  : x,
-                              )
-                              .filter((x) => x.quantity > 0),
-                          )
-                        }
-                      >
-                        −
-                      </button>
-                      <input
-                        className="h-9 w-12 border-0 bg-transparent text-center text-sm font-semibold tabular-nums outline-none"
-                        type="number"
-                        min={0}
-                        step="any"
-                        value={line.quantity}
-                        onChange={(e) => {
-                          const q = Number(e.target.value);
-                          setCart((c) =>
-                            c
-                              .map((x) =>
-                                x.productId === line.productId
-                                  ? { ...x, quantity: q }
-                                  : x,
-                              )
-                              .filter((x) => x.quantity > 0),
-                          );
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="flex h-9 w-9 items-center justify-center rounded-md text-lg font-bold"
-                        onClick={() =>
-                          setCart((c) =>
-                            c.map((x) =>
-                              x.productId === line.productId
-                                ? { ...x, quantity: Number(x.quantity) + 1 }
-                                : x,
-                            ),
-                          )
-                        }
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div className="text-sm font-bold tabular-nums">
-                      {(line.unitPrice * line.quantity).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </div>
-                  </div>
-                  {line.serialized ? (
-                    <div className="mt-2 max-h-32 space-y-1 overflow-y-auto rounded-lg border border-chart-5/30 bg-chart-5/10 p-2">
-                      <p className="text-[10px] font-semibold text-chart-5">
-                        Serial / chassis numbers {line.selectedSerials.length}/
-                        {Math.round(line.quantity * (line.factorToStock || 1))}
-                      </p>
-                      {options.length === 0 ? (
-                        <p className="text-[10px] text-muted-foreground">
-                          No free serial / chassis numbers in this warehouse
-                        </p>
-                      ) : (
-                        options.map((serial) => (
-                          <label
-                            key={serial}
-                            className="flex min-h-8 cursor-pointer items-center gap-2 text-xs"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={line.selectedSerials.includes(serial)}
-                              onChange={() =>
-                                toggleSerial(line.productId, serial)
-                              }
-                            />
-                            <span className="font-mono">{serial}</span>
-                          </label>
-                        ))
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-                );
-              })
-            )}
-
-          </div>
-
-          <SheetFooter className="shrink-0 gap-2 border-t bg-card px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-col">
-            <div className="flex w-full items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total</span>
-              <span className="text-xl font-black tabular-nums text-primary">
-                {total.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </div>
-            <div className="grid w-full grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 rounded-xl"
-                onClick={() => setMobileCartOpen(false)}
-              >
-                Add more
-              </Button>
-              <Button
-                type="button"
-                className="h-12 rounded-xl font-bold"
-                disabled={cart.length === 0 || total <= 0}
-                onClick={() => {
-                  if (notifyMissingSerials()) return;
-                  setMobileCartOpen(false);
-                  setCheckoutOpen(true);
-                }}
-              >
-                Next: Pay
-              </Button>
-            </div>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <PosMobileCart
+        open={mobileCartOpen}
+        setOpen={setMobileCartOpen}
+        cart={cart}
+        total={total}
+        setCart={setCart}
+        freeSerials={freeSerials}
+        toggleSerial={toggleSerial}
+        notifyMissingSerials={notifyMissingSerials}
+        setCheckoutOpen={setCheckoutOpen}
+      />
 
 
       {lastReceipt ? (
