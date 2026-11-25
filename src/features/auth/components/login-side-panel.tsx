@@ -21,14 +21,15 @@ const proof = [
   { icon: Banknote, label: "Cash & profits" },
 ];
 
+/** Desktop-only marketing column — kept short and scannable. */
 export function LoginSidePanel() {
   return (
-    <Stagger stagger={0.18} className="flex h-full flex-col justify-center">
+    <Stagger stagger={0.12} className="flex h-full max-w-lg flex-col justify-center py-8">
       <FadeIn staggerChild direction="up">
-        <p className="text-sm font-semibold uppercase tracking-widest text-cyan-300/90">
-          GetAxe Business Management
+        <p className="text-xs font-semibold uppercase tracking-widest text-cyan-300/90">
+          Business management
         </p>
-        <h1 className="mt-3 text-5xl font-black leading-tight text-white md:text-6xl">
+        <h1 className="mt-3 text-4xl font-black leading-tight text-white xl:text-5xl">
           Know. Control.
           <br />
           Decide. Grow.
@@ -36,42 +37,41 @@ export function LoginSidePanel() {
       </FadeIn>
 
       <FadeIn staggerChild direction="up">
-        <p className="mt-6 max-w-xl text-xl leading-8 text-white/80">
-          Your business shouldn&apos;t depend on guesswork — or on you being at
-          the counter every minute. See stock, sales, cash and what needs
-          attention so you can make decisions with facts.
+        <p className="mt-5 text-lg leading-7 text-white/75">
+          See stock, sales and cash clearly — so decisions are based on facts,
+          not guesswork.
         </p>
       </FadeIn>
 
       <FadeIn staggerChild direction="up">
-        <div className="mt-10 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-wrap gap-2">
           {pillars.map(({ icon: Icon, label }) => (
             <div
               key={label}
-              className="flex items-center gap-2 rounded-full border border-white/20 bg-card/10 px-5 py-3 backdrop-blur-xl"
+              className="flex items-center gap-2 rounded-full border border-white/20 bg-card/10 px-4 py-2 backdrop-blur-xl"
             >
-              <Icon className="h-5 w-5 text-cyan-300" />
-              <span className="font-medium text-white">{label}</span>
+              <Icon className="h-4 w-4 text-cyan-300" />
+              <span className="text-sm font-medium text-white">{label}</span>
             </div>
           ))}
         </div>
       </FadeIn>
 
       <FadeIn staggerChild direction="up">
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-2">
           {proof.map(({ icon: Icon, label }) => (
             <div
               key={label}
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85"
+              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white/85"
             >
-              <Icon className="h-4 w-4 text-cyan-200/90" />
+              <Icon className="h-3.5 w-3.5 text-cyan-200/90" />
               <span>{label}</span>
             </div>
           ))}
-          <span className="self-center text-sm text-white/60">
-            Pharmacy · Spare parts · Hardware · Retail
-          </span>
         </div>
+        <p className="mt-3 text-sm text-white/50">
+          Pharmacy · Spare parts · Hardware · Retail
+        </p>
       </FadeIn>
     </Stagger>
   );
