@@ -9,14 +9,6 @@ import { getSession } from "./session";
 
 export const getCurrentUser = cache(async () => {
   const session = await getSession();
-  if (process.env.NODE_ENV === "development") {
-    console.log(
-      "SESSION:",
-      session
-        ? { userId: session.userId, businessId: session.businessId }
-        : null,
-    );
-  }
   if (!session) {
     return null;
   }

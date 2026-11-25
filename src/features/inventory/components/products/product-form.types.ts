@@ -9,12 +9,6 @@ import type {
   ProductContext,
 } from "../../types";
 
-/*
-|--------------------------------------------------------------------------
-| Form Schema
-|--------------------------------------------------------------------------
-*/
-
 export const productFormSchema = z.object({
 
   productType:
@@ -139,22 +133,10 @@ export type ProductFormInput =
 export type ProductFormOutput =
   z.output<typeof productFormSchema>;
 
-/*
-|--------------------------------------------------------------------------
-| Shared Select Option
-|--------------------------------------------------------------------------
-*/
-
 export interface SelectOption {
   id: string;
   name: string;
 }
-
-/*
-|--------------------------------------------------------------------------
-| Lookup Data
-|--------------------------------------------------------------------------
-*/
 
 export interface ProductLookupData {
 
@@ -194,12 +176,6 @@ export interface ProductLookupData {
   inventoryAccounts:
     SelectOption[];
 }
-
-/*
-|--------------------------------------------------------------------------
-| Component Props
-|--------------------------------------------------------------------------
-*/
 
 export interface ProductFormProps {
 

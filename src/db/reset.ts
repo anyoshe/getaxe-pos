@@ -48,18 +48,15 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("⚠️  GetAxe DB RESET — all tenant data will be deleted.\n");
 
   const pool = new Pool({ connectionString: url });
   const client = await pool.connect();
   try {
-    console.log("→ DROP SCHEMA public CASCADE");
     await client.query("DROP SCHEMA IF EXISTS public CASCADE");
     await client.query("CREATE SCHEMA public");
     await client.query("GRANT ALL ON SCHEMA public TO public");
     // restore default privileges for the connecting role
     await client.query("GRANT ALL ON SCHEMA public TO CURRENT_USER");
-    console.log("→ Schema recreated\n");
   } finally {
     client.release();
     await pool.end();
@@ -72,13 +69,10 @@ async function main() {
     process.platform === "win32" ? "tsx.cmd" : "tsx",
   );
 
-  console.log("→ Running migrations (pnpm db:migrate)");
   await run("pnpm", ["exec", "tsx", "src/db/migrate.ts"]);
 
-  console.log("\n→ Running full system seed (pnpm db:seed)");
   await run("pnpm", ["exec", "tsx", "src/db/seed/index.ts"]);
 
-  console.log("\n🎉 Clean slate ready. Platform: superadmin@getaxe.tech / Admin@12345\n");
 }
 
 main().catch((e) => {

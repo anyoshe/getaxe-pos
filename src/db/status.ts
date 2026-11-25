@@ -26,7 +26,6 @@ function checksum(content: string) {
 
 async function run() {
 
-  console.log("\n🚀 GetAxe Migration Status\n");
 
 
   const appliedResult = await pool.query(`
@@ -66,16 +65,13 @@ async function run() {
     if(record){
 
       if(record.checksum !== hash){
-        console.log(`⚠ CHECKSUM FAILED ${file}`);
       }
       else {
-        console.log(`✓ ${file}`);
       }
 
     }
     else {
 
-      console.log(`→ ${file} pending`);
       pending++;
 
     }
@@ -83,15 +79,8 @@ async function run() {
   }
 
 
-  console.log("");
 
-  console.log(
-    `Applied: ${applied.length}`
-  );
 
-  console.log(
-    `Pending: ${pending}`
-  );
 
 
   await pool.end();

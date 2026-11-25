@@ -14,4 +14,3 @@ if (!result.valid) {
   process.exit(1);
 }
 
-console.log("Permission validation passed.");
