@@ -32,6 +32,11 @@ export function LoginLayout({ children }: LoginLayoutProps) {
             className="w-full max-w-md"
           >
             {children ?? <LoginCard />}
+            <p className="mt-4 text-center text-sm text-white/55">
+              <a href="/pricing" className="underline-offset-2 hover:text-white hover:underline">
+                View plans &amp; pricing
+              </a>
+            </p>
           </FadeIn>
         </section>
       </div>
